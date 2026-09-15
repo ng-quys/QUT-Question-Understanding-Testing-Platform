@@ -1,23 +1,210 @@
+@import "tailwindcss";
+
 :root {
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-primary-border: var(--primary-border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
 }
 
-html,
+:root,
+body.theme-1 {
+  --bg-main: #F5F7FA;
+  --bg-card: #FFFFFF;
+  --bg-card-subtle: #F8FAFC;
+  --text-main: #0D1B2A;
+  --text-muted: #475569;
+  --text-secondary: #475569;
+  --text-subtle: #94A3B8;
+
+  /* Brand / Left Banner Gradient */
+  --banner-from: #0D1B2A;
+  --banner-to: #1E3A8A;
+  --banner-ambient-1: #1E3A8A;
+  --banner-ambient-2: #3B82F6;
+  --banner-text: #FFFFFF;
+  --banner-tag-bg: rgba(255, 255, 255, 0.12);
+  --banner-tag-text: #F4C430;
+
+  /* Primary Action & Active State */
+  --primary: #1E3A8A;
+  --primary-hover: #172554;
+  --primary-text: #FFFFFF;
+  --primary-light: rgba(30, 58, 138, 0.08);
+  --primary-soft: rgba(30, 58, 138, 0.05);
+  --primary-border: rgba(30, 58, 138, 0.25);
+  --primary-glow: rgba(30, 58, 138, 0.35);
+  --focus-ring: rgba(30, 58, 138, 0.25);
+
+  /* Highlight / Badge / Accent (Vàng ánh kim #F4C430) */
+  --accent: #F4C430;
+  --accent-hover: #EAB308;
+  --accent-text: #854D0E;
+  --accent-bg-subtle: rgba(244, 196, 48, 0.18);
+  --accent-border: rgba(244, 196, 48, 0.45);
+
+  /* Borders */
+  --border-color: #E2E8F0;
+  --border-subtle: rgba(226, 232, 240, 0.8);
+}
+
+body.theme-2 {
+  --bg-main: #F0F9FF;
+  --bg-card: #FFFFFF;
+  --bg-card-subtle: #F8FAFC;
+  --text-main: #1E293B;
+  --text-muted: #64748B;
+  --text-secondary: #64748B;
+  --text-subtle: #94A3B8;
+
+  /* Brand / Left Banner Gradient (Soft Sky Blue #0EA5E9 -> #BAE6FD) */
+  --banner-from: #0EA5E9;
+  --banner-to: #BAE6FD;
+  --banner-ambient-1: #0EA5E9;
+  --banner-ambient-2: #F4C430;
+  --banner-text: #FFFFFF;
+  --banner-tag-bg: rgba(255, 255, 255, 0.22);
+  --banner-tag-text: #FFFFFF;
+
+  /* Primary Action & Active State (#0EA5E9) */
+  --primary: #0EA5E9;
+  --primary-hover: #0284C7;
+  --primary-text: #FFFFFF;
+  --primary-light: rgba(14, 165, 233, 0.1);
+  --primary-soft: rgba(14, 165, 233, 0.06);
+  --primary-border: rgba(14, 165, 233, 0.3);
+  --primary-glow: rgba(14, 165, 233, 0.35);
+  --focus-ring: rgba(14, 165, 233, 0.25);
+
+  /* Highlight / Badge / Accent (#F4C430) */
+  --accent: #F4C430;
+  --accent-hover: #EAB308;
+  --accent-text: #854D0E;
+  --accent-bg-subtle: rgba(244, 196, 48, 0.2);
+  --accent-border: rgba(244, 196, 48, 0.45);
+
+  /* Borders */
+  --border-color: #E2E8F0;
+  --border-subtle: rgba(226, 232, 240, 0.8);
+}
+
+body.theme-3 {
+  --bg-main: #F1F1F1;
+  --bg-card: #FAFAF8;
+  --bg-card-subtle: #F4F4F2;
+  --text-main: #1F2937;
+  --text-muted: #4B5563;
+  --text-secondary: #4B5563;
+  --text-subtle: #9CA3AF;
+
+  /* Brand / Left Banner Gradient (Đen Charcoal / Xám Đậm #1F2937 -> #374151) */
+  --banner-from: #1F2937;
+  --banner-to: #374151;
+  --banner-ambient-1: #374151;
+  --banner-ambient-2: #2563EB;
+  --banner-text: #FFFFFF;
+  --banner-tag-bg: rgba(255, 255, 255, 0.12);
+  --banner-tag-text: #E5E7EB;
+
+  /* Primary Action & Active State (Xanh Dương Classic #2563EB) */
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-text: #FFFFFF;
+  --primary-light: rgba(37, 99, 235, 0.08);
+  --primary-soft: rgba(37, 99, 235, 0.05);
+  --primary-border: rgba(37, 99, 235, 0.25);
+  --primary-glow: rgba(37, 99, 235, 0.35);
+  --focus-ring: rgba(37, 99, 235, 0.25);
+
+  /* Highlight / Badge / Accent (Màu Bạc #C0C0C0) */
+  --accent: #C0C0C0;
+  --accent-hover: #A3A3A3;
+  --accent-text: #374151;
+  --accent-bg-subtle: rgba(192, 192, 192, 0.35);
+  --accent-border: #C0C0C0;
+
+  /* Borders */
+  --border-color: #E5E7EB;
+  --border-subtle: rgba(229, 231, 235, 0.9);
+}
+
+/* Smooth Transition on Theme Switch */
 body,
-#root {
-  width: 100%;
-  min-height: 100%;
+body * {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
-body {
-  margin: 0;
+/* Custom CSS Helper Utilities */
+.app-bg-main {
+  background-color: var(--bg-main) !important;
+}
+
+.app-bg-card {
+  background-color: var(--bg-card) !important;
+}
+
+.app-bg-card-subtle {
+  background-color: var(--bg-card-subtle) !important;
+}
+
+.app-text-main {
+  color: var(--text-main) !important;
+}
+
+.app-text-muted {
+  color: var(--text-muted) !important;
+}
+
+.app-banner-bg {
+  background: linear-gradient(135deg, var(--banner-from) 0%, var(--banner-to) 100%) !important;
+}
+
+.app-btn-primary {
+  background-color: var(--primary) !important;
+  color: var(--primary-text) !important;
+}
+.app-btn-primary:hover {
+  background-color: var(--primary-hover) !important;
+  box-shadow: 0 4px 14px var(--primary-glow) !important;
+}
+
+.app-btn-accent {
+  background-color: var(--accent) !important;
+  color: var(--accent-text) !important;
+}
+.app-btn-accent:hover {
+  background-color: var(--accent-hover) !important;
+}
+
+.app-badge-accent {
+  background-color: var(--accent-bg-subtle) !important;
+  color: var(--accent-text) !important;
+  border: 1px solid var(--accent-border) !important;
+}
+
+.app-badge-primary {
+  background-color: var(--primary-light) !important;
+  color: var(--primary) !important;
+  border: 1px solid var(--primary-border) !important;
+}
+
+.app-active-tab {
+  background-color: var(--bg-card) !important;
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+}
+
+.app-input-focus:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--focus-ring) !important;
+}
+
+.app-border {
+  border-color: var(--border-color) !important;
+}
+
+.app-border-subtle {
+  border-color: var(--border-subtle) !important;
 }

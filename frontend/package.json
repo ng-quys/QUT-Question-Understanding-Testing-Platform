@@ -10,9 +10,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^2.22.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "docx": "^9.7.1",
+    "file-saver": "^2.0.5",
     "keycloak-js": "^26.2.4",
+    "lucide-react": "^1.46.0",
+    "motion": "^13.3.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.4",
+    "recharts": "^3.10.1",
+    "tailwindcss": "^4.3.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
