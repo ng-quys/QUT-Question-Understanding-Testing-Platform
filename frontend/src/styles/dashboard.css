@@ -1,0 +1,29 @@
+/* Dashboard specific styles and layout utilities */
+
+/* Custom compact table styling */
+.dashboard-table th {
+  letter-spacing: 0.05em;
+}
+
+.dashboard-table tr {
+  transition: background-color 0.15s ease;
+}
+
+/* Custom scrollbar for dashboard sidebars and tables */
+.dashboard-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
