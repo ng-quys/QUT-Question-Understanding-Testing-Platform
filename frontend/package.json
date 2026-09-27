@@ -12,9 +12,11 @@
   "dependencies": {
     "@google/genai": "^2.22.0",
     "@tailwindcss/vite": "^4.3.3",
+    "axios": "^1.20.0",
     "docx": "^9.7.1",
     "file-saver": "^2.0.5",
     "keycloak-js": "^26.2.4",
+    "keycloakify": "^11.16.0",
     "lucide-react": "^1.46.0",
     "motion": "^13.3.0",
     "react": "^19.2.8",

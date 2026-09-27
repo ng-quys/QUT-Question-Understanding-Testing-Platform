@@ -4,7 +4,6 @@ import type { SlideData } from '../types';
 import { QuestionBankVisual } from './visuals/QuestionBankVisual';
 import { AIGenerationVisual } from './visuals/AIGenerationVisual';
 import { ExamAnalyticsVisual } from './visuals/ExamAnalyticsVisual';
-import { Sparkles } from 'lucide-react';
 
 interface HeroSlideProps {
   slide: SlideData;
@@ -17,49 +16,47 @@ export const HeroSlide: React.FC<HeroSlideProps> = ({ slide, isActive }) => {
   return (
     <motion.div
       key={slide.id}
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="flex flex-col justify-between h-full space-y-6 w-full max-w-lg mx-auto"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="flex h-full w-full flex-col"
     >
-      {/* Slide Text Content */}
-      <div className="space-y-3 z-10 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold tracking-wide uppercase shadow-sm"
-          style={{ color: 'var(--accent)' }}
+      <div className="max-w-xl">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.05, duration: 0.3 }}
+          className="mb-4 text-sm font-medium text-white/60"
         >
-          <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
-          <span>{slide.tag}</span>
-        </motion.div>
+          {slide.tag}
+        </motion.p>
 
         <motion.h2
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.4 }}
-          className="text-2xl sm:text-3xl lg:text-3xl font-bold text-white tracking-tight leading-[1.25]"
+          transition={{ delay: 0.08, duration: 0.35 }}
+          className="max-w-lg text-3xl font-semibold leading-tight tracking-[-0.025em] text-white lg:text-[2.5rem]"
         >
           {slide.title}
         </motion.h2>
 
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-          className="text-sm text-white/85 font-normal leading-relaxed max-w-md mx-auto drop-shadow-xs"
+          transition={{ delay: 0.12, duration: 0.35 }}
+          className="mt-4 max-w-lg text-[15px] leading-7 text-white/65"
         >
           {slide.description}
         </motion.p>
       </div>
 
-      {/* Visual Component */}
-      <div className="flex-1 flex items-center justify-center py-2 w-full">
-        {slide.visualType === 'question-bank' && <QuestionBankVisual />}
-        {slide.visualType === 'ai-generator' && <AIGenerationVisual />}
-        {slide.visualType === 'exam-analytics' && <ExamAnalyticsVisual />}
+      <div className="mt-8 flex min-h-0 flex-1 items-center justify-center">
+        <div className="w-full max-w-[520px]">
+          {slide.visualType === 'question-bank' && <QuestionBankVisual />}
+          {slide.visualType === 'ai-generator' && <AIGenerationVisual />}
+          {slide.visualType === 'exam-analytics' && <ExamAnalyticsVisual />}
+        </div>
       </div>
     </motion.div>
   );
