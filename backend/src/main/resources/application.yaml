@@ -1,0 +1,15 @@
+server:
+  port: 8080
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/online-exam-system
+
+keycloak:
+  server-url: http://localhost:8081
+  realm: online-exam-system
+  admin-client-id: online-exam-backend
+  admin-client-secret: WKUvU6PW9giLza6NCyCQFhXWY1as78r37GblTPN1FxsTC3b2tKjZwpH03C9GY91rseniZmT6hYkMKOK5HSaQAQ
