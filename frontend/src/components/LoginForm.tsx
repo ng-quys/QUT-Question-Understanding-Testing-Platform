@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Check, AlertCircle, Sparkles, ShieldCheck } from 'lucide-react';
-import type { UserRole, LoginFormData, FormErrors } from '../types';
+import type { UserRole, FormErrors } from '../types';
 import { RoleToggle } from './RoleToggle';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 import { RegisterModal } from './RegisterModal';
+import { login, saveAuthSession } from '../services/authService';
 
 interface LoginFormProps {
   onLoginSuccess?: (role: UserRole, email: string) => void;
@@ -30,11 +31,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     // Adapt default sample email for testing convenience if input is empty
     if (!email || email.includes('student') || email.includes('faculty') || email.includes('giangvien') || email.includes('sinhvien')) {
       if (newRole === 'student') {
-        setEmail('student@university.edu.vn');
-        setPassword('Matkhau123@');
+        setEmail('student001@university.edu.vn');
+        setPassword('Student@123');
       } else {
         setEmail('faculty@university.edu.vn');
-        setPassword('Giangvien123@');
+        setPassword('Faculty@123');
       }
     }
   };
@@ -42,11 +43,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const handleQuickDemoFill = (selectedRole: UserRole) => {
     setRole(selectedRole);
     if (selectedRole === 'student') {
-      setEmail('student@university.edu.vn');
-      setPassword('Matkhau123@');
+      setEmail('student001@university.edu.vn');
+      setPassword('Student@123');
     } else {
       setEmail('faculty@university.edu.vn');
-      setPassword('Giangvien123@');
+      setPassword('Faculty@123');
     }
     setErrors({});
   };
@@ -69,21 +70,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsLoading(true);
-    // Simulate login API latency
-    setTimeout(() => {
-      setIsLoading(false);
+    setErrors({});
+    try {
+      const session = await login(email.trim(), password, role);
+      saveAuthSession(session, rememberMe);
       setLoginSuccess(true);
-      if (onLoginSuccess) {
-        setTimeout(() => {
-          onLoginSuccess(role, email);
-        }, 500);
-      }
-    }, 700);
+      window.setTimeout(() => onLoginSuccess?.(session.role, session.email), 350);
+    } catch (error) {
+      setLoginSuccess(false);
+      setErrors({ general: error instanceof Error ? error.message : 'Đăng nhập thất bại' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSocialLogin = (provider: 'Google' | 'Microsoft') => {
@@ -151,8 +154,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         <AnimatePresence>
           {loginSuccess && (
             <motion.div
-              initial={{ opacity: 0, height: 0, mb: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 text-emerald-800 text-xs"
             >
@@ -170,6 +173,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {errors.general && (
+          <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-700 text-xs">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="font-semibold">{errors.general}</div>
+          </div>
+        )}
 
         {/* Form Fields */}
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>

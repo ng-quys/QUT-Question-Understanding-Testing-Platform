@@ -10,9 +10,8 @@ export const LoginPage: React.FC = () => {
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
   const navigate = useNavigate();
 
-  const handleLoginSuccess = (role: UserRole, email: string) => {
-    // Navigate to dashboard upon successful login
-    navigate(ROUTES.DASHBOARD);
+  const handleLoginSuccess = (role: UserRole, _email: string) => {
+    navigate(role === 'student' ? ROUTES.STUDENT : ROUTES.DASHBOARD);
   };
 
   return (
