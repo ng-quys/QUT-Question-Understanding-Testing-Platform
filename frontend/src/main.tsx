@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import App from './App';
+import App from './app/App';
 import './index.css';
 
 import keycloak from './services/keycloak';

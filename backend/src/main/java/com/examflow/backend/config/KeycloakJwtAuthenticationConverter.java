@@ -31,7 +31,7 @@ public class KeycloakJwtAuthenticationConverter
             authorities = roles.stream()
                     .map(Object::toString)
                     .map(role -> new SimpleGrantedAuthority(
-                            "ROLE_" + role
+                            "ROLE_" + role.toUpperCase()
                     ))
                     .toList();
         }

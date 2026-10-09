@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -332,6 +333,58 @@ return userId;
                 firstName,
                 lastName
         };
+    }
+
+    public void assignRealmRole(
+            String userId,
+            String roleName
+    ) {
+        String adminToken = getAdminAccessToken();
+        assignRealmRole(userId, roleName, adminToken);
+    }
+
+    /**
+     * Keep exactly one application role (STUDENT or TEACHER) on the user.
+     * This prevents repeated logins from accumulating both roles.
+     */
+    public void setApplicationRealmRole(
+            String userId,
+            String roleName
+    ) {
+        String normalizedRole = roleName.toUpperCase(Locale.ROOT);
+        if (!normalizedRole.equals("STUDENT") && !normalizedRole.equals("TEACHER")) {
+            throw new IllegalArgumentException("Unsupported application role: " + roleName);
+        }
+
+        String adminToken = getAdminAccessToken();
+        String oppositeRole = normalizedRole.equals("STUDENT") ? "TEACHER" : "STUDENT";
+
+        removeRealmRole(userId, oppositeRole, adminToken);
+        assignRealmRole(userId, normalizedRole, adminToken);
+    }
+
+    private void removeRealmRole(
+            String userId,
+            String roleName,
+            String adminToken
+    ) {
+        Map<?, ?> role = restClient.get()
+                .uri(serverUrl + "/admin/realms/" + realm + "/roles/" + roleName)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                .retrieve()
+                .body(Map.class);
+
+        if (role == null) {
+            return;
+        }
+
+        restClient.method(HttpMethod.DELETE)
+                .uri(serverUrl + "/admin/realms/" + realm + "/users/" + userId + "/role-mappings/realm")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(List.of(role))
+                .retrieve()
+                .toBodilessEntity();
     }
 
     private void assignRealmRole(

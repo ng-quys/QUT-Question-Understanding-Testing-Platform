@@ -27,4 +27,6 @@ public interface ExamSessionStudentRepository extends JpaRepository<ExamSessionS
     """)
     Optional<ExamSessionStudent> findRegistration(@Param("studentId") Long studentId,
                                                    @Param("sessionId") Long sessionId);
+    long countByExamSessionId(Long examSessionId);
+    boolean existsByExamSessionIdAndStudentId(Long examSessionId, Long studentId);
 }

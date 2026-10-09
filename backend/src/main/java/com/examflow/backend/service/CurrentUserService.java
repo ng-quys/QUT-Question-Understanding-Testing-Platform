@@ -30,13 +30,32 @@ public class CurrentUserService {
 
         String keycloakUserId = jwt.getSubject();
 
-        return userRepository
+        UserEntity byKeycloakId = userRepository
                 .findByKeycloakUserId(keycloakUserId)
-                .orElseThrow(() ->
-                        new ApiException(
-                                HttpStatus.UNAUTHORIZED,
-                                "Không tìm thấy người dùng trong hệ thống"
-                        )
-                );
+                .orElse(null);
+
+        if (byKeycloakId != null) {
+            return byKeycloakId;
+        }
+
+        // A user may authenticate through another Keycloak identity provider
+        // (Google/Microsoft) and receive a different subject while still using
+        // the same verified application email. Fall back to the JWT email so
+        // all supported login methods resolve to the same local account.
+        String email = jwt.getClaimAsString("email");
+
+        if (email != null && !email.isBlank()) {
+            return userRepository
+                    .findByEmailIgnoreCase(email.trim())
+                    .orElseThrow(() -> new ApiException(
+                            HttpStatus.UNAUTHORIZED,
+                            "Không tìm thấy người dùng trong hệ thống"
+                    ));
+        }
+
+        throw new ApiException(
+                HttpStatus.UNAUTHORIZED,
+                "Không tìm thấy người dùng trong hệ thống"
+        );
     }
 }

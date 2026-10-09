@@ -37,4 +37,7 @@ private String passwordHash;
 
     private String department;
     private String status;
+public Long getId() {
+    return id;
+}
 }

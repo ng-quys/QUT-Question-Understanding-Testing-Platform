@@ -1,1 +1,1 @@
-export { ActiveDashboard } from '../../components/dashboard/academic/ActiveDashboard';
+export { ActiveDashboard } from '../../features/dashboard/pages/ActiveDashboard';

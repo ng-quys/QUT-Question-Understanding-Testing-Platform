@@ -30,4 +30,6 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> 
     """)
     Optional<ExamAttempt> findOwnedAttempt(@Param("attemptId") Long attemptId,
                                            @Param("studentId") Long studentId);
+    long countByExamSessionId(Long examSessionId);
+    long countByExamSessionIdAndStatusIn(Long examSessionId, List<String> statuses);
 }
