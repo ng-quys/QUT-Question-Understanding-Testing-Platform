@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { StudentPortalPage } from './components/student/StudentPortalPage';
 import { ThemeProvider } from './context/ThemeContext';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
+import { AdminPage } from './components/admin/AdminPage';
 import { ROUTES } from './constants/routes';
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
           <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
           <Route path={ROUTES.STUDENT} element={<StudentPortalPage />} />
+          <Route path={ROUTES.ADMIN} element={<AdminPage />} />
           {/* Default route redirecting to login */}
           <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.LOGIN} replace />} />
           {/* Fallback route */}

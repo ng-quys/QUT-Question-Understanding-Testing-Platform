@@ -27,4 +27,11 @@ public interface ExamSessionStudentRepository extends JpaRepository<ExamSessionS
     """)
     Optional<ExamSessionStudent> findRegistration(@Param("studentId") Long studentId,
                                                    @Param("sessionId") Long sessionId);
+
+    @Query("""
+        select ess from ExamSessionStudent ess
+        where ess.student.id = :studentId and ess.examSession.id = :sessionId
+    """)
+    Optional<ExamSessionStudent> findByStudentAndSession(@Param("studentId") Long studentId,
+                                                         @Param("sessionId") Long sessionId);
 }

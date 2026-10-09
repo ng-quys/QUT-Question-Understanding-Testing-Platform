@@ -11,7 +11,7 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLoginSuccess = (role: UserRole, _email: string) => {
-    navigate(role === 'student' ? ROUTES.STUDENT : ROUTES.DASHBOARD);
+    navigate(role === 'student' ? ROUTES.STUDENT : role === 'admin' ? ROUTES.ADMIN : ROUTES.DASHBOARD);
   };
 
   return (

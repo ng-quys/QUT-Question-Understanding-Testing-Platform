@@ -33,6 +33,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       if (newRole === 'student') {
         setEmail('student001@university.edu.vn');
         setPassword('Student@123');
+      } else if (newRole === 'admin') {
+        setEmail('admin@examflow.edu.vn');
+        setPassword('Admin@123');
       } else {
         setEmail('faculty@university.edu.vn');
         setPassword('Faculty@123');
@@ -45,6 +48,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     if (selectedRole === 'student') {
       setEmail('student001@university.edu.vn');
       setPassword('Student@123');
+    } else if (selectedRole === 'admin') {
+      setEmail('admin@examflow.edu.vn');
+      setPassword('Admin@123');
     } else {
       setEmail('faculty@university.edu.vn');
       setPassword('Faculty@123');
@@ -91,7 +97,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
   const handleSocialLogin = (provider: 'Google' | 'Microsoft') => {
     setIsLoading(true);
-    const userEmail = role === 'student' ? `sinhvien.${provider.toLowerCase()}@edu.vn` : `giangvien.${provider.toLowerCase()}@edu.vn`;
+    const userEmail = role === 'student' ? `sinhvien.${provider.toLowerCase()}@edu.vn` : role === 'admin' ? `admin.${provider.toLowerCase()}@examflow.edu.vn` : `giangvien.${provider.toLowerCase()}@edu.vn`;
     setTimeout(() => {
       setIsLoading(false);
       setEmail(userEmail);
@@ -165,7 +171,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
                 <div className="text-emerald-700 mt-0.5">
                   Đang chuyển hướng đến bảng điều khiển{' '}
                   <span className="font-semibold underline">
-                    {role === 'student' ? 'Làm bài thi của Sinh viên' : 'Quản lý Đề & Chấm điểm Giảng viên'}
+                    {role === 'student' ? 'Làm bài thi của Sinh viên' : role === 'admin' ? 'Quản trị hệ thống' : 'Quản lý Đề & Chấm điểm Giảng viên'}
                   </span>
                   ...
                 </div>
@@ -193,7 +199,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
                 Địa chỉ Email
               </label>
               <span className="text-[11px] app-text-muted">
-                {role === 'student' ? 'Mã SV / Email trường' : 'Email công vụ'}
+                {role === 'student' ? 'Mã SV / Email trường' : role === 'admin' ? 'Email quản trị' : 'Email công vụ'}
               </span>
             </div>
             <div className="relative">
@@ -208,7 +214,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
                   setEmail(e.target.value);
                   if (errors.email) setErrors({ ...errors, email: undefined });
                 }}
-                placeholder={role === 'student' ? 'sv2024@university.edu.vn' : 'giangvien@university.edu.vn'}
+                placeholder={role === 'student' ? 'sv2024@university.edu.vn' : role === 'admin' ? 'admin@examflow.edu.vn' : 'giangvien@university.edu.vn'}
                 className={`w-full pl-10 pr-4 py-3 text-sm rounded-xl border bg-white app-text-main placeholder:text-slate-400 shadow-sm focus:outline-none transition-all duration-200 ${
                   errors.email
                     ? 'border-rose-400 focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500'

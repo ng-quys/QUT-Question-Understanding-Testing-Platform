@@ -15,9 +15,11 @@ import java.util.List;
 @RequestMapping("/api/student")
 public class StudentController {
     private final StudentService studentService;
+    private final com.examflow.backend.service.AntiCheatService antiCheatService;
 
-    public StudentController(StudentService studentService) {
+    public StudentController(StudentService studentService, com.examflow.backend.service.AntiCheatService antiCheatService) {
         this.studentService = studentService;
+        this.antiCheatService = antiCheatService;
     }
 
     @GetMapping("/dashboard")
@@ -34,7 +36,7 @@ public class StudentController {
     public StudentAttemptDto start(@AuthenticationPrincipal AuthenticatedUser user,
                                    @PathVariable Long sessionId,
                                    @RequestBody(required = false) StartExamRequest request) {
-        return studentService.startExam(studentId(user), sessionId, request);
+        return studentService.startExamByCode(studentId(user), sessionId, request == null ? null : request.accessCode());
     }
 
     @GetMapping("/attempts/{attemptId}")
@@ -55,6 +57,12 @@ public class StudentController {
                                    @PathVariable Long attemptId,
                                    @Valid @RequestBody SubmitExamRequest request) {
         return studentService.submit(studentId(user), attemptId, request);
+    }
+
+    @GetMapping("/attempts/{attemptId}/ai-status")
+    public tools.jackson.databind.JsonNode aiStatus(@AuthenticationPrincipal AuthenticatedUser user,
+                                                           @PathVariable Long attemptId) {
+        return antiCheatService.studentRuntimeStatus(attemptId, studentId(user));
     }
 
     @GetMapping("/results")
