@@ -1,4 +1,4 @@
-export type UserRole = 'faculty' | 'student';
+export type UserRole = 'faculty' | 'student' | 'admin';
 
 export type DashboardNavTab =
   | 'overview'
