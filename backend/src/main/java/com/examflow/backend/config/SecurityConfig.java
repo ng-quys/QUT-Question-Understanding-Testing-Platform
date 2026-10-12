@@ -66,6 +66,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/student/**")
                         .hasAnyRole("STUDENT", "ADMIN")
 
+                        .requestMatchers(HttpMethod.POST, "/api/internal/anticheating/events")
+                        .permitAll()
+
                         // Everything else requires authentication
                         .anyRequest()
                         .authenticated()

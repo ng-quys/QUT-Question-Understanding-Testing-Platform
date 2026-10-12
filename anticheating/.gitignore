@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+student-profiles/*.jpg
+/evidence/
+models/objects/*.pt
+
+runtime/
+
+.env
+models/
+*.log

@@ -29,4 +29,7 @@ public interface ExamSessionStudentRepository extends JpaRepository<ExamSessionS
                                                    @Param("sessionId") Long sessionId);
     long countByExamSessionId(Long examSessionId);
     boolean existsByExamSessionIdAndStudentId(Long examSessionId, Long studentId);
+    @Query("select ess from ExamSessionStudent ess where ess.student.id = :studentId and ess.examSession.id = :sessionId")
+    Optional<ExamSessionStudent> findByStudentAndSession(@Param("studentId") Long studentId,
+                                                       @Param("sessionId") Long sessionId);
 }

@@ -1,0 +1,8 @@
+opencv-python
+mediapipe
+numpy
+onnxruntime
+sounddevice
+webrtcvad-wheels
+insightface==0.7.3
+ultralytics

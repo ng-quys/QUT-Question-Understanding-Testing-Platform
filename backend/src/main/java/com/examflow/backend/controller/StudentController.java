@@ -25,6 +25,8 @@ import com.examflow.backend.entity.UserEntity;
 import com.examflow.backend.exception.ApiException;
 import com.examflow.backend.service.CurrentUserService;
 import com.examflow.backend.service.StudentService;
+import com.examflow.backend.service.AntiCheatService;
+import tools.jackson.databind.JsonNode;
 
 import jakarta.validation.Valid;
 
@@ -32,13 +34,16 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/student")
 public class StudentController {
 
+    private final AntiCheatService antiCheatService;
     private final StudentService studentService;
     private final CurrentUserService currentUserService;
 
     public StudentController(
             StudentService studentService,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            AntiCheatService antiCheatService
     ) {
+        this.antiCheatService = antiCheatService;
         this.studentService = studentService;
         this.currentUserService = currentUserService;
     }
@@ -134,24 +139,19 @@ public class StudentController {
         );
     }
 
-   private Long studentId(Jwt jwt) {
-
-    System.out.println("JWT SUB = " + jwt.getSubject());
-
-    UserEntity user =
-            currentUserService.getCurrentUser(jwt);
-
-    System.out.println("DB USER ID = " + user.getId());
-    System.out.println("DB EMAIL = " + user.getEmail());
-    System.out.println("DB ROLE = [" + user.getRole() + "]");
-
-    if (!"student".equalsIgnoreCase(user.getRole())) {
-        throw new ApiException(
-                HttpStatus.FORBIDDEN,
-                "Yêu cầu quyền sinh viên"
-        );
+    @GetMapping("/attempts/{attemptId}/ai-status")
+    public JsonNode aiStatus(@AuthenticationPrincipal Jwt jwt, @PathVariable Long attemptId) {
+        return antiCheatService.studentRuntimeStatus(attemptId, studentId(jwt));
     }
 
-    return user.getId();
-}
+    private Long studentId(Jwt jwt) {
+        if (jwt == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Bạn cần đăng nhập");
+        }
+        UserEntity user = currentUserService.getCurrentUser(jwt);
+        if (user == null || !"student".equalsIgnoreCase(user.getRole())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Yêu cầu quyền sinh viên");
+        }
+        return user.getId();
+    }
 }
