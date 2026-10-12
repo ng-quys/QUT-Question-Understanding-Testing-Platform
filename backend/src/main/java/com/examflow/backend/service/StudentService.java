@@ -75,83 +75,130 @@ public class StudentService {
     }
 
     @Transactional
+
     public StudentDashboardDto getDashboard(Long studentId) {
+
         UserEntity student = requireStudent(studentId);
+
         List<StudentSessionDto> sessions = getSessions(studentId);
+
         List<StudentResultDto> results = getResults(studentId);
 
+        long upcoming = sessions.stream().filter(s -> "scheduled".equalsIgnoreCase(s.sessionStatus())).count();
+
+        long ongoing = sessions.stream().filter(s -> "ongoing".equalsIgnoreCase(s.sessionStatus())).count();
+
         long completed = results.size();
+
         BigDecimal avg = results.stream()
+
                 .map(StudentResultDto::score)
+
                 .filter(Objects::nonNull)
+
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         if (!results.isEmpty()) {
+
             avg = avg.divide(BigDecimal.valueOf(results.size()), 2, RoundingMode.HALF_UP);
+
         }
 
         return new StudentDashboardDto(
+
                 student.getId(), student.getFullName(), student.getEmail(), student.getDepartment(),
-                0, 0, completed, avg, sessions, results.stream().limit(5).toList()
+
+                upcoming, ongoing, completed, avg,
+
+                sessions, results.stream().limit(5).toList()
+
         );
+
     }
 
-    /**
-     * Student history only: return sessions that have a completed/submitted attempt.
-     * Upcoming/ongoing sessions are intentionally not exposed in the portal list.
-     */
     @Transactional
-    public List<StudentSessionDto> getSessions(Long studentId) {
-        requireStudent(studentId);
-        Map<Long, ExamSessionStudent> registrationBySession = registrationRepository
-                .findAllByStudentIdWithDetails(studentId).stream()
-                .collect(Collectors.toMap(r -> r.getExamSession().getId(), r -> r, (a, b) -> a));
 
-        return attemptRepository.findAllByStudentIdWithDetails(studentId).stream()
-                .filter(a -> "completed".equalsIgnoreCase(a.getStatus()) || "submitted".equalsIgnoreCase(a.getStatus()))
-                .map(a -> {
-                    ExamSession session = a.getExamSession();
-                    Exam exam = a.getExam();
-                    ExamSessionStudent reg = registrationBySession.get(session.getId());
+    public List<StudentSessionDto> getSessions(Long studentId) {
+
+        requireStudent(studentId);
+
+        Map<Long, ExamAttempt> attemptBySession = attemptRepository.findAllByStudentIdWithDetails(studentId)
+
+                .stream().collect(Collectors.toMap(a -> a.getExamSession().getId(), a -> a, (a, b) -> a));
+
+        LocalDateTime now = now();
+
+        return registrationRepository.findAllByStudentIdWithDetails(studentId).stream()
+
+                .map(reg -> {
+
+                    ExamSession s = reg.getExamSession();
+
+                    Exam e = s.getExam();
+
+                    ExamAttempt a = attemptBySession.get(s.getId());
+
+                    boolean inWindow = !now.isBefore(s.getStartTime()) && now.isBefore(s.getEndTime());
+
+                    boolean canStart = inWindow
+
+                            && (a == null || "in_progress".equalsIgnoreCase(a.getStatus()));
+
                     return new StudentSessionDto(
-                            session.getId(), exam.getId(), exam.getCode(), exam.getTitle(),
-                            exam.getCourse().getCode(), exam.getCourse().getName(), session.getRoomCode(),
-                            session.getStartTime(), session.getEndTime(), session.getStatus(),
-                            reg == null ? "completed" : reg.getStatus(), exam.getDurationMinutes(),
-                            exam.getTotalQuestions(), exam.getTotalPoints(), a.getId(), a.getStatus(), a.getScore(),
-                            false, false
+
+                            s.getId(), e.getId(), e.getCode(), e.getTitle(), e.getCourse().getCode(), e.getCourse().getName(),
+
+                            s.getRoomCode(), s.getStartTime(), s.getEndTime(), s.getStatus(), reg.getStatus(),
+
+                            e.getDurationMinutes(), e.getTotalQuestions(), e.getTotalPoints(),
+
+                            a == null ? null : a.getId(), a == null ? null : a.getStatus(), a == null ? null : a.getScore(),
+
+                            canStart, s.getAccessCode() != null && !s.getAccessCode().isBlank()
+                                    && !s.getAccessCode().equals(s.getRoomCode())
+
                     );
+
                 }).toList();
+
     }
 
     @Transactional
     public StudentAttemptDto startExam(Long studentId, Long sessionId, StartExamRequest request) {
-        UserEntity student = requireStudent(studentId);
-        ExamSession session = registrationRepository.findRegistration(studentId, sessionId)
-                .map(ExamSessionStudent::getExamSession)
-                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "Bạn chưa tham gia cuộc thi này"));
-        return startExamWithSession(student, session, request);
+        return startExamForRoom(studentId, sessionId,
+                request == null ? null : request.roomCode(),
+                request == null ? null : request.accessCode());
     }
 
-    /** Starts an attempt after the access code has been verified. Registration is created lazily. */
+    // Compatibility entry point for callers that supply a single room code.
     @Transactional
-    public StudentAttemptDto startExamByCode(Long studentId, Long sessionId, String joinCode) {
+    public StudentAttemptDto startExamByCode(Long studentId, Long sessionId, String roomCode) {
+        return startExamForRoom(studentId, sessionId, roomCode, roomCode);
+    }
+
+    private StudentAttemptDto startExamForRoom(Long studentId, Long sessionId,
+            String roomCode, String password) {
         UserEntity student = requireStudent(studentId);
         ExamSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy ca thi"));
-
-        String normalizedCode = joinCode == null ? "" : joinCode.trim();
-        if (normalizedCode.isBlank() || session.getExam() == null
-                || session.getExam().getCode() == null
-                || !session.getExam().getCode().trim().equalsIgnoreCase(normalizedCode)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Mã cuộc thi không khớp với ca thi này");
+        String code = roomCode == null ? "" : roomCode.trim();
+        if (code.isBlank() || session.getRoomCode() == null
+                || !session.getRoomCode().trim().equalsIgnoreCase(code)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Mã ca thi không khớp");
         }
-
-        return startExamWithSessionAndRegistration(student, session, normalizedCode);
-    }
-
-    private StudentAttemptDto startExamWithSession(UserEntity student, ExamSession session, StartExamRequest request) {
-        String supplied = request == null ? null : request.accessCode();
-        return startExamWithSessionAndRegistration(student, session, supplied);
+        if (!"scheduled".equalsIgnoreCase(session.getStatus())
+                && !"ongoing".equalsIgnoreCase(session.getStatus())) {
+            throw new ApiException(HttpStatus.CONFLICT, "Ca thi không còn nhận người tham gia");
+        }
+        String expectedPassword = session.getAccessCode();
+        if (expectedPassword != null && !expectedPassword.isBlank()) {
+            // Legacy Uyen sessions store the public room code in access_code too.
+            boolean sameAsRoom = expectedPassword.equals(session.getRoomCode());
+            if (!sameAsRoom && !expectedPassword.equals(password)) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "Mật khẩu ca thi không đúng");
+            }
+        }
+        return startExamWithSessionAndRegistration(student, session, code);
     }
 
     private StudentAttemptDto startExamWithSessionAndRegistration(UserEntity student, ExamSession session, String supplied) {
@@ -179,7 +226,6 @@ public class StudentService {
                 }
                 return buildAttemptDto(a);
             }
-            finalizeAttempt(a);
             throw new ApiException(HttpStatus.CONFLICT, "Thời gian làm bài của bài thi trước đã kết thúc");
         }
 
@@ -261,11 +307,8 @@ public class StudentService {
         if (!"in_progress".equalsIgnoreCase(attempt.getStatus())) {
             throw new ApiException(HttpStatus.CONFLICT, "Bài thi không còn ở trạng thái đang làm");
         }
-        if (request != null && request.answers() != null) {
+        if (effectiveEnd(attempt).isAfter(now()) && request != null && request.answers() != null) {
             for (SaveAnswerRequest item : request.answers()) {
-                // Final submission is allowed at the exact deadline. Persist the
-                // submitted selections without applying the normal save-answer
-                // time guard again.
                 saveAnswerInternal(attempt, item);
             }
         }
@@ -283,9 +326,7 @@ public class StudentService {
             }
         }
         attempt.setScore(score.setScale(2, RoundingMode.HALF_UP));
-        attempt.setSubmittedAt(LocalDateTime.now(
-    ZoneId.of("Asia/Ho_Chi_Minh")
-));
+        attempt.setSubmittedAt(now());
         attempt.setStatus("completed");
         attemptRepository.save(attempt);
         antiCheatService.stopSession(attempt.getId());

@@ -2,7 +2,11 @@
 __pycache__/
 *.pyc
 student-profiles/*.jpg
-evidence/
+/evidence/
 models/objects/*.pt
 
 runtime/
+
+.env
+models/
+*.log

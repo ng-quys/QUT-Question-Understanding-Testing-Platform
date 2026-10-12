@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, AlertTriangle, BarChart3, BookOpen, CalendarClock, CheckCircle2, ChevronRight, ClipboardList, Eye, FileText, GraduationCap, LayoutDashboard, Lock, LogOut, Menu, RefreshCw, Search, ShieldAlert, ShieldCheck, Trophy, Unlock, UserCog, Users, X } from 'lucide-react';
 import { adminApi, type AdminAttempt, type AdminCourse, type AdminDashboard, type AdminExam, type AdminSession, type AdminUser, type AuditRow, type AttemptDetail, type AntiCheatSummary } from '../../services/adminService';
-import { clearAuthSession, getAuthSession } from '../../services/authService';
-import { ROUTES } from '../../constants/routes';
+import { ROUTES } from '../../app/routes';
+import { clearAuthSession, getAuthSession } from '../../features/auth/services/authService';
 
 type Tab = 'overview'|'users'|'students'|'teachers'|'courses'|'exams'|'sessions'|'attempts'|'anti'|'reports'|'audit';
 const tabs:{id:Tab;label:string;icon:React.ElementType}[]=[

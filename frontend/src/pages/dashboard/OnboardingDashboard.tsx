@@ -1,1 +1,1 @@
-export { OnboardingDashboard } from '../../components/dashboard/academic/OnboardingDashboard';
+export { OnboardingDashboard } from '../../features/dashboard/pages/OnboardingDashboard';

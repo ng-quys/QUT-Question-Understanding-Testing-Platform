@@ -12,6 +12,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT / "app") not in sys.path:
+    sys.path.insert(0, str(ROOT / "app"))
+from env_config import load_env_file
+load_env_file(ROOT / ".env")
 HOST = os.environ.get("ANTICHEAT_SERVICE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("ANTICHEAT_SERVICE_PORT", "8000"))
 PROFILE_DIR = Path(os.environ.get("ANTICHEAT_PROFILE_DIR", str(ROOT / "student-profiles"))).resolve()

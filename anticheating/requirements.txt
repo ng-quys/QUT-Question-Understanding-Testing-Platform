@@ -3,6 +3,6 @@ mediapipe
 numpy
 onnxruntime
 sounddevice
-webrtcvad
-insightface
+webrtcvad-wheels
+insightface==0.7.3
 ultralytics

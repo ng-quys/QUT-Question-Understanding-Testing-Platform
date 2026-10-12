@@ -22,7 +22,7 @@ public class AntiCheatInternalController {
     @PostMapping("/events")
     public ApiMessage event(@RequestHeader(value = "X-AntiCheat-Secret", required = false) String provided,
                             @RequestBody JsonNode data) {
-        if (provided == null || !provided.equals(secret)) {
+        if (provided == null || secret.isBlank() || "change-me".equals(secret) || !java.security.MessageDigest.isEqual(provided.getBytes(java.nio.charset.StandardCharsets.UTF_8), secret.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid Anti-Cheating secret");
         }
         service.receiveAiEvent(data);

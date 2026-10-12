@@ -21,5 +21,6 @@ public record ExamSearchResponse(
         boolean alreadyAttempted,
         String attemptStatus,
         boolean canEnter,
+        boolean requiresAccessCode,
         String message
 ) {}

@@ -1,0 +1,4 @@
+import { apiFetch } from '../../../services/api';
+export interface TeacherExamSession {id:number;examId:number;examCode:string;examTitle:string;courseCode:string;courseName:string;name:string;roomCode:string;accessCode:string|null;startTime:string;endTime:string;status:string;registeredStudents:number;attempts:number;submissions:number}
+export interface CreateSessionRequest {examId:number;name:string;roomCode?:string;accessCode?:string;startTime:string;endTime:string;studentIds:number[]}
+export const sessionApi={list:()=>apiFetch<TeacherExamSession[]>('/teacher/exam-sessions'),create:(b:CreateSessionRequest)=>apiFetch<TeacherExamSession>('/teacher/exam-sessions',{method:'POST',body:JSON.stringify(b)}),status:(id:number,value:string)=>apiFetch<TeacherExamSession>(`/teacher/exam-sessions/${id}/status?value=${encodeURIComponent(value)}`,{method:'PATCH'})};
