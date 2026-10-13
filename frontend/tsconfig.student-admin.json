@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.student-admin.tsbuildinfo"
+  },
+  "include": [
+    "src/components/student/StudentPortalPage.tsx",
+    "src/components/admin/AdminPage.tsx",
+    "src/services/studentService.ts",
+    "src/services/adminService.ts",
+    "src/vite-env.d.ts"
+  ]
+}

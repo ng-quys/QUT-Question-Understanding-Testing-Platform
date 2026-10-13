@@ -29,3 +29,15 @@ target/
 
 # IntelliJ
 *.iml
+
+**/node_modules/
+**/.venv/
+**/target/
+**/dist/
+**/__pycache__/
+*.pyc
+anticheating/models/
+anticheating/student-profiles/
+.env
+.env.*
+!.env.example
