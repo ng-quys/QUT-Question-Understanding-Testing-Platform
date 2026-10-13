@@ -9,6 +9,8 @@ import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
 import { StudentPortalPage } from '../features/student/pages/StudentPortalPage';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { ROUTES } from './routes';
+import { AdminPage } from '../features/admin/pages/AdminPage';
+import { AdminLoginPage } from '../features/admin/pages/AdminLoginPage';
 
 export default function App() {
   return (
@@ -25,6 +27,8 @@ export default function App() {
           <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.LOGIN} replace />} />
           {/* Fallback route */}
           <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
+          <Route path={ROUTES.ADMIN_LOGIN} element={<AdminLoginPage />} />
+          <Route path={ROUTES.ADMIN} element={<AdminPage />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

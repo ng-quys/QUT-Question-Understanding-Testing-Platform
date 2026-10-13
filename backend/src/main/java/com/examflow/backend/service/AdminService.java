@@ -65,7 +65,7 @@ public class AdminService {
         Number completed = one("SELECT COUNT(*) FROM exam_attempts WHERE status IN ('completed','submitted')");
         BigDecimal avg = decimal("SELECT COALESCE(ROUND(AVG(score),2),0) FROM exam_attempts WHERE status IN ('completed','submitted')");
         Number recent = one("SELECT COUNT(*) FROM exam_attempts WHERE status IN ('completed','submitted') AND submitted_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'");
-        Number highRisk = one("SELECT COUNT(*) FROM (SELECT attempt_id FROM anti_cheat_events WHERE event IN ('TAB_HIDDEN','FULLSCREEN_EXIT','WINDOW_BLUR') GROUP BY attempt_id HAVING COUNT(*) >= 3) x");
+        Number highRisk = one("SELECT COUNT(*) FROM (SELECT attempt_id FROM anti_cheat_events WHERE active = TRUE AND module = 'M7' AND event IN ('TAB_HIDDEN','FULLSCREEN_EXIT','WINDOW_BLUR') GROUP BY attempt_id HAVING COUNT(*) >= 3) x");
         long highRiskCount = highRisk == null ? 0 : highRisk.longValue();
         return new AdminDto.Dashboard(total.longValue(), active.longValue(), students.longValue(), teachers.longValue(), admins.longValue(),
                 courses.longValue(), exams.longValue(), sessions.longValue(), attempts.longValue(), inProgress.longValue(),
@@ -91,7 +91,9 @@ public class AdminService {
                 }).toList();
     }
 
+    @Transactional
     public List<AdminDto.UserRow> students(String q, String status) { return users(q, "student", status); }
+    @Transactional
     public List<AdminDto.UserRow> teachers(String q, String status) {
         ensureAdminTables();
         String sql = "SELECT id, username, email, full_name, role, department, status, created_at FROM users WHERE role IN ('faculty','teacher') AND (:q='' OR LOWER(username) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(email) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(full_name) LIKE LOWER(CONCAT('%',:q,'%'))) AND (:status='' OR status=:status) ORDER BY created_at DESC,id DESC LIMIT 500";
@@ -140,7 +142,7 @@ public class AdminService {
     public List<AdminDto.SessionRow> sessions(String q, String status) {
         ensureAdminTables() ;
         String sql="""
-            SELECT s.id,s.exam_id,e.code,e.title,COALESCE(c.name,''),s.room_code,e.code,s.start_time,s.end_time,s.status,
+            SELECT s.id,s.exam_id,e.code,e.title,COALESCE(c.name,''),s.room_code,s.access_code,s.start_time,s.end_time,s.status,
                    (SELECT COUNT(*) FROM exam_session_students ess WHERE ess.exam_session_id=s.id),
                    (SELECT COUNT(*) FROM exam_attempts a WHERE a.exam_session_id=s.id)
             FROM exam_sessions s JOIN exams e ON e.id=s.exam_id LEFT JOIN classes c ON c.id=s.class_id
@@ -156,7 +158,7 @@ public class AdminService {
         ensureAdminTables() ;
         String sql="""
             SELECT a.id,a.exam_session_id,u.username,u.full_name,e.code,e.title,a.started_at,a.submitted_at,a.score,e.total_points,a.status,
-                   (SELECT COUNT(*) FROM anti_cheat_events ace WHERE ace.attempt_id=a.id)
+                   (SELECT COUNT(*) FROM anti_cheat_events ace WHERE ace.attempt_id=a.id AND ace.module='M7' AND ace.active=TRUE),(SELECT COUNT(*) FROM anti_cheat_events ace WHERE ace.attempt_id=a.id AND ace.module <> 'M7' AND ace.active=TRUE)
             FROM exam_attempts a JOIN users u ON u.id=a.student_id JOIN exams e ON e.id=a.exam_id
             WHERE (:q='' OR LOWER(u.username) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(u.full_name) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(e.code) LIKE LOWER(CONCAT('%',:q,'%')))
               AND (:status='' OR a.status=:status)
@@ -168,7 +170,7 @@ public class AdminService {
     @Transactional
     public AdminDto.AttemptDetail attemptDetail(Long id) {
         ensureAdminTables() ;
-        AdminDto.AttemptRow row = ((List<AdminDto.AttemptRow>) attemptsById(id)).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,"Không tìm thấy lượt thi"));
+        AdminDto.AttemptRow row = attemptsById(id).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,"Không tìm thấy lượt thi"));
         String sql="SELECT id,event,active,occurred_at,module,duration_seconds,risk_score,risk_level,source_module,evidence_path FROM anti_cheat_events WHERE attempt_id=:id ORDER BY occurred_at ASC,id ASC";
         List<?> eventRows = em.createNativeQuery(sql).setParameter("id", id).getResultList();
         List<AdminDto.BrowserEvent> events = eventRows.stream().map(this::browserEventRow).toList();
@@ -187,7 +189,7 @@ public class AdminService {
     }
 
     private List<AdminDto.AttemptRow> attemptsById(Long id){
-        String sql="SELECT a.id,a.exam_session_id,u.username,u.full_name,e.code,e.title,a.started_at,a.submitted_at,a.score,e.total_points,a.status,(SELECT COUNT(*) FROM anti_cheat_events ace WHERE ace.attempt_id=a.id) FROM exam_attempts a JOIN users u ON u.id=a.student_id JOIN exams e ON e.id=a.exam_id WHERE a.id=:id";
+        String sql="SELECT a.id,a.exam_session_id,u.username,u.full_name,e.code,e.title,a.started_at,a.submitted_at,a.score,e.total_points,a.status,(SELECT COUNT(*) FROM anti_cheat_events ace WHERE ace.attempt_id=a.id AND ace.module='M7' AND ace.active=TRUE),(SELECT COUNT(*) FROM anti_cheat_events ace WHERE ace.attempt_id=a.id AND ace.module <> 'M7' AND ace.active=TRUE) FROM exam_attempts a JOIN users u ON u.id=a.student_id JOIN exams e ON e.id=a.exam_id WHERE a.id=:id";
         return em.createNativeQuery(sql).setParameter("id",id).getResultList().stream().map(this::attemptRow).toList();
     }
 
@@ -195,7 +197,7 @@ public class AdminService {
     public AdminDto.AntiCheatSummary antiCheat(Long attemptId) {
         ensureAdminTables() ;
         String sql="""
-          SELECT COUNT(*),COUNT(*) FILTER(WHERE event='TAB_HIDDEN'),COUNT(*) FILTER(WHERE event='FULLSCREEN_EXIT'),COUNT(*) FILTER(WHERE event='WINDOW_BLUR'),COUNT(*) FILTER(WHERE event='COPY'),COUNT(*) FILTER(WHERE event='PASTE'),COUNT(*) FILTER(WHERE event='RIGHT_CLICK'),COUNT(*) FILTER(WHERE module <> 'M7'),COALESCE(MAX(risk_score),0),COALESCE((ARRAY_AGG(risk_level ORDER BY risk_score DESC))[1],'LOW') FROM anti_cheat_events WHERE attempt_id=:id
+          SELECT COUNT(*),COUNT(*) FILTER(WHERE active=TRUE AND module='M7' AND event='TAB_HIDDEN'),COUNT(*) FILTER(WHERE active=TRUE AND module='M7' AND event='FULLSCREEN_EXIT'),COUNT(*) FILTER(WHERE active=TRUE AND module='M7' AND event='WINDOW_BLUR'),COUNT(*) FILTER(WHERE active=TRUE AND module='M7' AND event='COPY'),COUNT(*) FILTER(WHERE active=TRUE AND module='M7' AND event='PASTE'),COUNT(*) FILTER(WHERE active=TRUE AND module='M7' AND event='RIGHT_CLICK'),COUNT(*) FILTER(WHERE active=TRUE AND module <> 'M7'),COALESCE(MAX(risk_score),0),COALESCE((ARRAY_AGG(risk_level ORDER BY risk_score DESC))[1],'LOW') FROM anti_cheat_events WHERE attempt_id=:id
           """;
         Object[] x=(Object[])em.createNativeQuery(sql).setParameter("id",attemptId).getSingleResult();
         long total=((Number)x[0]).longValue(); long tab=((Number)x[1]).longValue(); long fs=((Number)x[2]).longValue(); long blur=((Number)x[3]).longValue(); long copy=((Number)x[4]).longValue(); long paste=((Number)x[5]).longValue(); long right=((Number)x[6]).longValue();
@@ -222,7 +224,15 @@ public class AdminService {
         return new AdminDto.UserRow(((Number)x[0]).longValue(),(String)x[1],(String)x[2],(String)x[3],(String)x[4],(String)x[5],(String)x[6],toDateTime(x[7]));
     }
 
-    private AdminDto.AttemptRow attemptRow(Object r){Object[]x=(Object[])r;return new AdminDto.AttemptRow(((Number)x[0]).longValue(),((Number)x[1]).longValue(),(String)x[2],(String)x[3],(String)x[4],(String)x[5],toDateTime(x[6]),toDateTime(x[7]),(BigDecimal)x[8],(BigDecimal)x[9],(String)x[10],((Number)x[11]).longValue());}
+    @Transactional
+    public void auditPolicy(Long adminId, Long examId, boolean enabled) {
+        ensureAdminTables();
+        em.createNativeQuery("INSERT INTO audit_logs(actor_id,action,target_type,target_id,detail) VALUES (:a,'UPDATE_AI_POLICY','EXAM',:t,:d)")
+                .setParameter("a", adminId).setParameter("t", String.valueOf(examId))
+                .setParameter("d", "enabled=" + enabled).executeUpdate();
+    }
+
+    private AdminDto.AttemptRow attemptRow(Object r){Object[]x=(Object[])r;return new AdminDto.AttemptRow(((Number)x[0]).longValue(),((Number)x[1]).longValue(),(String)x[2],(String)x[3],(String)x[4],(String)x[5],toDateTime(x[6]),toDateTime(x[7]),(BigDecimal)x[8],(BigDecimal)x[9],(String)x[10],((Number)x[11]).longValue(),((Number)x[12]).longValue());}
     private Number one(String sql){return (Number)em.createNativeQuery(sql).getSingleResult();}
     private BigDecimal decimal(String sql){Object v=em.createNativeQuery(sql).getSingleResult();return v instanceof BigDecimal b?b:new BigDecimal(String.valueOf(v));}
     private String safe(String s){return s==null?"":s.trim();}

@@ -35,7 +35,7 @@ public class CurrentUserService {
                 .orElse(null);
 
         if (byKeycloakId != null) {
-            return byKeycloakId;
+            return requireActive(byKeycloakId);
         }
 
         // A user may authenticate through another Keycloak identity provider
@@ -45,17 +45,23 @@ public class CurrentUserService {
         String email = jwt.getClaimAsString("email");
 
         if (email != null && !email.isBlank()) {
-            return userRepository
+            return requireActive(userRepository
                     .findByEmailIgnoreCase(email.trim())
                     .orElseThrow(() -> new ApiException(
                             HttpStatus.UNAUTHORIZED,
                             "Không tìm thấy người dùng trong hệ thống"
-                    ));
+                    )));
         }
 
         throw new ApiException(
                 HttpStatus.UNAUTHORIZED,
                 "Không tìm thấy người dùng trong hệ thống"
         );
+    }
+    private UserEntity requireActive(UserEntity user) {
+        if (!"active".equalsIgnoreCase(user.getStatus())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Tài khoản đã bị khóa hoặc ngưng hoạt động");
+        }
+        return user;
     }
 }

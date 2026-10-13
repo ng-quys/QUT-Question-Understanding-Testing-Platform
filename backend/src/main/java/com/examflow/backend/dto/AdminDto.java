@@ -32,7 +32,7 @@ public final class AdminDto {
     public record AttemptRow(Long id, Long sessionId, String studentUsername, String studentName,
                              String examCode, String examTitle, LocalDateTime startedAt,
                              LocalDateTime submittedAt, BigDecimal score, BigDecimal totalPoints,
-                             String status, long browserEvents) {}
+                             String status, long browserEvents, long aiEvents) {}
 
     public record AttemptDetail(AttemptRow attempt, List<BrowserEvent> events) {}
 
