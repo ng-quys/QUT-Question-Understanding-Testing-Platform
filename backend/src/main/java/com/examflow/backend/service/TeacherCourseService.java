@@ -15,7 +15,6 @@ import com.examflow.backend.exception.ApiException;
 import com.examflow.backend.repository.ChapterRepository;
 import com.examflow.backend.repository.CloRepository;
 import com.examflow.backend.repository.CourseRepository;
-import com.examflow.backend.repository.QuestionRepository;
 
 @Service
 public class TeacherCourseService {
@@ -23,20 +22,20 @@ public class TeacherCourseService {
     private final CourseRepository courseRepository;
     private final ChapterRepository chapterRepository;
     private final CloRepository cloRepository;
-    private final QuestionRepository questionRepository;
+    private final QuestionBankStatsService questionBankStats;
     private final CurrentUserService currentUserService;
 
     public TeacherCourseService(
             CourseRepository courseRepository,
             ChapterRepository chapterRepository,
             CloRepository cloRepository,
-            QuestionRepository questionRepository,
+            QuestionBankStatsService questionBankStats,
             CurrentUserService currentUserService
     ) {
         this.courseRepository = courseRepository;
         this.chapterRepository = chapterRepository;
         this.cloRepository = cloRepository;
-        this.questionRepository = questionRepository;
+        this.questionBankStats = questionBankStats;
         this.currentUserService = currentUserService;
     }
 
@@ -161,7 +160,7 @@ public class TeacherCourseService {
                 );
 
         long questionCount =
-                questionRepository.countByCourse_Id(
+                questionBankStats.countByCourse(
                         course.getId()
                 );
 

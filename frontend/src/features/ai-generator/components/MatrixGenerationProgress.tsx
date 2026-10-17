@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Sparkles, Brain, CheckCircle2, Layers, Cpu, Compass } from 'lucide-react';
 import { QuestionItem, Course, CourseChapter, CourseCLO } from '../../../types';
 import { MatrixKnowledgeUnit, MatrixSummaryStats } from '../../matrix/types';
-import { generateQuestionsFromMatrix } from '../utils/matrixQuestionGenerator';
+import { apiFetch } from '../../../services/api';
 
 interface MatrixGenerationProgressProps {
   courseId: string;
@@ -16,6 +16,8 @@ interface MatrixGenerationProgressProps {
   clos: CourseCLO[];
   onComplete: (questions: QuestionItem[]) => void;
   onCancel: () => void;
+  sourceText: string;
+  provider: 'openai' | 'qwen';
 }
 
 export const MatrixGenerationProgress: React.FC<MatrixGenerationProgressProps> = ({
@@ -30,6 +32,8 @@ export const MatrixGenerationProgress: React.FC<MatrixGenerationProgressProps> =
   clos,
   onComplete,
   onCancel,
+  sourceText,
+  provider,
 }) => {
   const [percent, setPercent] = useState(10);
   const [currentUnitName, setCurrentUnitName] = useState<string>('');
@@ -38,53 +42,31 @@ export const MatrixGenerationProgress: React.FC<MatrixGenerationProgressProps> =
   const course = courses.find((c) => c.id === courseId);
   const courseName = course ? `${course.code} - ${course.name}` : 'Học phần';
 
+  const [error, setError] = useState('');
   useEffect(() => {
-    // Generate questions
-    const generatedQuestions = generateQuestionsFromMatrix(
-      courseId,
-      units,
-      chapters,
-      clos,
-      aiInstruction,
-      defaultScore
-    );
-
-    const activeUnits = units.filter((u) => u.nb + u.th + u.vd > 0);
-
-    const t1 = setTimeout(() => {
-      setPercent(30);
-      setCurrentUnitName(activeUnits[0]?.name || 'Chuyên đề học phần');
-      setStatusMessage(`Đang phân bổ theo ma trận: ${summary.totalNB} NB, ${summary.totalTH} TH, ${summary.totalVD} VD...`);
-    }, 600);
-
-    const t2 = setTimeout(() => {
-      setPercent(65);
-      const midUnit = activeUnits[Math.floor(activeUnits.length / 2)] || activeUnits[0];
-      setCurrentUnitName(midUnit?.name || 'Chuẩn đầu ra');
-      setStatusMessage('Đang biên soạn nội dung học thuật, tạo phương án nhiễu & giải thích...');
-    }, 1400);
-
-    const t3 = setTimeout(() => {
-      setPercent(90);
-      setCurrentUnitName(activeUnits[activeUnits.length - 1]?.name || 'Hoàn tất');
-      setStatusMessage('Đang thẩm định chất lượng câu hỏi đối với chuẩn CLO...');
-    }, 2200);
-
-    const t4 = setTimeout(() => {
-      setPercent(100);
-      setStatusMessage('Hoàn thành! Đang mở giao diện kiểm duyệt...');
-      setTimeout(() => {
-        onComplete(generatedQuestions);
-      }, 500);
-    }, 2800);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const data = await apiFetch<Array<{content:string; options:string[]; correctIndex:number; explanation:string; bloom:'remember'|'understand'|'apply'; chapterId:number|null; cloId:number|null}>>('/teacher/questions/ai-generate', {
+          method: 'POST', body: JSON.stringify({
+            courseId: Number(courseId), provider, instruction: aiInstruction,
+            sourceText, units: units.map(u => ({name:u.name,chapterId:Number(u.chapterId)||null,cloId:Number(u.cloId)||null,nb:u.nb,th:u.th,vd:u.vd}))
+          })
+        });
+        if (cancelled) return;
+        setPercent(100);
+        onComplete(data.map((q,i) => ({
+          id: `ai-${Date.now()}-${i}`,courseId,chapterId:String(q.chapterId??''),
+          topicId:'',cloId:String(q.cloId??''),bloom:q.bloom,content:q.content,
+          options:q.options,correctIndex:q.correctIndex,explanation:q.explanation,
+          status:'pending' as const,source:'ai' as const,updatedAt:'Vừa sinh bằng AI',default_score:defaultScore
+        })));
+      } catch(e) {if(!cancelled) setError(e instanceof Error ? e.message : 'Không thể kết nối mô hình AI');}
     };
-  }, [courseId, units, chapters, clos, aiInstruction, onComplete, summary]);
+    setPercent(25); setStatusMessage('Đang gọi mô hình AI và kiểm tra câu hỏi...');
+    void run();
+    return () => {cancelled=true;};
+  }, [courseId,units,aiInstruction,sourceText,provider,defaultScore]);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center shadow-lg max-w-xl mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-200">
@@ -154,6 +136,7 @@ export const MatrixGenerationProgress: React.FC<MatrixGenerationProgressProps> =
         </div>
       )}
 
+      {error && <div role="alert" className="text-sm text-red-700 bg-red-50 p-3 rounded">{error}. Kiểm tra cấu hình API và thử lại.</div>}
       {/* Cancel button */}
       <div className="pt-2">
         <button

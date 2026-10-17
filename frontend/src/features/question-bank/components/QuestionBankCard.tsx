@@ -232,6 +232,10 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
               {question.default_score}đ
             </span>
           )}
+          <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-500 shrink-0" title="Ngày cập nhật gần nhất">
+            <Clock className="w-3 h-3" />
+            Cập nhật: {question.updatedAt}
+          </span>
         </div>
 
         {/* Quick approval buttons for pending questions (if not editing) */}
@@ -502,14 +506,8 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
           {/* 4. FOOTER THẺ CÂU HỎI                                                    */}
           {/* ========================================================================= */}
           <div className="pt-1.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            {/* Góc trái: Ngày cập nhật + Nhãn tóm tắt đáp án đúng nhỏ gọn */}
+            {/* Góc trái: Nhãn tóm tắt đáp án đúng nhỏ gọn */}
             <div className="flex items-center flex-wrap gap-2 text-[11px] min-w-0">
-              <span className="text-slate-400 shrink-0">
-                Cập nhật: {question.updatedAt}
-              </span>
-
-              <span className="text-slate-300 hidden sm:inline">•</span>
-
               {/* Nhãn tóm tắt đáp án đúng nhỏ gọn */}
               <div
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/90 font-medium text-[11px] max-w-full sm:max-w-md truncate"

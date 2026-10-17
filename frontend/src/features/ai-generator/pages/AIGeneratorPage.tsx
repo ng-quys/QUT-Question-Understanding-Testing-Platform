@@ -19,6 +19,7 @@ import { QuestionReviewStep } from '../components/QuestionReviewStep';
 import { MatrixPage } from '../../matrix/pages/MatrixPage';
 import { MatrixGenerationProgress } from '../components/MatrixGenerationProgress';
 import { MatrixKnowledgeUnit, MatrixSummaryStats } from '../../matrix/types';
+import { apiFetch } from '../../../services/api';
 
 interface AIGeneratorPageProps {
   courses: Course[];
@@ -51,6 +52,8 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
   // Bước 3: AI sinh câu hỏi (Biên soạn theo phân bổ ma trận và tài liệu)
   // Bước 4: Duyệt & Chỉnh sửa (Kiểm định chất lượng & Lưu vào Ngân hàng câu hỏi)
   const [currentStep, setCurrentStep] = useState<AIWorkflowStep>(1);
+  const [provider, setProvider] = useState<'openai' | 'qwen'>('qwen');
+  const [saveError, setSaveError] = useState('');
   const [documents, setDocuments] = useState<SourceDocument[]>([]);
   const [, setExtractionSummary] = useState<DocumentExtractionSummary | null>(null);
 
@@ -120,22 +123,21 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
     onShowToast('Đã xóa câu hỏi khỏi danh sách xem trước');
   };
 
-  const handleSaveAll = (status: 'pending' | 'approved') => {
-    const finalizedQuestions = generatedQuestions.map((q) => ({
-      ...q,
-      status,
-      updatedAt: 'Vừa xong',
-    }));
-
-    onSaveQuestions(finalizedQuestions);
-    onShowToast(
-      status === 'approved'
-        ? `Đã thêm ${finalizedQuestions.length} câu hỏi vào Ngân hàng chính thức!`
-        : `Đã lưu ${finalizedQuestions.length} câu hỏi vào danh sách Chờ duyệt!`
-    );
-
-    // Direct user to question bank
-    onNavigateToQuestionBank();
+  const handleSaveAll = async (status: 'pending' | 'approved') => {
+    setSaveError('');
+    try {
+      for (const q of generatedQuestions) {
+        await apiFetch('/teacher/questions', {method:'POST',body:JSON.stringify({
+          courseId:Number(q.courseId),chapterId:Number(q.chapterId)||null,
+          topicId:null,cloId:Number(q.cloId)||null,bloom:q.bloom,
+          difficulty:'medium',content:q.content,explanation:q.explanation,
+          status,defaultScore:q.default_score ?? 0.5,
+          answers:q.options.map((content,i)=>({content,correct:i===q.correctIndex}))
+        })});
+      }
+      onSaveQuestions(generatedQuestions.map(q=>({...q,status,updatedAt:'Vừa xong'})));
+      onNavigateToQuestionBank();
+    } catch(e) {setSaveError(e instanceof Error?e.message:'Lưu câu hỏi thất bại');}
   };
 
   return (
@@ -232,6 +234,10 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
       {/* ======================================================== */}
       {currentStep === 3 && activeMatrixData && (
         <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3 mb-3 text-sm"><label htmlFor="ai-provider">Mô hình AI:</label>
+            <select id="ai-provider" className="border rounded px-3 py-2" value={provider} onChange={e=>setProvider(e.target.value as 'openai'|'qwen')}>
+              <option value="qwen">Qwen (Ollama local)</option><option value="openai">OpenAI API</option>
+            </select></div>
           <MatrixGenerationProgress
             courseId={activeMatrixData.courseId}
             totalQuestions={activeMatrixData.totalQuestions}
@@ -244,6 +250,8 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
             clos={clos}
             onComplete={handleMatrixGenerationComplete}
             onCancel={handleCancelMatrixGeneration}
+            provider={provider}
+            sourceText={documents.map(d=>d.extractedText||'').join('\n\n')}
           />
         </div>
       )}
@@ -266,6 +274,7 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
             </button>
           </div>
 
+          {saveError && <div role="alert" className="text-red-700 bg-red-50 p-3 rounded">{saveError}</div>}
           <QuestionReviewStep
             questions={generatedQuestions}
             documents={documents}

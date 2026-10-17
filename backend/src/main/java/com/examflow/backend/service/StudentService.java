@@ -25,7 +25,6 @@ import com.examflow.backend.dto.StudentDashboardDto;
 import com.examflow.backend.dto.StudentResultDto;
 import com.examflow.backend.dto.StudentSessionDto;
 import com.examflow.backend.dto.SubmitExamRequest;
-import com.examflow.backend.entity.Answer;
 import com.examflow.backend.entity.Clo;
 import com.examflow.backend.entity.Exam;
 import com.examflow.backend.entity.ExamAttempt;
@@ -35,7 +34,7 @@ import com.examflow.backend.entity.ExamSessionStudent;
 import com.examflow.backend.entity.StudentAnswer;
 import com.examflow.backend.entity.UserEntity;
 import com.examflow.backend.exception.ApiException;
-import com.examflow.backend.repository.AnswerRepository;
+import com.examflow.backend.repository.CloRepository;
 import com.examflow.backend.repository.ExamAttemptRepository;
 import com.examflow.backend.repository.ExamQuestionRepository;
 import com.examflow.backend.repository.ExamSessionStudentRepository;
@@ -46,12 +45,13 @@ import com.examflow.backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
 @Service
 public class StudentService {
+    private final ExamSnapshotReadService snapshotReadService;
     private final UserRepository userRepository;
     private final ExamSessionStudentRepository registrationRepository;
     private final ExamSessionRepository sessionRepository;
     private final ExamAttemptRepository attemptRepository;
     private final ExamQuestionRepository examQuestionRepository;
-    private final AnswerRepository answerRepository;
+    private final CloRepository cloRepository;
     private final StudentAnswerRepository studentAnswerRepository;
     private final AntiCheatService antiCheatService;
 
@@ -61,15 +61,16 @@ public class StudentService {
             ExamSessionRepository sessionRepository,
             ExamAttemptRepository attemptRepository,
             ExamQuestionRepository examQuestionRepository,
-            AnswerRepository answerRepository,
+            CloRepository cloRepository,
             StudentAnswerRepository studentAnswerRepository,
-            AntiCheatService antiCheatService) {
+            AntiCheatService antiCheatService, ExamSnapshotReadService snapshotReadService) {
+        this.snapshotReadService = snapshotReadService;
         this.userRepository = userRepository;
         this.registrationRepository = registrationRepository;
         this.sessionRepository = sessionRepository;
         this.attemptRepository = attemptRepository;
         this.examQuestionRepository = examQuestionRepository;
-        this.answerRepository = answerRepository;
+        this.cloRepository = cloRepository;
         this.studentAnswerRepository = studentAnswerRepository;
         this.antiCheatService = antiCheatService;
     }
@@ -278,21 +279,37 @@ public class StudentService {
         return new ApiMessage("Đã lưu câu trả lời");
     }
 
+    // Snapshot is immutable for an exam_question. Legacy JPA rows are retained for FK compatibility.
+    private record FrozenQuestion(String content, Long correctAnswerId, List<ExamOptionDto> options) {}
+
+    private FrozenQuestion frozen(ExamQuestion eq) {
+        return snapshotReadService.find(eq.getId())
+                .map(snapshot -> new FrozenQuestion(
+                        snapshot.content(),
+                        snapshot.correctAnswerId(),
+                        snapshot.options().stream()
+                                .map(option -> new ExamOptionDto(
+                                        option.id(), option.label(), option.content()))
+                                .toList()))
+                .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "Đề thi thiếu snapshot câu hỏi " + eq.getId()));
+    }
+
     private void saveAnswerInternal(ExamAttempt attempt, SaveAnswerRequest request) {
         ExamQuestion eq = examQuestionRepository.findByExamIdWithQuestion(attempt.getExam().getId()).stream()
-                .filter(x -> x.getQuestion().getId().equals(request.questionId()))
+                .filter(x -> x.getQuestionId().equals(request.questionId()))
                 .findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Câu hỏi không thuộc đề thi này"));
-        Answer selected = answerRepository.findByIdAndQuestionId(request.answerId(), request.questionId())
-                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Đáp án không thuộc câu hỏi"));
-
+        FrozenQuestion snapshot = frozen(eq);
+        if (snapshot.options().stream().noneMatch(o -> o.id().equals(request.answerId())))
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Đáp án không thuộc snapshot của đề thi");
         StudentAnswer answer = studentAnswerRepository.findByAttemptIdAndQuestionId(attempt.getId(), request.questionId())
                 .orElseGet(StudentAnswer::new);
         answer.setAttempt(attempt);
-        answer.setQuestion(eq.getQuestion());
-        answer.setSelectedAnswer(selected);
-        answer.setCorrect(selected.getCorrect());
-        answer.setPointsAwarded(Boolean.TRUE.equals(selected.getCorrect()) ? eq.getPoints() : BigDecimal.ZERO);
+        answer.setQuestionId(eq.getQuestionId());
+        answer.setSelectedAnswerId(request.answerId());
+        boolean isCorrect = snapshot.correctAnswerId().equals(request.answerId());
+        answer.setCorrect(isCorrect);
+        answer.setPointsAwarded(isCorrect ? eq.getPoints() : BigDecimal.ZERO);
         answer.setAnsweredAt(now());
         studentAnswerRepository.save(answer);
     }
@@ -316,11 +333,11 @@ public class StudentService {
         List<ExamQuestion> examQuestions = examQuestionRepository.findByExamIdWithQuestion(attempt.getExam().getId());
         List<StudentAnswer> saved = studentAnswerRepository.findByAttemptIdWithDetails(attemptId);
         Map<Long, StudentAnswer> byQuestion = saved.stream()
-                .collect(Collectors.toMap(sa -> sa.getQuestion().getId(), sa -> sa, (a, b) -> a));
+                .collect(Collectors.toMap(sa -> sa.getQuestionId(), sa -> sa, (a, b) -> a));
 
         BigDecimal score = BigDecimal.ZERO;
         for (ExamQuestion eq : examQuestions) {
-            StudentAnswer sa = byQuestion.get(eq.getQuestion().getId());
+            StudentAnswer sa = byQuestion.get(eq.getQuestionId());
             if (sa != null && Boolean.TRUE.equals(sa.getCorrect())) {
                 score = score.add(eq.getPoints());
             }
@@ -414,16 +431,17 @@ public class StudentService {
 
     private StudentAttemptDto buildAttemptDto(ExamAttempt attempt) {
         Map<Long, StudentAnswer> existing = studentAnswerRepository.findByAttemptIdWithDetails(attempt.getId()).stream()
-                .collect(Collectors.toMap(sa -> sa.getQuestion().getId(), sa -> sa, (a, b) -> a));
+                .collect(Collectors.toMap(sa -> sa.getQuestionId(), sa -> sa, (a, b) -> a));
         List<ExamQuestionDto> questions = examQuestionRepository.findByExamIdWithQuestion(attempt.getExam().getId()).stream()
                 .map(eq -> {
-                    List<ExamOptionDto> options = answerRepository.findByQuestionIdOrderByPositionAsc(eq.getQuestion().getId())
-                            .stream().map(a -> new ExamOptionDto(a.getId(), a.getLabel(), a.getContent())).toList();
-                    StudentAnswer saved = existing.get(eq.getQuestion().getId());
+                    FrozenQuestion snapshot = frozen(eq);
+                    List<ExamOptionDto> options = snapshot.options();
+                    StudentAnswer saved = existing.get(eq.getQuestionId());
+                    Long cloId = snapshotReadService.find(eq.getId()).orElseThrow().cloId();
+                    String cloCode = cloId == null ? null : cloRepository.findById(cloId).map(Clo::getCode).orElse(null);
                     return new ExamQuestionDto(
-                            eq.getQuestion().getId(), eq.getPosition(), eq.getQuestion().getContent(), eq.getPoints(),
-                            eq.getQuestion().getClo() == null ? null : eq.getQuestion().getClo().getCode(),
-                            options, saved == null || saved.getSelectedAnswer() == null ? null : saved.getSelectedAnswer().getId()
+                            eq.getQuestionId(), eq.getPosition(), snapshot.content(), eq.getPoints(),
+                            cloCode, options, saved == null ? null : saved.getSelectedAnswerId()
                     );
                 }).toList();
         Exam exam = attempt.getExam();
@@ -437,10 +455,18 @@ public class StudentService {
     private StudentResultDto buildResultDto(ExamAttempt attempt, List<ExamQuestion> examQuestions, List<StudentAnswer> savedAnswers) {
         int correct = (int) savedAnswers.stream().filter(sa -> Boolean.TRUE.equals(sa.getCorrect())).count();
         Map<Long, List<StudentAnswer>> byClo = savedAnswers.stream()
-                .filter(sa -> sa.getQuestion().getClo() != null)
-                .collect(Collectors.groupingBy(sa -> sa.getQuestion().getClo().getId()));
-        List<CloAchievementDto> cloAchievement = byClo.values().stream().map(items -> {
-            Clo clo = items.get(0).getQuestion().getClo();
+                .filter(sa -> examQuestions.stream().anyMatch(eq -> eq.getQuestionId().equals(sa.getQuestionId())))
+                .filter(sa -> examQuestions.stream().filter(eq -> eq.getQuestionId().equals(sa.getQuestionId()))
+                        .findFirst().map(eq -> snapshotReadService.find(eq.getId())
+                                .map(snap -> snap.cloId() != null).orElse(false)).orElse(false))
+                .collect(Collectors.groupingBy(sa -> examQuestions.stream()
+                        .filter(eq -> eq.getQuestionId().equals(sa.getQuestionId())).findFirst()
+                        .flatMap(eq -> snapshotReadService.find(eq.getId()))
+                        .orElseThrow().cloId()));
+        List<CloAchievementDto> cloAchievement = byClo.entrySet().stream().map(entry -> {
+            Clo clo = cloRepository.findById(entry.getKey())
+                    .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "CLO không tồn tại trong Main DB"));
+            List<StudentAnswer> items = entry.getValue();
             int answered = items.size();
             int correctCount = (int) items.stream().filter(sa -> Boolean.TRUE.equals(sa.getCorrect())).count();
             double percent = answered == 0 ? 0.0 : Math.round((correctCount * 10000.0 / answered)) / 100.0;

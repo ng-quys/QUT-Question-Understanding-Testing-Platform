@@ -67,9 +67,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             <h1 className="text-lg sm:text-xl font-bold text-slate-900 font-['Space_Grotesk'] tracking-tight">
               {TAB_TITLES[activeTab]}
             </h1>
-            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200/60">
-              {LECTURER_PROFILE.currentSemester}
-            </span>
           </div>
         </div>
       </div>

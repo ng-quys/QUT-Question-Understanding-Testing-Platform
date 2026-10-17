@@ -36,6 +36,7 @@ interface QuestionBankPageProps {
   clos: CourseCLO[];
   onUpdateQuestions: (newQuestions: QuestionItem[]) => void;
   onOpenAIGenerator: () => void;
+  onNavigateNewQuestion: () => void;
   onShowToast: (msg: string) => void;
   initialCourseFilter?: string;
   initialTopicFilter?: string;
@@ -48,6 +49,7 @@ export const QuestionBankPage: React.FC<QuestionBankPageProps> = ({
   clos,
   onUpdateQuestions,
   onOpenAIGenerator,
+  onNavigateNewQuestion,
   onShowToast,
   initialCourseFilter,
   initialTopicFilter,
@@ -73,6 +75,7 @@ export const QuestionBankPage: React.FC<QuestionBankPageProps> = ({
   const [selectedBloom, setSelectedBloom] = useState<Bloom3Level | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'approved' | 'pending'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Add / Edit Modal State
   const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
@@ -215,59 +218,10 @@ export const QuestionBankPage: React.FC<QuestionBankPageProps> = ({
 
   return (
     <div className="space-y-4 animate-in fade-in duration-200">
-      {/* 1. TOP HEADER & ACTIONS */}
-      <div className="bg-white rounded-xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] flex items-center gap-2">
-              <Database className="w-5 h-5" style={{ color: 'var(--primary)' }} />
-              <span>Ngân hàng câu hỏi</span>
-            </h2>
-            {pendingCount > 0 && (
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-amber-600" />
-                <span>{pendingCount} chờ duyệt</span>
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Quản lý và tra cứu câu hỏi theo mô hình 3 chiều: Chủ đề kiến thức, Chuẩn đầu ra CLO và Thang đo Bloom
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* AI Generator button */}
-          <button
-            type="button"
-            onClick={onOpenAIGenerator}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold shadow-xs transition-transform active:scale-[0.98] cursor-pointer"
-            style={{
-              backgroundColor: 'var(--accent)',
-              color: 'var(--accent-text)',
-            }}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI sinh câu hỏi</span>
-          </button>
-
-          {/* Add question button */}
-          <button
-            type="button"
-            onClick={() => {
-              setQuestionToEdit(null);
-              setIsFormModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-white shadow-xs transition-transform active:scale-[0.98] cursor-pointer"
-            style={{ backgroundColor: 'var(--primary)' }}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm câu hỏi</span>
-          </button>
-        </div>
-      </div>
-
       {/* 2. MULTI-DIMENSIONAL FILTER BAR */}
       <div className="bg-white rounded-xl border border-slate-200/90 p-4 shadow-xs space-y-3">
+        {isFilterOpen && (
+          <>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
             <Filter className="w-3.5 h-3.5" style={{ color: 'var(--primary)' }} />
@@ -286,7 +240,7 @@ export const QuestionBankPage: React.FC<QuestionBankPageProps> = ({
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
           {/* Filter 1: Học phần */}
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 mb-1">
@@ -384,19 +338,43 @@ export const QuestionBankPage: React.FC<QuestionBankPageProps> = ({
           </div>
         </div>
 
-        {/* Live Search & Count */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100">
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm theo nội dung câu hỏi, đáp án, giải thích..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-500"
-            />
-          </div>
+          </>
+        )}
 
+        {/* Search remains visible even when filters are collapsed */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1 max-w-xl">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm theo nội dung câu hỏi, đáp án, giải thích..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen((open) => !open)}
+              aria-label={isFilterOpen ? 'Ẩn bộ lọc' : 'Hiện bộ lọc'}
+              aria-expanded={isFilterOpen}
+              title={isFilterOpen ? 'Ẩn bộ lọc' : 'Hiện bộ lọc'}
+              className={`relative flex items-center justify-center h-8 w-9 shrink-0 rounded-lg border transition-colors cursor-pointer ${isFilterOpen || hasActiveFilters ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            >
+              <Filter className="w-4 h-4" />
+              {hasActiveFilters && !isFilterOpen && <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-amber-400" />}
+            </button>
+            <button
+              type="button"
+              onClick={onNavigateNewQuestion}
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-white hover:opacity-90"
+              style={{ backgroundColor: 'var(--primary)' }}
+              title="Chọn cách tạo câu hỏi mới"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
           <div className="text-xs text-slate-600 font-medium">
             Đã tìm thấy <strong className="text-slate-900 font-bold">{filteredQuestions.length}</strong> câu hỏi phù hợp
           </div>
