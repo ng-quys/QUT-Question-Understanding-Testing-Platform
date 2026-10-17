@@ -22,7 +22,7 @@ export const OnboardingDashboard: React.FC<OnboardingDashboardProps> = ({
     <div className="space-y-6 pt-2">
       {/* Intro Header */}
       <div className="bg-white border border-slate-200 rounded-lg p-5">
-        <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight font-['Plus_Jakarta_Sans',sans-serif]">
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight font-sans">
           Bắt đầu với ExamFlow
         </h2>
         <p className="text-sm text-slate-600 mt-1 max-w-3xl">

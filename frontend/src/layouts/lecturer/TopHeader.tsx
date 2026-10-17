@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import {getTeacherProfile,type TeacherProfile} from '../../features/profile-teacher/services/teacherProfileService';
+import React, { useState } from 'react';
+import {useTeacherProfile} from '../../features/profile-teacher/hooks/useTeacherProfile';
 import {
   Search,
   Bell,
@@ -12,7 +12,7 @@ import {
   User,
   HelpCircle,
 } from 'lucide-react';
-import { LECTURER_PROFILE, NOTIFICATIONS_DATA } from '../../features/dashboard/data/mockDashboardData';
+import { NOTIFICATIONS_DATA } from '../../features/dashboard/data/mockDashboardData';
 import type{ DashboardNavTab } from '../../types';
 
 interface TopHeaderProps {
@@ -45,8 +45,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [teacher,setTeacher]=useState<TeacherProfile|null>(null);
-  useEffect(()=>{getTeacherProfile().then(setTeacher).catch(()=>{});},[]);
+  const {profile:teacher}=useTeacherProfile();
 
   const unreadCount = NOTIFICATIONS_DATA.filter((n) => !n.read).length;
 
@@ -64,7 +63,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg sm:text-xl font-bold text-slate-900 font-['Space_Grotesk'] tracking-tight">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 font-sans tracking-tight">
               {TAB_TITLES[activeTab]}
             </h1>
           </div>
@@ -81,7 +80,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm đề thi, câu hỏi, sinh viên..."
-            className="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200/80 focus:bg-white focus:outline-none focus:border-[var(--primary)] text-slate-800 placeholder-slate-400 transition-all"
+            className="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200/80 focus:bg-white focus:outline-none focus:border-(--primary) text-slate-800 placeholder-slate-400 transition-all"
           />
           {searchQuery && (
             <button
@@ -166,18 +165,15 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             }}
             className="flex items-center gap-2.5 p-1 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 transition-all cursor-pointer"
           >
-            <img
-              src={LECTURER_PROFILE.avatarUrl}
-              alt={teacher?.name || 'Giảng viên'}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover ring-1 ring-slate-200"
-              referrerPolicy="no-referrer"
-            />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center ring-1 ring-slate-200">
+              <User className="w-4 h-4" />
+            </div>
             <div className="hidden sm:block text-left">
               <div className="text-xs font-bold text-slate-900 leading-tight flex items-center gap-1">
                 <span>{teacher?.name || 'Giảng viên'}</span>
               </div>
               <div className="text-[10px] text-slate-500 font-medium">
-                {'Giảng viên'} • CNTT
+                {teacher?.role || 'Chưa có dữ liệu'} • {teacher?.department || 'Chưa cập nhật khoa'}
               </div>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />

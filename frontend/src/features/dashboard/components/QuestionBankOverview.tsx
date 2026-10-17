@@ -17,7 +17,7 @@ export const QuestionBankOverview: React.FC<QuestionBankOverviewProps> = ({
       <div>
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 font-['Space_Grotesk'] tracking-tight">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 font-sans tracking-tight">
               Ngân hàng câu hỏi
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -39,7 +39,7 @@ export const QuestionBankOverview: React.FC<QuestionBankOverviewProps> = ({
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Tổng số câu hỏi
             </div>
-            <div className="text-3xl font-extrabold text-slate-900 font-['Space_Grotesk'] mt-0.5">
+            <div className="text-3xl font-extrabold text-slate-900 font-sans mt-0.5">
               1,248 <span className="text-xs font-medium text-slate-400">câu</span>
             </div>
           </div>

@@ -97,6 +97,7 @@ export interface QuestionItem {
   explanation?: string;
   status: 'approved' | 'pending' | 'rejected';
   source: 'manual' | 'ai';
+  createdAt?: string | null;
   updatedAt: string;
   default_score?: number;
   aiSuggestedMeta?: {

@@ -40,7 +40,7 @@ export const Step2Matrix: React.FC<Step2Props> = ({
               <Grid3X3 className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold app-text-main font-['Plus_Jakarta_Sans',sans-serif]">
+              <h2 className="text-lg font-bold app-text-main font-sans">
                 Bước 2: Thiết lập Ma trận đề thi & Phân bổ câu hỏi
               </h2>
               <p className="text-xs app-text-muted">

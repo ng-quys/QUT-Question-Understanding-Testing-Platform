@@ -48,7 +48,7 @@ export const RecentExamTable: React.FC<RecentExamTableProps> = ({
       {/* Section Header & Time Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-1 gap-2">
         <div>
-          <h2 className="text-[19px] sm:text-[20px] font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] tracking-tight">
+          <h2 className="text-[19px] sm:text-[20px] font-bold text-slate-900 font-sans tracking-tight">
             Hoạt động thi gần đây
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">

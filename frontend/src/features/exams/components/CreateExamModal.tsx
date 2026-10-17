@@ -72,7 +72,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
                   <FileSpreadsheet className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-['Space_Grotesk']">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-sans">
                     Tạo Đề Thi Trắc Nghiệm Mới
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">

@@ -40,7 +40,7 @@ export const CreateTypeSelector: React.FC<CreateTypeSelectorProps> = ({
 
         {/* Header */}
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-['Plus_Jakarta_Sans',sans-serif]">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-sans">
             Bạn muốn tạo gì?
           </h2>
           <p className="text-sm text-slate-500 mt-1">
@@ -140,7 +140,7 @@ export const CreateTypeSelector: React.FC<CreateTypeSelectorProps> = ({
 
       {/* Header */}
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-['Plus_Jakarta_Sans',sans-serif]">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-sans">
           Bạn muốn tạo câu hỏi bằng cách nào?
         </h2>
         <p className="text-sm text-slate-500 mt-1">

@@ -116,7 +116,7 @@ public class TeacherQuestionBankService {
             owned = List.of(courseId);
         }
         String placeholders = String.join(",", java.util.Collections.nCopies(owned.size(), "?"));
-        StringBuilder sql = new StringBuilder("select id,course_id,chapter_id,topic_id,clo_id,cognitive_level_id,difficulty_level_id,content,explanation,status,source,default_score,updated_at from questions where course_id in ("+placeholders+")");
+        StringBuilder sql = new StringBuilder("select id,course_id,chapter_id,topic_id,clo_id,cognitive_level_id,difficulty_level_id,content,explanation,status,source,default_score,created_at,updated_at from questions where course_id in ("+placeholders+")");
         List<Object> args = new java.util.ArrayList<>(owned);
         if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
             sql.append(" and status=?"); args.add(status);
@@ -139,14 +139,14 @@ public class TeacherQuestionBankService {
             lookupCode("cognitive_levels", rs.getShort("cognitive_level_id")),
             lookupCode("difficulty_levels", rs.getShort("difficulty_level_id")),
             rs.getString("content"), rs.getString("explanation"), rs.getString("status"),
-            rs.getString("source"), rs.getBigDecimal("default_score"), rs.getTimestamp("updated_at"));
+            rs.getString("source"), rs.getBigDecimal("default_score"), rs.getTimestamp("created_at"), rs.getTimestamp("updated_at"));
     }
 
     private static Long nullableLong(java.sql.ResultSet rs, String name) throws java.sql.SQLException { long v=rs.getLong(name); return rs.wasNull()?null:v; }
 
-    private QuestionResponse mapRow(long id,long courseId,Long chapterId,Long topicId,Long cloId,String bloom,String difficulty,String content,String explanation,String status,String source,BigDecimal score,Timestamp updated) {
+    private QuestionResponse mapRow(long id,long courseId,Long chapterId,Long topicId,Long cloId,String bloom,String difficulty,String content,String explanation,String status,String source,BigDecimal score,Timestamp created,Timestamp updated) {
         List<QuestionResponse.AnswerResponse> answers = bank.query("select id,label,content,is_correct,position from answers where question_id=? order by position", (rs,n)->new QuestionResponse.AnswerResponse(rs.getLong("id"),rs.getString("label").trim(),rs.getString("content"),rs.getBoolean("is_correct"),rs.getInt("position")), id);
-        return new QuestionResponse(id,courseId,chapterId,topicId,cloId,bloom,difficulty,content,explanation,status,source,score,updated==null?null:updated.toLocalDateTime(),answers);
+        return new QuestionResponse(id,courseId,chapterId,topicId,cloId,bloom,difficulty,content,explanation,status,source,score,created==null?null:created.toInstant(),updated==null?null:updated.toInstant(),answers);
     }
 
     public QuestionResponse create(SaveQuestionRequest r, Jwt jwt) {
@@ -172,7 +172,7 @@ public class TeacherQuestionBankService {
 
     public QuestionResponse get(long id, Jwt jwt) {
         requireQuestion(id,jwt);
-        return bank.queryForObject("select id,course_id,chapter_id,topic_id,clo_id,cognitive_level_id,difficulty_level_id,content,explanation,status,source,default_score,updated_at from questions where id=?",
+        return bank.queryForObject("select id,course_id,chapter_id,topic_id,clo_id,cognitive_level_id,difficulty_level_id,content,explanation,status,source,default_score,created_at,updated_at from questions where id=?",
             (rs,n)->mapBankRow(rs),id);
     }
 

@@ -180,7 +180,7 @@ export const QuestionGenerationStep: React.FC<QuestionGenerationStepProps> = ({
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+        <h3 className="text-base font-bold text-slate-900 font-sans">
           AI đang phân tích tài liệu và sinh câu hỏi
         </h3>
         <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">

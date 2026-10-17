@@ -178,7 +178,7 @@ useEffect(() => {
               className="flex items-baseline gap-1 min-w-0 truncate cursor-pointer"
               onClick={() => handleItemClick('overview')}
             >
-              <span className="font-bold text-[17px] text-slate-900 tracking-tight font-['Plus_Jakarta_Sans',sans-serif]">
+              <span className="font-bold text-[17px] text-slate-900 tracking-tight font-sans">
                 ExamFlow
               </span>
               <span

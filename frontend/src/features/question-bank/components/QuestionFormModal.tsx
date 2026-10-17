@@ -166,7 +166,7 @@ export const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+            <h3 className="text-base font-bold text-slate-900 font-sans">
               {questionToEdit ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi trắc nghiệm mới'}
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">

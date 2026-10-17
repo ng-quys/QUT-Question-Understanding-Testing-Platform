@@ -55,7 +55,7 @@ export const SetupStep: React.FC<SetupStepProps> = ({
       <div className="flex-1 bg-white border border-slate-200 rounded-lg p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
           <div>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 font-sans">
               {title}
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">

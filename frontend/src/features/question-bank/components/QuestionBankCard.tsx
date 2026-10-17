@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import {
   Check,
   CheckCircle2,
-  Clock,
-  Sparkles,
   ChevronDown,
   Edit2,
   Trash2,
@@ -20,6 +18,23 @@ import type{
   Bloom3Level,
 } from '../../../types';
 import { BLOOM_3_CONFIG } from '../../dashboard/data/mockAcademicData';
+
+const questionDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Ho_Chi_Minh',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+const formatQuestionDate = (value?: string | null): string => {
+  if (!value) return 'Chưa có dữ liệu';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Chưa có dữ liệu';
+  return questionDateFormatter.format(date).replace(', ', ' ');
+};
 
 interface QuestionBankCardProps {
   question: QuestionItem;
@@ -70,16 +85,12 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
   const bloomCfg = BLOOM_3_CONFIG[question.bloom];
   const isPending = question.status === 'pending';
 
-  // Breadcrumb identification: [Mã HP - Tên HP] › [Tên Chương / Chủ đề]
+  // Breadcrumb identification: [Mã HP] › [Tên Chương / Chủ đề]
   const courseCode = course?.code || 'TI01';
   const courseName = course?.name || 'Học phần';
   const chapterOrTopicName = chapter
     ? `${chapter.code}: ${chapter.name}`
     : topicName || question.aiSuggestedMeta?.topicName || 'Chương chung';
-
-  // Format correct option letter & text
-  const correctLetter = String.fromCharCode(65 + question.correctIndex);
-  const correctOptionText = question.options[question.correctIndex] || '';
 
   // Start in-line editing
   const handleStartEdit = () => {
@@ -116,12 +127,6 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
       return;
     }
 
-    const todayStr = new Date().toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-
     const updatedItem: QuestionItem = {
       ...question,
       content: editContent.trim(),
@@ -129,7 +134,6 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
       correctIndex: editCorrectIndex,
       explanation: editExplanation.trim(),
       bloom: editBloom,
-      updatedAt: todayStr,
     };
 
     onSave(updatedItem);
@@ -170,13 +174,13 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
         title={!isEditing ? (isDetailExpanded ? 'Nhấn để thu gọn chi tiết' : 'Nhấn để xem chi tiết câu hỏi') : undefined}
       >
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-          {/* Breadcrumb nhận diện: [Mã HP - Tên HP] › [Tên Chương / Chủ đề] */}
+          {/* Breadcrumb nhận diện: [Mã HP] › [Tên Chương / Chủ đề] */}
           <div
             className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-100/90 hover:bg-slate-200/80 text-slate-700 border border-slate-200 text-[11px] font-semibold transition-colors truncate max-w-full sm:max-w-md"
             title={`Học phần: ${courseCode} - ${courseName} › ${chapterOrTopicName}`}
           >
             <span className="text-slate-900 font-bold shrink-0">
-              [{courseCode} - {courseName}]
+              [{courseCode}]
             </span>
             <span className="text-slate-400 font-bold shrink-0">›</span>
             <span className="text-slate-700 font-medium truncate">
@@ -197,72 +201,13 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
             {clo ? clo.code : question.aiSuggestedMeta?.cloCode || 'CLO'}
           </span>
 
-          {/* Badge Mức nhận thức Bloom */}
-          <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold border shrink-0 ${bloomCfg.bgClass} ${bloomCfg.textClass} ${bloomCfg.borderClass}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${bloomCfg.dotClass}`} />
-            <span>{bloomCfg.label}</span>
-          </span>
-
-          {/* Badge Trạng thái: Đã duyệt / Chờ duyệt */}
-          {isPending ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
-              <Clock className="w-3 h-3 text-amber-600" />
-              <span>Chờ duyệt</span>
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-              <Check className="w-3 h-3 text-emerald-600" />
-              <span>Đã duyệt</span>
-            </span>
-          )}
-
-          {/* Tag AI sinh nếu là nguồn AI */}
-          {question.source === 'ai' && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-0.5 shrink-0">
-              <Sparkles className="w-2.5 h-2.5 text-purple-600" />
-              AI sinh
-            </span>
-          )}
-
           {/* Tag Điểm mặc định nếu có */}
           {question.default_score !== undefined && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200/80 shrink-0">
               {question.default_score}đ
             </span>
           )}
-          <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-500 shrink-0" title="Ngày cập nhật gần nhất">
-            <Clock className="w-3 h-3" />
-            Cập nhật: {question.updatedAt}
-          </span>
         </div>
-
-        {/* Quick approval buttons for pending questions (if not editing) */}
-        {!isEditing && isPending && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1 shrink-0 self-end sm:self-auto"
-          >
-            <button
-              type="button"
-              onClick={() => onApprove(question.id)}
-              className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
-              title="Duyệt câu hỏi này vào ngân hàng chính thức"
-            >
-              <Check className="w-3 h-3" />
-              <span>Duyệt</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onReject(question.id)}
-              className="px-2 py-0.5 rounded border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-semibold transition-colors cursor-pointer"
-              title="Từ chối câu hỏi AI"
-            >
-              Từ chối
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ========================================================================= */}
@@ -390,7 +335,7 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
 
           {/* Explanation Textarea */}
           <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+            <label className="flex text-xs font-bold text-slate-800 mb-1 items-center gap-1.5">
               <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
               <span>Giải thích chi tiết (tùy chọn):</span>
             </label>
@@ -489,7 +434,7 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
 
               {/* Blockquote Giải thích chi tiết */}
               {question.explanation && (
-                <blockquote className="my-2 p-3.5 pl-4 pr-3.5 mr-2 bg-slate-50 border-l-4 border-[#e75d0c] rounded-r-lg border-y border-r border-slate-200/60 shadow-2xs">
+                <blockquote className="my-2 p-3.5 pl-4 pr-3.5 mr-2 bg-slate-50 border-l-4 border-l-[#e75d0c] rounded-r-lg border-y border-r border-slate-200/60 shadow-2xs">
                   <div className="flex items-center gap-1.5 font-bold italic text-slate-800 text-xs sm:text-[13px] mb-1">
                     <span className="text-[#e75d0c] not-italic">💡</span>
                     <span>Giải thích chi tiết:</span>
@@ -499,26 +444,66 @@ export const QuestionBankCard: React.FC<QuestionBankCardProps> = ({
                   </p>
                 </blockquote>
               )}
+
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 pt-3 text-xs">
+                <div>
+                  <dt className="text-slate-500">Mức độ Bloom</dt>
+                  <dd className="mt-1 font-medium text-slate-800">{bloomCfg.label}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Trạng thái duyệt</dt>
+                  <dd className="mt-1 font-medium text-slate-800">
+                    {isPending ? 'Chờ duyệt' : question.status === 'rejected' ? 'Đã từ chối' : 'Đã duyệt'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Thời gian tạo</dt>
+                  <dd className="mt-1 font-medium text-slate-800">{formatQuestionDate(question.createdAt)}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Cập nhật cuối</dt>
+                  <dd className="mt-1 font-medium text-slate-800">{formatQuestionDate(question.updatedAt)}</dd>
+                </div>
+                {question.source === 'ai' && (
+                  <div>
+                    <dt className="text-slate-500">Nguồn</dt>
+                    <dd className="mt-1 font-medium text-slate-800">AI sinh</dd>
+                  </div>
+                )}
+              </dl>
+
+              {/* Quick approval buttons for pending questions (if not editing) */}
+              {!isEditing && isPending && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1 shrink-0 self-end sm:self-auto"
+                >
+                  <button
+                    type="button"
+                    onClick={() => onApprove(question.id)}
+                    className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                    title="Duyệt câu hỏi này vào ngân hàng chính thức"
+                  >
+                    <Check className="w-3 h-3" />
+                    <span>Duyệt</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onReject(question.id)}
+                    className="px-2 py-0.5 rounded border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-semibold transition-colors cursor-pointer"
+                    title="Từ chối câu hỏi AI"
+                  >
+                    Từ chối
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {/* ========================================================================= */}
           {/* 4. FOOTER THẺ CÂU HỎI                                                    */}
           {/* ========================================================================= */}
-          <div className="pt-1.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            {/* Góc trái: Nhãn tóm tắt đáp án đúng nhỏ gọn */}
-            <div className="flex items-center flex-wrap gap-2 text-[11px] min-w-0">
-              {/* Nhãn tóm tắt đáp án đúng nhỏ gọn */}
-              <div
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/90 font-medium text-[11px] max-w-full sm:max-w-md truncate"
-                title={`Đáp án đúng: [${correctLetter}] ${correctOptionText}`}
-              >
-                <span className="font-bold text-emerald-950 shrink-0">Đáp án đúng:</span>
-                <span className="font-bold text-emerald-700 shrink-0">[{correctLetter}]</span>
-                <span className="truncate text-emerald-900">{correctOptionText}</span>
-              </div>
-            </div>
-
+          <div className="pt-1.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-end gap-2">
             {/* Góc phải: Chỉ giữ lại 2 nút chức năng: [✏️ Sửa] và [🗑 Xóa] */}
             <div
               onClick={(e) => e.stopPropagation()}

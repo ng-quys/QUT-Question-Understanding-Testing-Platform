@@ -15,7 +15,7 @@ export const WelcomeSection: React.FC<WelcomeSectionProps> = ({
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-2xl sm:text-3xl font-extrabold app-text-main tracking-tight font-['Plus_Jakarta_Sans',sans-serif]">
+          <h2 className="text-2xl sm:text-3xl font-extrabold app-text-main tracking-tight font-sans">
             Chào buổi sáng, {LECTURER_PROFILE.name} 👋
           </h2>
         </div>

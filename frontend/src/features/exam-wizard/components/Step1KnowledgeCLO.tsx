@@ -221,7 +221,7 @@ export const Step1KnowledgeCLO: React.FC<Step1Props> = ({
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold app-text-main font-['Plus_Jakarta_Sans',sans-serif]">
+              <h2 className="text-lg font-bold app-text-main font-sans">
                 1. Thông tin Môn học & Kỳ thi
               </h2>
               <p className="text-xs app-text-muted">
@@ -371,7 +371,7 @@ export const Step1KnowledgeCLO: React.FC<Step1Props> = ({
               <UploadCloud className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold app-text-main font-['Plus_Jakarta_Sans',sans-serif]">
+              <h2 className="text-lg font-bold app-text-main font-sans">
                 2. Nạp Tài liệu & Đề cương môn học
               </h2>
               <p className="text-xs app-text-muted">
@@ -511,7 +511,7 @@ export const Step1KnowledgeCLO: React.FC<Step1Props> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold app-text-main font-['Plus_Jakarta_Sans',sans-serif]">
+                <h2 className="text-lg font-bold app-text-main font-sans">
                   3. Thiết lập Chuẩn đầu ra (CLO)
                 </h2>
                 <span

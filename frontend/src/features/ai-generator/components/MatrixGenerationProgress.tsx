@@ -83,7 +83,7 @@ export const MatrixGenerationProgress: React.FC<MatrixGenerationProgressProps> =
       </div>
 
       <div>
-        <h3 className="text-xl font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+        <h3 className="text-xl font-bold text-slate-900 font-sans">
           AI đang sinh {totalQuestions} câu hỏi theo Ma trận
         </h3>
         <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">

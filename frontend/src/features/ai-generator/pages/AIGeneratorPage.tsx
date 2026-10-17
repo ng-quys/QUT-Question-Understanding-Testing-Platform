@@ -156,7 +156,7 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-            <h1 className="text-xl font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900 font-sans flex items-center gap-2">
               <span>Trình AI sinh câu hỏi học phần</span>
               <span
                 className="text-[10px] font-bold px-2 py-0.5 rounded text-white tracking-wider uppercase shadow-2xs"

@@ -85,7 +85,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                 <span className="px-2 py-0.5 rounded font-mono text-xs font-bold text-slate-800 bg-slate-100 border border-slate-200">
                   {course.code}
                 </span>
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 font-sans">
                   {course.name}
                 </h2>
                 <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
