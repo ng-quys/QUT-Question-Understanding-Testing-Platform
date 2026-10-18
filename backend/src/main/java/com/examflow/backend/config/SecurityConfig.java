@@ -2,6 +2,10 @@ package com.examflow.backend.config;
 
 
 import java.util.List;
+import java.net.InetAddress;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.authorization.AuthorizationDecision;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +20,32 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig {
+
+    @Bean
+    @Order(1)
+    public SecurityFilterChain aiInternalKeySecurity(HttpSecurity http) throws Exception {
+        // Exact path only: every other API keeps the existing JWT chain.
+        return http.securityMatcher("/api/internal/ai-credits/verify-key")
+            .csrf(csrf->csrf.disable()).cors(cors->cors.disable())
+            .requestCache(cache->cache.disable())
+            .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth->auth.anyRequest().access((authentication,context)->
+                new AuthorizationDecision(isDirectLoopbackGet(context.getRequest()))))
+            .exceptionHandling(errors->errors
+                .authenticationEntryPoint((request,response,error)->response.setStatus(403))
+                .accessDeniedHandler((request,response,error)->response.setStatus(403)))
+            .build();
+    }
+
+    private static boolean isDirectLoopbackGet(HttpServletRequest request) {
+        if(!"GET".equals(request.getMethod()))return false;
+        for(String header:List.of("Forwarded","X-Forwarded-For","X-Forwarded-Host","X-Forwarded-Proto","X-Real-IP"))
+            if(request.getHeader(header)!=null)return false;
+        String address=request.getRemoteAddr();
+        if(address==null||(!address.contains(":")&&!address.matches("[0-9.]+")))return false;
+        try{return InetAddress.getByName(address).isLoopbackAddress();}
+        catch(Exception ignored){return false;}
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
