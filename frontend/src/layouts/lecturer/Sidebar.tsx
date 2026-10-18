@@ -1,3 +1,4 @@
+import {useAiQuota} from '../../features/ai-generator/hooks/useAiQuota';
 import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
@@ -56,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed = false,
   onToggleCollapse,
 }) => {
+  const {quota:aiQuota,error:quotaError}=useAiQuota();
   // State to track accordion open/close for groups
   const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>({
     questionBank: true,
@@ -670,16 +672,16 @@ useEffect(() => {
               <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--primary)' }} />
               AI Generator
             </span>
-            <span className="text-[11px] text-slate-500 font-medium">86/200</span>
+            <span className="text-[11px] text-slate-500 font-medium">{aiQuota ? aiQuota.used + '/' + aiQuota.monthlyLimit : '—'}</span>
           </div>
           <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
             <div
-              className="h-1.5 rounded-full w-[43%]"
-              style={{ backgroundColor: 'var(--primary)' }}
+              className="h-1.5 rounded-full"
+              style={{ backgroundColor: 'var(--primary)', width: aiQuota && aiQuota.monthlyLimit > 0 ? Math.min(100,aiQuota.used/aiQuota.monthlyLimit*100)+'%' : '0%' }}
             />
           </div>
           <div className="mt-1 flex justify-between items-center text-[10px] text-slate-500">
-            <span>Hạn mức tháng</span>
+            <span>{aiQuota ? 'Còn ' + aiQuota.remaining + ' credits' : quotaError ? 'AI Credits chưa sẵn sàng' : 'Đang tải hạn mức...'}</span>
             <button
               type="button"
               className="font-semibold cursor-pointer hover:underline"
@@ -689,6 +691,10 @@ useEffect(() => {
               Tạo thêm
             </button>
           </div>
+          {aiQuota && <div className="mt-1 text-[10px] text-slate-500 space-y-0.5">
+            <p>Cấp thêm: {aiQuota.extraBalance} · Giữ chỗ: {aiQuota.reserved + aiQuota.extraReserved}</p>
+            <p>Reset: {new Date(aiQuota.nextReset).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p>
+          </div>}
         </div>
       ) : (
         <div className="px-2 pb-2 flex justify-center">
@@ -701,7 +707,7 @@ useEffect(() => {
               borderColor: 'var(--primary-border)',
               color: 'var(--primary)',
             }}
-            title="AI Generator (86/200 câu)"
+            title={aiQuota ? 'AI Credits: còn ' + aiQuota.remaining : 'AI Credits chưa sẵn sàng'}
           >
             <Sparkles className="w-4 h-4" />
           </button>

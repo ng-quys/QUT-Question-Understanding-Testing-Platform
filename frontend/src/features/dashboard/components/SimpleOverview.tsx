@@ -13,5 +13,5 @@ export function SimpleOverview({onNavigateTab}:{onNavigateTab:(tab:DashboardNavT
    <div className="rounded-xl border border-slate-200 bg-white"><div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><h3 className="font-semibold text-slate-900">Đề thi gần đây</h3><button onClick={()=>onNavigateTab('exams')} className="text-sm font-medium text-blue-700 hover:underline">Xem tất cả</button></div>
    {data.recentExams.length===0?<p className="px-5 py-9 text-center text-sm text-slate-500">Chưa có đề thi nào. Hãy tạo đề thi từ mục Quản lý đề thi.</p>:<div className="divide-y divide-slate-100">{data.recentExams.map(e=><button key={e.id} onClick={()=>onNavigateTab('exams')} className="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-slate-50"><span className="font-medium text-sm text-slate-800">{e.title}</span><span className="ml-3 text-xs text-slate-500">{e.code}</span></button>)}</div>}</div>
   </>}
- </section>
+ </section> 
 }

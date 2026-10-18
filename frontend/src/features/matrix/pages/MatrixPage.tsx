@@ -1,3 +1,4 @@
+import type {AiQuota} from '../../ai-generator/services/aiCreditsService';
 import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowLeft, FileText, Award } from 'lucide-react';
 import { Course, CourseChapter, CourseCLO, QuestionItem, SourceDocument } from '../../../types';
@@ -36,6 +37,7 @@ export interface MatrixPageProps {
   }) => void;
   onBackToUpload?: () => void;
   uploadedDocuments?: SourceDocument[];
+  aiQuota?: AiQuota | null;
 }
 
 export const MatrixPage: React.FC<MatrixPageProps> = ({
@@ -51,6 +53,7 @@ export const MatrixPage: React.FC<MatrixPageProps> = ({
   onStartGenerationWithMatrix,
   onBackToUpload,
   uploadedDocuments,
+  aiQuota,
 }) => {
   // 1. Selected Course
   const [selectedCourseId, setSelectedCourseId] = useState<string>(() => {
@@ -287,6 +290,12 @@ export const MatrixPage: React.FC<MatrixPageProps> = ({
 
   // Trigger AI Question Generation
   const handleGenerateWithAI = () => {
+    if(onStartGenerationWithMatrix){
+      if(!aiQuota){onShowToast('AI Credits chưa sẵn sàng.');return;}
+      if(summary.matrixTotal>aiQuota.maxPerRequest){onShowToast('Mỗi lần chỉ được sinh tối đa '+aiQuota.maxPerRequest+' câu hỏi. Vui lòng giảm số lượng hoặc chia thành nhiều lượt.');return;}
+      if(aiQuota.activeJob){onShowToast('Bạn đang có một job AI hoạt động.');return;}
+      if(summary.matrixTotal>aiQuota.remaining){onShowToast('Không đủ AI Credits khả dụng.');return;}
+    }
     if (!validation.isValid || summary.matrixTotal <= 0) {
       onShowToast('Vui lòng hoàn thiện cấu hình ma trận trước khi sinh câu hỏi.');
       return;
@@ -327,6 +336,12 @@ export const MatrixPage: React.FC<MatrixPageProps> = ({
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto pb-12 animate-in fade-in duration-150">
+      {onStartGenerationWithMatrix && <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700" role="status">
+        Chi phí dự kiến: <strong>{summary.matrixTotal} credits</strong>
+        {aiQuota && <span> · Còn {aiQuota.remaining} · Tối đa {aiQuota.maxPerRequest} câu/lượt</span>}
+        {aiQuota && summary.matrixTotal>aiQuota.maxPerRequest && <p className="mt-1 text-rose-700">Mỗi lần chỉ được sinh tối đa {aiQuota.maxPerRequest} câu hỏi. Vui lòng giảm số lượng hoặc chia thành nhiều lượt.</p>}
+        {aiQuota && summary.matrixTotal>aiQuota.remaining && <p className="mt-1 text-rose-700">Không đủ AI Credits khả dụng.</p>}
+      </div>}
       {/* Context banner if coming from Step 1 (Upload) */}
       {onBackToUpload && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 p-3.5 bg-indigo-50/80 border border-indigo-200/90 rounded-xl text-xs">

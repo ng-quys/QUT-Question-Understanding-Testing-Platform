@@ -4,12 +4,12 @@
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { LoginPage } from '../features/auth/pages/LoginPage';
-import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
-import { StudentPortalPage } from '../features/student/pages/StudentPortalPage';
-import { ThemeProvider } from './providers/ThemeProvider';
-import { AdminPage } from '../features/admin/pages/AdminPage';
-import { AdminLoginPage } from '../features/admin/pages/AdminLoginPage';
+import { LoginPage } from '../auth/pages/LoginPage';
+import { DashboardPage } from '../dashboard/pages/DashboardPage';
+import { StudentPortalPage } from '../student/pages/StudentPortalPage';
+import { ThemeProvider } from '../../app/providers/ThemeProvider';
+import { AdminPage } from '../admin/pages/AdminPage';
+import { AdminLoginPage } from '../admin/pages/AdminLoginPage';
 import { ROUTES } from './routes';
 
 export default function App() {

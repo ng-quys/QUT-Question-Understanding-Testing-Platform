@@ -20,6 +20,8 @@ private final HttpClient http = HttpClient.newBuilder()
     .connectTimeout(Duration.ofSeconds(10))
     .build();
     
+    @Value("${ai.credits.max-questions-per-request:45}") private int maxQuestions;
+    @Value("${ai.internal.key:}") private String internalKey;
     @Value("${ai.openai.key:}") private String openaiKey;
     @Value("${ai.openai.model:gpt-4.1-mini}") private String openaiModel;
     @Value("${ai.rag.url:http://127.0.0.1:8002}") private String ragUrl;
@@ -27,15 +29,17 @@ private final HttpClient http = HttpClient.newBuilder()
     public AiGenerationService(ObjectMapper json) { this.json = json; }
 
     public List<AiQuestionDto> generate(AiGenerateRequest request) {
+        return generate(request, () -> false);
+    }
+
+    public List<AiQuestionDto> generate(AiGenerateRequest request, java.util.function.BooleanSupplier cancelled) {
         if (!List.of("openai", "qwen").contains(request.provider()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider không hợp lệ");
-        int total = request.units().stream().mapToInt(u -> u.nb()+u.th()+u.vd()).sum();
-        if (total < 1 || total > 30)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mỗi lượt hỗ trợ 1-30 câu hỏi");
+        AiCreditRules.count(request, maxQuestions);
         if (request.sourceText() == null || request.sourceText().isBlank())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cần nội dung tài liệu thực tế");
         if ("qwen".equals(request.provider())) return generateViaRag(request);
-        return generateViaOpenAi(request);
+        return generateViaOpenAi(request, cancelled);
     }
 
 private List<AiQuestionDto> generateViaRag(AiGenerateRequest request) {
@@ -54,6 +58,7 @@ HttpRequest req = HttpRequest.newBuilder(
         URI.create(ragUrl.replaceAll("/+$", "") + "/generate"))
     .timeout(Duration.ofMinutes(25))
     .header("Content-Type", "application/json; charset=utf-8")
+    .header("X-AI-Internal-Key", internalKey)
     .POST(HttpRequest.BodyPublishers.ofString(
         requestJson,
         java.nio.charset.StandardCharsets.UTF_8
@@ -103,12 +108,13 @@ System.out.println("RAG RESPONSE: " + res.body());
         }
     }
 
-    private List<AiQuestionDto> generateViaOpenAi(AiGenerateRequest request) {
+    private List<AiQuestionDto> generateViaOpenAi(AiGenerateRequest request, java.util.function.BooleanSupplier cancelled) {
         if (openaiKey.isBlank()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Thiếu OpenAI API key");
         List<AiQuestionDto> result = new ArrayList<>();
         for (var unit : request.units()) {
             for (var pair : List.of(Map.entry("remember", unit.nb()), Map.entry("understand", unit.th()), Map.entry("apply", unit.vd()))) {
                 for (int i = 0; i < pair.getValue(); i++) {
+                    if (cancelled.getAsBoolean()) return result;
                     String prompt = "Chỉ dựa vào tài liệu, sinh đúng 1 câu trắc nghiệm tiếng Việt mức Bloom " + pair.getKey() +
                         ", chủ đề " + unit.name() + ". Yêu cầu: " + Objects.toString(request.instruction(), "") +
                         ". Trả JSON {\"questions\":[{\"content\":\"...\",\"options\":[\"...\",\"...\",\"...\",\"...\"],\"correctIndex\":0,\"explanation\":\"...\"}]}" +
@@ -120,6 +126,7 @@ System.out.println("RAG RESPONSE: " + res.body());
                             .header("Authorization","Bearer " + openaiKey)
                             .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(payload))).build();
                         HttpResponse<String> response = http.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+                        if (cancelled.getAsBoolean()) return result;
                         if (response.statusCode() != 200) throw new IllegalArgumentException("OpenAI HTTP " + response.statusCode());
                         String answer = json.readTree(response.body()).path("choices").path(0).path("message").path("content").asText();
                         JsonNode arr = json.readTree(answer).path("questions");
@@ -131,7 +138,7 @@ System.out.println("RAG RESPONSE: " + res.body());
                         int correct = q.path("correctIndex").asInt(-1);
                         if (correct < 0 || correct > 3) throw new IllegalArgumentException("OpenAI trả sai đáp án đúng");
                         result.add(new AiQuestionDto(q.path("content").asText(),options,correct,q.path("explanation").asText(),pair.getKey(),unit.chapterId(),unit.cloId()));
-                    } catch (Exception e) { throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Lỗi OpenAI: " + e.getMessage(), e); }
+                    } catch (Exception e) { if (!result.isEmpty()) return result; throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Lỗi OpenAI: " + e.getMessage(), e); }
                 }
             }
         }

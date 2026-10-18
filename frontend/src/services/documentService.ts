@@ -1,3 +1,4 @@
+import { apiFetch } from './api';
 import { SourceDocument, DocumentExtractionSummary } from '../types';
 
 export interface UploadProgressCallback {
@@ -18,20 +19,13 @@ export async function uploadAndExtractDocuments(
     form.append('files', doc.file!, doc.name);
   });
   onProgress?.('uploading', undefined, 30);
-  const url = `${(import.meta.env.VITE_AI_SERVICE_URL || 'http://127.0.0.1:8002').replace(/\/$/, '')}/extract`;
-  let response: Response;
-  try {
-    response = await fetch(url, { method: 'POST', body: form });
-  } catch {
-    throw new Error('Không kết nối được dịch vụ AI Python. Hãy chạy FastAPI tại cổng 8002.');
-  }
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.detail || `Trích xuất tài liệu thất bại (${response.status})`);
+  const result = await apiFetch<{documents:Array<{extractedText:string;wordCount:number}>;sourceProof:string}>(
+    '/teacher/ai-credits/extract', {method:'POST',body:form});
   onProgress?.('extracting', undefined, 80);
   const processed = documents.map((doc, i) => {
     const parsed = result.documents[i];
     if (!parsed?.extractedText) throw new Error(`Không có nội dung thật từ ${doc.name}`);
-    return { ...doc, status: 'success' as const, extractedText: parsed.extractedText as string,
+    return { ...doc, aiSourceProof:result.sourceProof, status: 'success' as const, extractedText: parsed.extractedText as string,
       wordCount: parsed.wordCount as number, topicsDetected: [] as string[], errorMessage: undefined };
   });
   onProgress?.('extracting', undefined, 100);

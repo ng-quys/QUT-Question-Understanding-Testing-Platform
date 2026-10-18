@@ -224,6 +224,7 @@ export type FileUploadState =
   | 'error';
 
 export interface SourceDocument {
+  aiSourceProof?: string;
   id: string;
   file?: File;
   name: string;

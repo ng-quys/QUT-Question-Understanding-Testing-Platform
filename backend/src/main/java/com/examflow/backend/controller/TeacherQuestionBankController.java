@@ -12,7 +12,8 @@ import com.examflow.backend.dto.SaveQuestionRequest;
 import com.examflow.backend.dto.AiGenerateRequest;
 import com.examflow.backend.dto.AiQuestionDto;
 import com.examflow.backend.service.TeacherQuestionBankService;
-import com.examflow.backend.service.AiGenerationService;
+import com.examflow.backend.service.AiCreditsService;
+import com.examflow.backend.service.CurrentUserService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -20,11 +21,13 @@ import jakarta.validation.Valid;
 @Validated
 public class TeacherQuestionBankController {
     private final TeacherQuestionBankService service;
-    private final AiGenerationService aiGenerationService;
+    private final AiCreditsService credits;
+    private final CurrentUserService users;
 
-    public TeacherQuestionBankController(TeacherQuestionBankService service, AiGenerationService aiGenerationService) {
+    public TeacherQuestionBankController(TeacherQuestionBankService service, AiCreditsService credits, CurrentUserService users) {
         this.service = service;
-        this.aiGenerationService = aiGenerationService;
+        this.credits = credits;
+        this.users = users;
     }
 
     @GetMapping public List<QuestionResponse> list(@RequestParam(required=false) Long courseId,@RequestParam(required=false) String status,@RequestParam(required=false) String search,@AuthenticationPrincipal Jwt jwt){return service.list(courseId,status,search,jwt);}
@@ -35,7 +38,11 @@ public class TeacherQuestionBankController {
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable long id,@AuthenticationPrincipal Jwt jwt){service.delete(id,jwt);}
 
     @PostMapping("/ai-generate")
-    public List<AiQuestionDto> generateQuestions(@Valid @RequestBody AiGenerateRequest request) {
-        return aiGenerationService.generate(request);
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Map<String,Object> generateQuestions(@AuthenticationPrincipal Jwt jwt, @RequestParam java.util.UUID idempotencyKey, @Valid @RequestBody AiGenerateRequest request) {
+        var user = users.getCurrentUser(jwt);
+        if (!List.of("teacher", "faculty", "admin").contains(user.getRole().toLowerCase(java.util.Locale.ROOT)))
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ giảng viên được sử dụng AI Credits.");
+        return credits.create(user.getId(), idempotencyKey, request);
     }
 }

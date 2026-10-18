@@ -5,6 +5,9 @@ import json
 import asyncio
 import logging
 import math
+import hmac
+from uuid import UUID
+from credits_runtime import GenerationRegistry
 import os
 import re
 from io import BytesIO
@@ -14,7 +17,7 @@ import httpx
 import psycopg2
 from dotenv import load_dotenv
 from docx import Document
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from langchain_community.vectorstores import FAISS
 from langchain_ollama import OllamaEmbeddings
@@ -29,6 +32,11 @@ logger = logging.getLogger('examflow.duplicate')
 OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://127.0.0.1:11434').rstrip('/')
 MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5:7b')
 EMBED_MODEL = os.getenv('OLLAMA_EMBED_MODEL', 'nomic-embed-text')
+MAX_QUESTIONS = int(os.getenv('AI_CREDITS_MAX_QUESTIONS', '45'))
+INTERNAL_KEY = os.getenv('AI_INTERNAL_KEY', '')
+if len(INTERNAL_KEY) < 32:
+    logger.warning('AI Credits unavailable: configure matching AI_INTERNAL_KEY (at least 32 characters) in BE and AI Service before starting jobs')
+registry = GenerationRegistry()
 MAX_CHARS = int(os.getenv('AI_MAX_SOURCE_CHARS', '120000'))
 DUPLICATE_THRESHOLD = float(os.getenv('AI_DUPLICATE_THRESHOLD', '0.85'))
 QUESTIONBANK_DSN = os.getenv('EXAMFLOW_QUESTIONBANK_DSN', '')
@@ -44,9 +52,9 @@ class Unit(BaseModel):
     name: str
     chapterId: int | None = None
     cloId: int | None = None
-    nb: int = Field(ge=0, le=30)
-    th: int = Field(ge=0, le=30)
-    vd: int = Field(ge=0, le=30)
+    nb: int = Field(ge=0, le=MAX_QUESTIONS)
+    th: int = Field(ge=0, le=MAX_QUESTIONS)
+    vd: int = Field(ge=0, le=MAX_QUESTIONS)
 
 class GenerationRequest(BaseModel):
     courseId: int
@@ -191,11 +199,10 @@ async def duplicate_check(request: DuplicateCheckRequest):
         raise HTTPException(503, 'Duplicate checking unavailable; inspect ai-service logs') from exc
 
 
-@app.post('/generate')
-async def generate(request: GenerationRequest):
+async def _generate(request: GenerationRequest, progress=lambda items: None, cancelled=lambda: False):
     total = sum(u.nb + u.th + u.vd for u in request.units)
-    if total < 1 or total > 30:
-        raise HTTPException(400, 'Số câu phải từ 1 đến 30')
+    if total < 1 or total > MAX_QUESTIONS:
+        raise HTTPException(400, f'Số câu phải từ 1 đến {MAX_QUESTIONS}')
     if len(request.sourceText.strip()) < 50:
         raise HTTPException(400, 'Nội dung tài liệu quá ngắn; vui lòng tải tài liệu thực')
     chunks = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150).split_documents([LCDocument(page_content=request.sourceText[:MAX_CHARS])])
@@ -204,6 +211,8 @@ async def generate(request: GenerationRequest):
         store = await __import__('asyncio').to_thread(FAISS.from_documents, chunks, embeddings)
     except Exception as exc:
         raise HTTPException(502, f'Embedding/FAISS thất bại: {str(exc)[:250]}') from exc
+    if cancelled():
+        return []
     # Fail closed: never silently bypass duplicate detection during generation.
     if not QUESTIONBANK_DSN:
         raise HTTPException(503, 'Chưa cấu hình Question Bank để kiểm tra trùng')
@@ -214,6 +223,8 @@ async def generate(request: GenerationRequest):
         for unit in request.units:
             for bloom, count in [('remember', unit.nb), ('understand', unit.th), ('apply', unit.vd)]:
                 for index in range(count):
+                    if cancelled():
+                        return result
                     query = f'{unit.name} {request.instruction} {bloom}'
                     retrieved = await asyncio.to_thread(store.similarity_search, query, 4)
                     context = '\n---\n'.join(d.page_content for d in retrieved)[:4800]
@@ -227,6 +238,8 @@ TÀI LIỆU:\n{context}'''
                     rejected_contents = []
                     last_error = ''
                     for attempt in range(DUPLICATE_MAX_ATTEMPTS):
+                        if cancelled():
+                            return result
                         retry_instruction = ''
                         if rejected_contents:
                             examples = '\n'.join(f'- {x[:250]}' for x in rejected_contents[-3:])
@@ -235,6 +248,8 @@ TÀI LIỆU:\n{context}'''
                                                  '\nChỉ xuất JSON hợp lệ, đúng một câu.')
                         try:
                             raw = await ollama_generate(client, prompt + retry_instruction)
+                            if cancelled():
+                                return result
                             candidates = normalize(raw, bloom, unit)
                         except (ValueError, httpx.HTTPError) as exc:
                             last_error = str(exc)
@@ -270,9 +285,52 @@ TÀI LIỆU:\n{context}'''
                         if accepted is not None:
                             break
                     if accepted is None:
-                        # No partial result: caller should not save an incomplete Bloom matrix.
+                        # Preserve accepted questions; skip this unfilled matrix slot.
                         logger.warning('GENERATION_EXHAUSTED course=%s bloom=%s index=%s attempts=%s reason=%s',
                                        request.courseId, bloom, index + 1, DUPLICATE_MAX_ATTEMPTS, last_error)
-                        raise HTTPException(422, f'Không tạo được câu khác biệt cho mức {bloom} sau {DUPLICATE_MAX_ATTEMPTS} lần thử. Hãy bổ sung tài liệu hoặc giảm số câu.')
+                        continue
                     result.append(accepted)
+                    progress(result)
     return result
+
+
+def require_internal(x_ai_internal_key: str = Header(default='')):
+    if len(INTERNAL_KEY) < 32:
+        raise HTTPException(503, 'AI_INTERNAL_KEY must be configured before generation')
+    if not hmac.compare_digest(x_ai_internal_key, INTERNAL_KEY):
+        raise HTTPException(403, 'Generation is available only through authenticated ExamFlow backend')
+
+
+@app.post('/generate', dependencies=[Depends(require_internal)])
+async def generate(request: GenerationRequest):
+    return await _generate(request)
+
+
+@app.post('/credits/jobs/{token}', status_code=202, dependencies=[Depends(require_internal)])
+async def start_credit_job(token: UUID, request: GenerationRequest):
+    total = sum(u.nb + u.th + u.vd for u in request.units)
+    if not 1 <= total <= MAX_QUESTIONS:
+        raise HTTPException(400, f'Số câu phải từ 1 đến {MAX_QUESTIONS}')
+    try:
+        return await registry.start(str(token), request.model_dump(),
+            lambda progress, cancelled: _generate(request, progress, cancelled))
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
+
+
+@app.get('/credits/jobs/{token}', dependencies=[Depends(require_internal)])
+async def credit_job_status(token: UUID):
+    try:
+        return registry.status(str(token))
+    except KeyError as exc:
+        raise HTTPException(404, 'Unknown execution token; backend reconciliation required') from exc
+
+
+@app.post('/credits/jobs/{token}/cancel', dependencies=[Depends(require_internal)])
+async def cancel_credit_job(token: UUID):
+    try:
+        return registry.cancel(str(token))
+    except KeyError as exc:
+        raise HTTPException(404, 'Unknown execution token; backend reconciliation required') from exc
