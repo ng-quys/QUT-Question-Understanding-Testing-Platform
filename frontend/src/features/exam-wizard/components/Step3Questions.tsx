@@ -66,7 +66,7 @@ export const Step3Questions: React.FC<Step3Props> = ({
               <ListFilter className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold app-text-main font-['Plus_Jakarta_Sans',sans-serif]">
+              <h2 className="text-lg font-bold app-text-main font-sans">
                 Bước 3: Hiệu chỉnh và Duyệt câu hỏi thi
               </h2>
               <p className="text-xs app-text-muted">

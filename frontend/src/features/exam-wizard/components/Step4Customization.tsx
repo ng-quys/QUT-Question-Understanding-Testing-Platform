@@ -40,7 +40,7 @@ export const Step4Customization: React.FC<Step4Props> = ({
               <Sliders className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold app-text-main font-['Plus_Jakarta_Sans',sans-serif]">
+              <h2 className="text-lg font-bold app-text-main font-sans">
                 Bước 4: Tùy chỉnh Cấu hình Đề thi & Chống gian lận
               </h2>
               <p className="text-xs app-text-muted">

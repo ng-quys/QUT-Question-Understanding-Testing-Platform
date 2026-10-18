@@ -37,12 +37,14 @@ import com.examflow.backend.exception.ApiException;
 public class TeacherCourseContentService {
 
     private final JdbcTemplate jdbc;
+    private final QuestionBankStatsService questionBankStats;
 
     private final CurrentUserService currentUserService;
 
 
 
-    public TeacherCourseContentService(JdbcTemplate jdbc, CurrentUserService currentUserService) {
+    public TeacherCourseContentService(JdbcTemplate jdbc, CurrentUserService currentUserService, QuestionBankStatsService questionBankStats) {
+        this.questionBankStats = questionBankStats;
 
         this.jdbc = jdbc;
 
@@ -116,13 +118,11 @@ public class TeacherCourseContentService {
 
                 List<CourseTopicDto> topics = jdbc.query(
 
-                    "select t.id, t.chapter_id, t.code, t.name, count(q.id) question_count " +
+                    "select t.id, t.chapter_id, t.code, t.name " +
 
-                    "from topics t left join questions q on q.topic_id = t.id " +
+                    "from topics t where t.chapter_id = ? and t.course_id = ? order by t.topic_order, t.id",
 
-                    "where t.chapter_id = ? and t.course_id = ? group by t.id, t.chapter_id, t.code, t.name, t.topic_order order by t.topic_order, t.id",
-
-                    (tr, x) -> new CourseTopicDto(tr.getLong("id"), tr.getLong("chapter_id"), tr.getString("code"), tr.getString("name"), tr.getLong("question_count")),
+                    (tr, x) -> new CourseTopicDto(tr.getLong("id"), tr.getLong("chapter_id"), tr.getString("code"), tr.getString("name"), questionBankStats.countByTopic(courseId, tr.getLong("id"))),
 
                     chapterId, courseId);
 
@@ -198,7 +198,8 @@ public class TeacherCourseContentService {
 
         requireCourseOwner(courseId, jwt); requireChapter(courseId, chapterId);
 
-        jdbc.update("update questions set topic_id = null, chapter_id = null where course_id = ? and chapter_id = ?", courseId, chapterId);
+        if (questionBankStats.countByChapter(courseId, chapterId) > 0)
+            throw new ApiException(HttpStatus.CONFLICT, "Chương còn câu hỏi trong Question Bank; hãy chuyển câu hỏi sang chương khác trước khi xóa.");
 
         jdbc.update("delete from topics where course_id = ? and chapter_id = ?", courseId, chapterId);
 
@@ -258,7 +259,7 @@ public class TeacherCourseContentService {
 
         jdbc.update("update topics set code = ?, name = ? where id = ? and chapter_id = ? and course_id = ?", code, name, topicId, chapterId, courseId);
 
-        Long count = jdbc.queryForObject("select count(*) from questions where topic_id = ?", Long.class, topicId);
+        Long count = questionBankStats.countByTopic(courseId, topicId);
 
         return new CourseTopicDto(topicId, chapterId, code, name, count == null ? 0 : count);
 
@@ -272,7 +273,8 @@ public class TeacherCourseContentService {
 
         requireCourseOwner(courseId, jwt); requireTopic(courseId, chapterId, topicId);
 
-        jdbc.update("update questions set topic_id = null where course_id = ? and topic_id = ?", courseId, topicId);
+        if (questionBankStats.countByTopic(courseId, topicId) > 0)
+            throw new ApiException(HttpStatus.CONFLICT, "Chủ đề còn câu hỏi trong Question Bank; hãy chuyển câu hỏi sang chủ đề khác trước khi xóa.");
 
         jdbc.update("delete from topics where id = ? and chapter_id = ? and course_id = ?", topicId, chapterId, courseId);
 
@@ -436,7 +438,12 @@ public CourseCloDto createClo(
 
         requireCourseOwner(courseId, jwt);
 
-        jdbc.update("update questions set clo_id = null where course_id = ? and clo_id = ?", courseId, cloId);
+        // Question Bank is authoritative. Never modify legacy Main.questions.
+        // Refuse deletion while questions reference this CLO to avoid cross-DB inconsistency.
+        if (questionBankStats.countByClo(courseId, cloId) > 0) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                "CLO đang được sử dụng bởi câu hỏi trong Question Bank; hãy chuyển liên kết trước khi xóa.");
+        }
 
         int deleted = jdbc.update("delete from clos where id = ? and course_id = ?", cloId, courseId);
 

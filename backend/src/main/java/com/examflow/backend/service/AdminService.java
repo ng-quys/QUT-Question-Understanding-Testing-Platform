@@ -7,6 +7,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,6 +18,8 @@ import java.util.Locale;
 public class AdminService {
     @PersistenceContext
     private EntityManager em;
+
+    @Autowired private QuestionBankStatsService questionBankStats;
 
     private void ensureAdminTables() {
         em.createNativeQuery("""
@@ -105,7 +108,6 @@ public class AdminService {
         ensureAdminTables() ;
         String sql = """
             SELECT c.id,c.code,c.name,c.department,c.status,
-                   (SELECT COUNT(*) FROM questions q WHERE q.course_id=c.id),
                    (SELECT COUNT(*) FROM exams e WHERE e.course_id=c.id),
                    (SELECT COUNT(*) FROM exam_sessions s JOIN exams e ON e.id=s.exam_id WHERE e.course_id=c.id)
             FROM courses c
@@ -114,7 +116,7 @@ public class AdminService {
             """;
         return em.createNativeQuery(sql).setParameter("q", safe(q)).getResultList().stream().map(r -> {
             Object[] x=(Object[])r;
-            return new AdminDto.CourseRow(((Number)x[0]).longValue(),(String)x[1],(String)x[2],(String)x[3],(String)x[4],((Number)x[5]).longValue(),((Number)x[6]).longValue(),((Number)x[7]).longValue());
+            return new AdminDto.CourseRow(((Number)x[0]).longValue(),(String)x[1],(String)x[2],(String)x[3],(String)x[4],questionBankStats.countByCourse(((Number)x[0]).longValue()),((Number)x[5]).longValue(),((Number)x[6]).longValue());
         }).toList();
     }
 

@@ -181,7 +181,7 @@ export const CourseListPage: React.FC<CourseListPageProps> = ({
       {/* Header bar */}
       <div className="bg-white rounded-xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] flex items-center gap-2">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 font-sans flex items-center gap-2">
             <BookOpen className="w-5 h-5" style={{ color: 'var(--primary)' }} />
             <span>Quản lý học phần</span>
           </h2>

@@ -22,27 +22,27 @@ import com.examflow.backend.entity.Course;
 import com.examflow.backend.entity.DifficultyLevel;
 import com.examflow.backend.entity.Exam;
 import com.examflow.backend.entity.ExamQuestion;
-import com.examflow.backend.entity.Question;
+
 import com.examflow.backend.exception.ApiException;
 import com.examflow.backend.repository.CourseRepository;
 import com.examflow.backend.repository.DifficultyLevelRepository;
 import com.examflow.backend.repository.ExamQuestionRepository;
 import com.examflow.backend.repository.ExamRepository;
-import com.examflow.backend.repository.QuestionRepository;
+
 
 import jakarta.transaction.Transactional;
 
 @Service
 public class TeacherExamService {
     private final CourseRepository courseRepository;
-    private final QuestionRepository questionRepository;
+    private final QuestionBankExamBridge questionBankBridge;
     private final ExamRepository examRepository;
     private final ExamQuestionRepository examQuestionRepository;
     private final DifficultyLevelRepository difficultyLevelRepository;
 
-    public TeacherExamService(CourseRepository courseRepository, QuestionRepository questionRepository,
+    public TeacherExamService(CourseRepository courseRepository, QuestionBankExamBridge questionBankBridge,
                               ExamRepository examRepository, ExamQuestionRepository examQuestionRepository, DifficultyLevelRepository difficultyLevelRepository) {
-        this.courseRepository = courseRepository; this.questionRepository = questionRepository;
+        this.courseRepository = courseRepository; this.questionBankBridge = questionBankBridge;
         this.examRepository = examRepository; this.examQuestionRepository = examQuestionRepository; this.difficultyLevelRepository = difficultyLevelRepository;
     }
 
@@ -64,14 +64,14 @@ public class TeacherExamService {
         Course course = courseRepository.findById(r.courseId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy môn học."));
         List<Long> clos = r.cloIds() == null ? List.of() : r.cloIds();
-        List<Question> pool = questionRepository.findApprovedPool(r.courseId(), clos.isEmpty() ? List.of(-1L) : clos, clos.isEmpty());
+        List<QuestionBankExamBridge.Candidate> pool = questionBankBridge.approvedPool(r.courseId(), clos);
 
         int[] counts = allocate(r.totalQuestions(), new double[]{r.mediumPercent(), r.goodPercent(), r.excellentPercent()});
         short mediumId = difficultyLevelRepository.findByLevelOrder((short)1).orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Thiếu difficulty level bậc 1 (Trung bình)." )).getId();
         short goodId = difficultyLevelRepository.findByLevelOrder((short)2).orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Thiếu difficulty level bậc 2 (Khá)." )).getId();
         short excellentId = difficultyLevelRepository.findByLevelOrder((short)3).orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Thiếu difficulty level bậc 3 (Giỏi)." )).getId();
         Map<Short, Integer> need = Map.of(mediumId, counts[0], goodId, counts[1], excellentId, counts[2]);
-        Map<Short, List<Question>> byDifficulty = pool.stream().collect(Collectors.groupingBy(Question::getDifficultyLevelId));
+        Map<Short, List<QuestionBankExamBridge.Candidate>> byDifficulty = pool.stream().collect(Collectors.groupingBy(QuestionBankExamBridge.Candidate::difficultyLevelId));
         for (var e : need.entrySet()) {
             int available = byDifficulty.getOrDefault(e.getKey(), List.of()).size();
             if (available < e.getValue())
@@ -83,7 +83,7 @@ public class TeacherExamService {
         for (Object[] p : pairs) oldExams.computeIfAbsent((Long)p[0], k -> new HashSet<>()).add((Long)p[1]);
         int maxOverlap = (int)Math.floor(r.totalQuestions() * r.maxOverlapPercent() / 100.0);
 
-        List<Question> selected = selectWithOverlapLimit(byDifficulty, need, oldExams, maxOverlap, r.totalQuestions());
+        List<QuestionBankExamBridge.Candidate> selected = selectWithOverlapLimit(byDifficulty, need, oldExams, maxOverlap, r.totalQuestions());
         if (selected == null)
             throw new ApiException(HttpStatus.BAD_REQUEST, "Không thể tạo đề thỏa giới hạn trùng " + r.maxOverlapPercent() + "%. Hãy tăng ngân hàng câu hỏi hoặc nới tỷ lệ trùng.");
         Collections.shuffle(selected);
@@ -94,20 +94,30 @@ public class TeacherExamService {
         exam = examRepository.save(exam);
 
         BigDecimal each = BigDecimal.TEN.divide(BigDecimal.valueOf(r.totalQuestions()), 4, RoundingMode.HALF_UP);
-        for (int i=0;i<selected.size();i++) { ExamQuestion eq = new ExamQuestion(); eq.setExam(exam); eq.setQuestion(selected.get(i)); eq.setPosition(i+1); eq.setPoints(each); examQuestionRepository.save(eq); }
+        for (int i = 0; i < selected.size(); i++) {
+            long questionId = selected.get(i).id();
+            ExamQuestion eq = new ExamQuestion();
+            eq.setExam(exam);
+            eq.setQuestionId(questionId);
+            eq.setPosition(i + 1);
+            eq.setPoints(each);
+            eq = examQuestionRepository.saveAndFlush(eq);
+            // Always freeze the authoritative Question Bank content at exam creation.
+            questionBankBridge.createSnapshot(eq.getId(), exam.getId(), questionId);
+        }
 
-        int actualMax = oldExams.values().stream().mapToInt(s -> (int)selected.stream().filter(q -> s.contains(q.getId())).count()).max().orElse(0);
+        int actualMax = oldExams.values().stream().mapToInt(s -> (int)selected.stream().filter(q -> s.contains(q.id())).count()).max().orElse(0);
         return new QuickExamResult(summary(exam), counts[0], counts[1], counts[2], maxOverlap, actualMax,
-                selected.stream().map(Question::getId).toList(), List.of());
+                selected.stream().map(QuestionBankExamBridge.Candidate::id).toList(), List.of());
     }
 
-    private List<Question> selectWithOverlapLimit(Map<Short,List<Question>> grouped, Map<Short,Integer> need,
+    private List<QuestionBankExamBridge.Candidate> selectWithOverlapLimit(Map<Short,List<QuestionBankExamBridge.Candidate>> grouped, Map<Short,Integer> need,
                                                    Map<Long,Set<Long>> oldExams, int maxOverlap, int total) {
         Random random = new Random();
         for (int attempt=0; attempt<500; attempt++) {
-            List<Question> pick = new ArrayList<>();
-            for (var entry : need.entrySet()) { List<Question> copy = new ArrayList<>(grouped.getOrDefault(entry.getKey(),List.of())); Collections.shuffle(copy, random); pick.addAll(copy.subList(0, entry.getValue())); }
-            boolean ok = oldExams.values().stream().allMatch(old -> pick.stream().filter(q -> old.contains(q.getId())).count() <= maxOverlap);
+            List<QuestionBankExamBridge.Candidate> pick = new ArrayList<>();
+            for (var entry : need.entrySet()) { List<QuestionBankExamBridge.Candidate> copy = new ArrayList<>(grouped.getOrDefault(entry.getKey(),List.of())); Collections.shuffle(copy, random); pick.addAll(copy.subList(0, entry.getValue())); }
+            boolean ok = oldExams.values().stream().allMatch(old -> pick.stream().filter(q -> old.contains(q.id())).count() <= maxOverlap);
             if (ok && pick.size()==total) return pick;
         }
         return null;

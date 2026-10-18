@@ -18,7 +18,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   return (
     <div className="pb-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
-        <h1 className="text-xl sm:text-[22px] font-bold text-slate-900 tracking-tight font-['Plus_Jakarta_Sans',sans-serif] leading-tight">
+        <h1 className="text-xl sm:text-[22px] font-bold text-slate-900 tracking-tight font-sans leading-tight">
           {title}
         </h1>
         <p className="text-xs sm:text-[13px] text-slate-500 mt-0.5">

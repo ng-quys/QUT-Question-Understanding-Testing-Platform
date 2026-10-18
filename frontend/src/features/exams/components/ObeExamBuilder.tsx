@@ -625,7 +625,7 @@ export const ObeExamBuilder: React.FC<ObeExamBuilderProps> = ({
             <span>Quay lại Quản lý đề thi</span>
           </button>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-['Plus_Jakarta_Sans',sans-serif]">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-sans">
               Tạo đề thi chuẩn theo Ma trận OBE
             </h1>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
@@ -1537,7 +1537,7 @@ export const ObeExamBuilder: React.FC<ObeExamBuilderProps> = ({
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Chuẩn hóa cấu trúc Ma trận OBE
                 </span>
-                <h2 className="text-xl font-bold mt-2 font-['Plus_Jakarta_Sans',sans-serif]">
+                <h2 className="text-xl font-bold mt-2 font-sans">
                   {examTitle}
                 </h2>
                 <p className="text-xs text-slate-300 mt-1">

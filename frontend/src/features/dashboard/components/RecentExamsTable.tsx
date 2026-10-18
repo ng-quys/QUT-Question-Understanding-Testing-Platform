@@ -73,7 +73,7 @@ export const RecentExamsTable: React.FC<RecentExamsTableProps> = ({
       <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 font-['Space_Grotesk'] tracking-tight">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 font-sans tracking-tight">
               Kỳ thi gần đây
             </h3>
             <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
@@ -207,7 +207,7 @@ export const RecentExamsTable: React.FC<RecentExamsTableProps> = ({
                   {/* Điểm TB */}
                   <td className="py-3.5 px-4 text-center">
                     {exam.avgScore !== null ? (
-                      <span className="inline-block px-2.5 py-0.5 rounded-md font-bold text-xs bg-indigo-50 text-indigo-700 font-['Space_Grotesk']">
+                      <span className="inline-block px-2.5 py-0.5 rounded-md font-bold text-xs bg-indigo-50 text-indigo-700 font-sans">
                         {exam.avgScore.toFixed(1)}
                       </span>
                     ) : (

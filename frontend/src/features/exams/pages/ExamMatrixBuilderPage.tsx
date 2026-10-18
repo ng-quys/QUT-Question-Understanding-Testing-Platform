@@ -161,7 +161,7 @@ export const ExamMatrixBuilderPage: React.FC<ExamMatrixBuilderPageProps> = ({
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] flex items-center gap-2">
+          <h1 className="text-xl font-bold text-slate-900 font-sans flex items-center gap-2">
             <span>Tạo đề nhanh</span>
             <span
               className="text-[10px] font-bold px-2 py-0.5 rounded text-white tracking-wider uppercase shadow-2xs"
@@ -563,7 +563,7 @@ export const ExamMatrixBuilderPage: React.FC<ExamMatrixBuilderPageProps> = ({
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div>
-                <h3 className="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+                <h3 className="text-base font-bold text-slate-900 font-sans">
                   Xem trước Bộ đề thi chính thức
                 </h3>
                 <p className="text-xs text-slate-500">

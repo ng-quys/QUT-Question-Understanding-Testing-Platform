@@ -1,0 +1,15 @@
+{
+  "Environment": {
+    "AI_INTERNAL_KEY": "",
+    "ANTICHEAT_INTERNAL_SECRET": "",
+    "QUESTION_BANK_DB_PASSWORD": ""
+  },
+  "MavenPath": "",
+  "Ports": {
+    "Ollama": 11434,
+    "Backend": 8080,
+    "AIGenerator": 8002,
+    "AntiCheating": 8000,
+    "Frontend": 5173
+  }
+}

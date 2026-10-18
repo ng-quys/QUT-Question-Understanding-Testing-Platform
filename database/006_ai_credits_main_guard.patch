@@ -1,0 +1,39 @@
+--- a/database/migrations/006_ai_credits.sql
++++ b/database/migrations/006_ai_credits.sql
+@@ -1,14 +1,12 @@
+--- AI Credits: staging candidate. Do not execute against production.
+--- Requires the existing public.users and public.ai_generation_requests schema.
++-- AI Credits: MAIN DB candidate. Execute only after explicit final user approval.
++-- MAIN project: kbplrzkjnyphsbdmscgq; database postgres; schema public.
+ -- No backfill, seed, changes to existing columns, or provider/model changes.
+---
+--- Required SESSION settings, set only after verifying the staging connection:
+---   examflow.migration_environment = 'staging'
+---   examflow.expected_database = '<verified staging database name>'
+--- These settings are an operator safety gate, not proof of server identity.
+---
+--- This migration deliberately fails on an existing/partial installation.
+--- Re-running after a successful commit is not supported.
++-- Verify host, port and connection user/project before setting SESSION values:
++--   examflow.migration_environment = 'main'
++--   examflow.expected_database = 'postgres'
++--   examflow.main_target_confirmation = 'kbplrzkjnyphsbdmscgq/postgres/public'
++-- Settings are operator acknowledgements, not proof of server identity.
++-- Deliberately fails on existing/partial installation. Do not run twice.
+ 
+ BEGIN;
+ 
+@@ -21,8 +19,11 @@
+         current_setting('examflow.expected_database', TRUE);
+ BEGIN
+     IF current_setting('examflow.migration_environment', TRUE)
+-            IS DISTINCT FROM 'staging' THEN
+-        RAISE EXCEPTION 'Staging-only candidate: staging environment acknowledgement is required';
++            IS DISTINCT FROM 'main'
++            OR current_setting('examflow.main_target_confirmation', TRUE)
++                IS DISTINCT FROM 'kbplrzkjnyphsbdmscgq/postgres/public'
++            OR current_schema() IS DISTINCT FROM 'public' THEN
++        RAISE EXCEPTION 'Explicit approval for the verified ExamFlow MAIN project/database/schema is required';
+     END IF;
+ 
+     IF NULLIF(BTRIM(expected_database), '') IS NULL

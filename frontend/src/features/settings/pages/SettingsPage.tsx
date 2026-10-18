@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   User,
   Bell,
@@ -12,30 +12,56 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+import {useTeacherProfile} from '../../profile-teacher/hooks/useTeacherProfile';
+import {updateTeacherProfile} from '../../profile-teacher/services/teacherProfileService';
+
 interface SettingsPageProps {
   onShowToast: (msg: string) => void;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onShowToast }) => {
   const [activeSubTab, setActiveSubTab] = useState<'general' | 'exam' | 'notifications'>('general');
-  const [fullName, setFullName] = useState('TS. Nguyễn Văn Hùng');
-  const [email, setEmail] = useState('hungnv@ptit.edu.vn');
-  const [department, setDepartment] = useState('Khoa Công nghệ Thông tin 1');
+  const {profile, error:loadError} = useTeacherProfile();
+  const [fullName, setFullName] = useState('');
+  const email = profile?.email || '';
+  const [department, setDepartment] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.name || '');
+      setDepartment(profile.department || '');
+    }
+  }, [profile]);
   const [defaultDuration, setDefaultDuration] = useState(60);
   const [autoShuffle, setAutoShuffle] = useState(true);
   const [instantScore, setInstantScore] = useState(true);
   const [emailAlerts, setEmailAlerts] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    onShowToast('Đã lưu cấu hình hệ thống thành công!');
+    if (activeSubTab !== 'general') {
+      onShowToast('Đã lưu cấu hình hệ thống thành công!');
+      return;
+    }
+    if (!profile || busy || !fullName.trim()) return;
+    setBusy(true);
+    setSaveError('');
+    try {
+      await updateTeacherProfile({name: fullName, department});
+      onShowToast('Đã lưu thông tin tài khoản thành công!');
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Không lưu được thông tin tài khoản.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="pb-2 border-b border-slate-200">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-sans tracking-tight">
           Cài đặt hệ thống
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -84,16 +110,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onShowToast }) => {
       <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-lg p-5 shadow-2xs space-y-5 max-w-2xl">
         {activeSubTab === 'general' && (
           <div className="space-y-4">
+            {(loadError || saveError) && <p role="alert" className="text-xs text-red-700">{saveError || loadError}</p>}
+            {!profile && !loadError && <p role="status" className="text-xs text-slate-500">Đang tải hồ sơ...</p>}
             <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
               <div
                 className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base shadow-xs"
                 style={{ backgroundColor: 'var(--primary)' }}
               >
-                NVH
+                {profile?.name?.trim().split(/\s+/).slice(-2).map(part => part[0]).join('').toUpperCase() || <User className="w-5 h-5" />}
               </div>
               <div>
                 <h3 className="font-bold text-slate-900 text-sm">{fullName}</h3>
-                <p className="text-xs text-slate-500">Giảng viên / Quản trị viên Khảo thí</p>
+                <p className="text-xs text-slate-500">{profile?.role || 'Chưa có dữ liệu'}</p>
               </div>
             </div>
 
@@ -104,6 +132,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onShowToast }) => {
                 </label>
                 <input
                   type="text"
+                  required
+                  maxLength={150}
+                  disabled={!profile || busy}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:border-[var(--primary)]"
@@ -117,7 +148,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onShowToast }) => {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  readOnly
                   className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:border-[var(--primary)]"
                 />
               </div>
@@ -128,6 +159,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onShowToast }) => {
                 </label>
                 <input
                   type="text"
+                  maxLength={150}
+                  disabled={!profile || busy}
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:border-[var(--primary)]"
@@ -200,11 +233,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onShowToast }) => {
         <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
           <button
             type="submit"
+            disabled={busy || (activeSubTab === 'general' && (!profile || !fullName.trim()))}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white shadow-xs hover:opacity-95 transition-all cursor-pointer"
             style={{ backgroundColor: 'var(--primary)' }}
           >
             <Save className="w-4 h-4" />
-            <span>Lưu cài đặt</span>
+            <span>{busy ? 'Đang lưu...' : 'Lưu cài đặt'}</span>
           </button>
         </div>
       </form>

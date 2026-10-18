@@ -398,7 +398,7 @@ export const GeneratorSetupStep: React.FC<GeneratorSetupStepProps> = ({
     <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-2xs space-y-4">
       {/* Step Header */}
       <div className="border-b border-slate-100 pb-3">
-        <h2 className="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] flex items-center gap-2">
+        <h2 className="text-base font-bold text-slate-900 font-sans flex items-center gap-2">
           <span>Thiết lập phạm vi / Ma trận CLO-Bloom</span>
           <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
             Bước 2 / 4
@@ -857,7 +857,7 @@ export const GeneratorSetupStep: React.FC<GeneratorSetupStepProps> = ({
                   <BookOpen className="w-4 h-4" style={{ color: 'var(--primary)' }} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+                  <h3 className="text-sm font-bold text-slate-900 font-sans">
                     Thêm học phần mới
                   </h3>
                   <p className="text-[11px] text-slate-500">
@@ -938,7 +938,7 @@ export const GeneratorSetupStep: React.FC<GeneratorSetupStepProps> = ({
               <div>
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+                    <h3 className="text-sm font-bold text-slate-900 font-sans">
                       Bạn muốn thêm gì?
                     </h3>
                     <p className="text-[11px] text-slate-500 mt-0.5">
@@ -1029,7 +1029,7 @@ export const GeneratorSetupStep: React.FC<GeneratorSetupStepProps> = ({
                       <ArrowLeft className="w-4 h-4" />
                     </button>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+                      <h3 className="text-sm font-bold text-slate-900 font-sans">
                         Thêm chương mới
                       </h3>
                       <p className="text-[11px] text-slate-500">
@@ -1110,7 +1110,7 @@ export const GeneratorSetupStep: React.FC<GeneratorSetupStepProps> = ({
                       <ArrowLeft className="w-4 h-4" />
                     </button>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+                      <h3 className="text-sm font-bold text-slate-900 font-sans">
                         Thêm chủ đề mới
                       </h3>
                       <p className="text-[11px] text-slate-500">
