@@ -74,23 +74,30 @@ class StudentAdminCompatibilityTests {
     @Test
     void runtimeHealthUsesJacksonThreeAndHandlesServiceDown() throws Exception {
         var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/health", exchange -> {
-            byte[] bytes = "{\"ok\":true,\"running\":true,\"ready\":true,\"attemptId\":32}".getBytes(StandardCharsets.UTF_8);
+        server.createContext("/monitoring/status", exchange -> {
+            assertEquals("POST",exchange.getRequestMethod());
+            assertEquals("test-secret",exchange.getRequestHeaders().getFirst("X-AntiCheat-Secret"));
+            byte[] bytes = "{\"ok\":true,\"mode\":\"batch\",\"modelStatus\":\"ready\",\"sessions\":[{\"attemptId\":32,\"status\":\"waiting\",\"ready\":false}]}".getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(200, bytes.length);
             exchange.getResponseBody().write(bytes);
             exchange.close();
         });
         server.start();
         var service = new AntiCheatService(null, "http://127.0.0.1:" + server.getAddress().getPort(), "test-secret");
+        var batch = new com.examflow.backend.service.BatchMonitoringService(null,null,"http://127.0.0.1:"+server.getAddress().getPort(),"test-secret");
+        org.springframework.test.util.ReflectionTestUtils.setField(service,"batchMonitoring",batch);
         try {
             var state = service.runtimeStatus();
             assertTrue(state.path("ready").asBoolean());
-            assertEquals(32L, state.path("attemptId").asLong());
+            assertEquals("batch",state.path("mode").asString());
+            assertEquals(32L, state.path("sessions").get(0).path("attemptId").asLong());
+            assertFalse(state.path("sessions").get(0).path("ready").asBoolean());
         } finally {
             server.stop(0);
         }
         var offline = service.runtimeStatus();
         assertFalse(offline.path("ready").asBoolean());
         assertEquals("offline", offline.path("status").asString());
+        batch.close();
     }
 }

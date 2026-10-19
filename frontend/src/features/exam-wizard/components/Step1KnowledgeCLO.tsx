@@ -11,7 +11,6 @@ import {
   Edit2,
   Check,
   AlertCircle,
-  Clock,
   Layers,
   CheckCircle2,
   Database,
@@ -81,7 +80,6 @@ export const Step1KnowledgeCLO: React.FC<Step1Props> = ({
     'Đề thi Giữa kỳ - Lập trình Web nâng cao (2026-2027)'
   );
   const [examCode, setExamCode] = useState<string>('INT3306-MID-01');
-  const [durationMinutes, setDurationMinutes] = useState<number>(60);
   const [targetQuestionCount, setTargetQuestionCount] = useState<number>(40);
 
   // Files State
@@ -338,20 +336,7 @@ export const Step1KnowledgeCLO: React.FC<Step1Props> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white app-text-main text-sm font-mono focus:outline-none app-input-focus transition-all"
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold app-text-main uppercase tracking-wider mb-2">
-                Thời lượng (phút)
-              </label>
-              <input
-                type="number"
-                min="15"
-                max="180"
-                step="5"
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white app-text-main text-sm font-medium focus:outline-none app-input-focus transition-all"
-              />
-            </div>
+            <p className="text-xs text-slate-500">Thời gian làm bài theo lịch ca thi.</p>
           </div>
         </div>
       </section>

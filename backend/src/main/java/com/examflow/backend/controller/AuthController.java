@@ -24,28 +24,30 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final RegistrationService registrationService;
+    private final com.examflow.backend.service.CurrentUserService currentUsers;
     private final SocialUserSyncService socialUserSyncService;
 
     public AuthController(
             RegistrationService registrationService,
-            SocialUserSyncService socialUserSyncService
+            SocialUserSyncService socialUserSyncService,
+            com.examflow.backend.service.CurrentUserService currentUsers
     ) {
         this.registrationService = registrationService;
+        this.currentUsers=currentUsers;
         this.socialUserSyncService = socialUserSyncService;
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping("/me")
+    public Map<String,Object> me(@org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.oauth2.jwt.Jwt jwt) {
+        var u=currentUsers.getCurrentUser(jwt);
+        return Map.of("id",u.getId(),"username",u.getUsername(),"fullName",u.getFullName(),"email",u.getEmail(),"role",u.getRole());
     }
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(
             @Valid @RequestBody RegisterRequest request
     ) {
-        registrationService.register(request);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(Map.of(
-                        "message",
-                        "Đăng ký tài khoản thành công"
-                ));
+        throw new com.examflow.backend.exception.ApiException(HttpStatus.FORBIDDEN,"Tài khoản do quản trị viên cấp. Không hỗ trợ tự đăng ký.");
     }
 
     /**
@@ -69,11 +71,8 @@ public class AuthController {
             );
         }
 
-        SocialUserSyncResponse response = socialUserSyncService.sync(
-                jwtAuthentication.getToken(),
-                request.role()
-        );
-
-        return ResponseEntity.ok(response);
+        var jwt=jwtAuthentication.getToken();
+        var user=currentUsers.getCurrentUser(jwt);
+        return ResponseEntity.ok(new SocialUserSyncResponse(user.getId(),user.getKeycloakUserId(),user.getUsername(),user.getEmail(),user.getFullName(),user.getRole(),user.getStatus(),false));
     }
 }

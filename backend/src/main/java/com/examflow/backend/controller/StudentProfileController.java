@@ -45,6 +45,7 @@ public class StudentProfileController {
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .header("X-Content-Type-Options", "nosniff")
                 .body(new ByteArrayResource(bytes));
     }
 
@@ -56,6 +57,9 @@ public class StudentProfileController {
         if (user == null || !"student".equalsIgnoreCase(user.getRole())) {
             throw new ApiException(org.springframework.http.HttpStatus.FORBIDDEN, "Yêu cầu quyền sinh viên");
         }
+        // Use the same authenticated account resolver as all other student APIs.
+        // Existing legacy/social accounts may resolve by email rather than the stored subject.
+        // Neither a studentId nor an object key from the client selects the photo owner.
         return user.getId();
     }
 }

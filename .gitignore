@@ -38,6 +38,14 @@ target/
 *.pyc
 anticheating/models/
 anticheating/student-profiles/
+backend/auto/
 .env
 .env.*
 !.env.example
+!.env.storage.example
+anticheating/evidence/
+anticheating/runtime/
+
+# Local one-click launcher: process IDs, runners and logs
+.qut-run/
+anticheating/.venv-launcher/

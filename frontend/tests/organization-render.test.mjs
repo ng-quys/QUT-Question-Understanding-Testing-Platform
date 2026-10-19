@@ -1,0 +1,66 @@
+import { before, after, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createServer } from 'vite';
+let server, AssignedExams, ExamOrganization, LoginForm, StudentMonitoring, ExamSessionsPage, examDate, sidebarStructure, ReportSummary, LiveSessionBoard, SessionRosterPanel, AttemptRiskStats;
+before(async()=>{
+ server=await createServer({server:{middlewareMode:true,watch:null},appType:'custom'});
+ ({LiveSessionBoard}=await server.ssrLoadModule('/src/features/sessions/components/LiveSessionBoard.tsx'));
+ ({SessionRosterPanel}=await server.ssrLoadModule('/src/features/sessions/components/SessionRosterPanel.tsx'));
+ ({AttemptRiskStats}=await server.ssrLoadModule('/src/features/admin/components/AttemptRiskStats.tsx'));
+ ({ReportSummary}=await server.ssrLoadModule('/src/features/admin/components/AdminOverview.tsx'));
+ ({examDate}=await server.ssrLoadModule('/src/utils/examTime.ts'));
+ ({AssignedExams}=await server.ssrLoadModule('/src/features/student/components/AssignedExams.tsx'));
+ ({ExamOrganization}=await server.ssrLoadModule('/src/features/sessions/components/ExamOrganization.tsx'));
+ ({sidebarStructure}=await server.ssrLoadModule('/src/features/admin/components/adminConfig.tsx'));
+ ({LoginForm}=await server.ssrLoadModule('/src/features/auth/components/LoginForm.tsx'));
+ ({ExamSessionsPage}=await server.ssrLoadModule('/src/features/sessions/pages/ExamSessionsPage.tsx'));
+ ({StudentMonitoring}=await server.ssrLoadModule('/src/features/student/components/StudentMonitoring.tsx'));
+});
+after(async()=>{await server?.close();});
+test('exam opens without a blocking model-loading screen',()=>{const html=renderToStaticMarkup(createElement(StudentMonitoring,{attemptId:1}));assert.match(html,/Bài thi đang diễn ra/);assert.doesNotMatch(html,/Đang tải model|90 giây|student-start-overlay/);});
+const sample={sessionId:1,examId:10,examCode:'WEB-01',examTitle:'Đề Web',sessionName:'Ca Web 1',courseCode:'WEB',courseName:'Lập trình Web',roomCode:'P101',roomName:'Phòng 101',startTime:'2030-10-16T09:00:00+07:00',endTime:'2030-10-16T10:00:00+07:00',sessionStatus:'ongoing',durationMinutes:60,questionCount:20,canStart:true,attemptId:null,attemptStatus:null};
+const renderStudent=(sessions,busy=false)=>renderToStaticMarkup(createElement(AssignedExams,{sessions,busy,onStart:async()=>{},onRefresh:async()=>{}}));
+test('empty assigned list explains time and roster without a join-code input',()=>{const html=renderStudent([]);assert.match(html,/Chưa có kỳ thi được mở cho bạn/);assert.doesNotMatch(html,/<input|QR|quét mã/);});
+test('eligible session shows its name, room, duration and start action',()=>{const html=renderStudent([sample]);for(const text of ['Ca Web 1','Phòng 101','60 phút','Vào thi'])assert.ok(html.includes(text));});
+test('in-progress session offers resume instead of another attempt',()=>{const html=renderStudent([{...sample,attemptId:25,attemptStatus:'in_progress'}]);assert.match(html,/Tiếp tục làm bài/);assert.doesNotMatch(html,/>Vào thi</);});
+test('submitted session has no start action',()=>{const html=renderStudent([{...sample,canStart:false,attemptStatus:'completed',attemptId:25}]);assert.match(html,/Đã nộp bài/);assert.doesNotMatch(html,/>Vào thi</);});
+test('opening an attempt disables duplicate start clicks',()=>{const html=renderStudent([sample],true);assert.match(html,/<button disabled="" class="student-button primary"/);assert.match(html,/Đang mở bài thi/);});
+test('admin organization navigation removes duplicate profile and live-monitor links',()=>{const html=renderToStaticMarkup(createElement(ExamOrganization,{admin:true}));for(const text of ['Phòng thi','Lớp hành chính','Tạo ca thi','Danh sách ca thi'])assert.ok(html.includes(text));});
+test('admin department workspace creates one sitting and has no course enrollment form',()=>{const html=renderToStaticMarkup(createElement(ExamOrganization,{admin:true,initialTab:'allocation'}));for(const text of ['Thông tin ca thi','Xem trước danh sách'])assert.ok(html.includes(text));assert.doesNotMatch(html,/Gán học phần cho cả lớp|Danh sách học phần|Nghỉ giữa hai ca/);});
+test('four organization screens are unique children of the sidebar group',()=>{const group=sidebarStructure.find(item=>item.groupId==='organization');assert.equal(group.label,'Phòng thi & lớp');assert.deepEqual(group.children.map(c=>c.label),['Phòng thi','Lớp hành chính','Tạo ca thi','Danh sách ca thi']);const ids=sidebarStructure.flatMap(item=>item.children||[item]).map(item=>item.id);assert.equal(ids.length,new Set(ids).size);});
+test('sidebar navigation opens a separate organization screen without horizontal tabs',()=>{for(const [initialTab,title] of [['rooms','Thêm phòng'],['classes','Thêm lớp'],['sessions','Bao gồm ca đang chuẩn bị'],['allocation','Xem trước danh sách']]){const html=renderToStaticMarkup(createElement(ExamOrganization,{admin:true,hideNavigation:true,initialTab}));assert.ok(html.includes(title));assert.doesNotMatch(html,/<nav aria-label="Tổ chức thi"/);}});
+test('login contains student code and password, with no self-registration or social login',()=>{const html=renderToStaticMarkup(createElement(LoginForm));assert.match(html,/Mã sinh viên/);assert.match(html,/Mật khẩu/);assert.match(html,/Tài khoản do quản trị viên cấp/);assert.doesNotMatch(html,/Đăng ký tài khoản|Google|Microsoft/);});
+
+test('Vietnam schedules parse identically on machines outside Vietnam',()=>{const previous=process.env.TZ;try{for(const zone of ['UTC','America/New_York','Asia/Ho_Chi_Minh']){process.env.TZ=zone;assert.equal(examDate('2030-10-16T09:00:00').toISOString(),'2030-10-16T02:00:00.000Z');}}finally{if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;}});
+test('explicit UTC and offset timestamps are preserved',()=>{assert.equal(examDate('2030-10-16T02:00:00Z').toISOString(),'2030-10-16T02:00:00.000Z');assert.equal(examDate('2030-10-16T09:00:00.123+07:00').toISOString(),'2030-10-16T02:00:00.123Z');});
+
+
+test('teacher retains original session form and evidence history without room organization',()=>{const html=renderToStaticMarkup(createElement(ExamSessionsPage,{courses:[],onShowToast:()=>{}}));assert.match(html,/Ca thi trực tuyến/);assert.match(html,/Tạo ca thi/);assert.match(html,/Lịch sử thi/);assert.doesNotMatch(html,/Ca thi được admin phân công|Lập ca &amp; công bố|Giám sát ca thi|Hồ sơ sinh viên|Lớp hành chính/);});
+
+test('score chart explains missing grades and uses only graded submissions as denominator',()=>{
+ const report={completed:84,graded:83,ungraded:1,averagePercent:54.78,atLeastHalf:57,latestSubmission:null,courses:[],distribution:[14,5,21,23,20].map((count,bucket)=>({bucket,count}))};
+ const html=renderToStaticMarkup(createElement(ReportSummary,{report}));
+ assert.match(html,/1 bài chưa có điểm hợp lệ/);assert.match(html,/5,48/);assert.match(html,/83 bài có điểm hợp lệ/);assert.match(html,/8 đến 10 điểm/);assert.match(html,/68,67%/);
+});
+test('ungraded submissions have no fake zero average or histogram',()=>{
+ const report={completed:2,graded:0,ungraded:2,averagePercent:0,atLeastHalf:0,latestSubmission:null,courses:[],distribution:[]};
+ const html=renderToStaticMarkup(createElement(ReportSummary,{report}));assert.match(html,/Chưa có điểm hợp lệ để thống kê/);assert.doesNotMatch(html,/class="admin-score-column/);
+ const zero=renderToStaticMarkup(createElement(ReportSummary,{report:{...report,completed:1,graded:1,ungraded:0,distribution:[{bucket:0,count:1}]}}));assert.match(zero,/0\/10/);assert.match(zero,/1 bài có điểm hợp lệ/);
+});
+
+test('live dashboard shows per-session progress and warning emphasis with named actions',()=>{
+ const html=renderToStaticMarkup(createElement(LiveSessionBoard,{rows:[{id:1,name:'Ca kiểm thử',totalStudents:30,submitted:7,warnedAttempts:12,startTime:'2030-10-16T09:00:00',endTime:'2030-10-16T10:00:00'}],serverTime:'2030-10-16T09:30:00',loading:false,busy:false,onDetail:()=>{},onAi:()=>{},onCancel:()=>{},onEnd:()=>{}}));
+ assert.match(html,/warning-high/);assert.match(html,/aria-valuenow="23"/);for(const text of ['Theo dõi sinh viên','Tiến độ nộp bài','Thao tác khác','Còn '])assert.ok(html.includes(text));
+});
+test('session roster paginates ten rows and distinguishes submitted, absent and warned students',()=>{
+ const roster=Array.from({length:12},(_,n)=>({id:n+1,username:String(9000000001+n),name:`Synthetic-person-${n+1}`,attemptId:n===0?104:null,attemptStatus:n===0?'completed':null,warningCount:n===0?15:0,riskLevel:n===0?'HIGH':'LOW'}));
+ const html=renderToStaticMarkup(createElement(SessionRosterPanel,{detail:{session:{id:1},roster},busy:false,onRefresh:()=>{},onAttempt:()=>{}}));
+ assert.ok(html.includes('Synthetic-person-10'));assert.ok(!html.includes('Synthetic-person-11'));for(const text of ['Mã SV:','Đã nộp bài','Chưa vào','roster-high-risk','Lọc trạng thái sinh viên','Tiếp'])assert.ok(html.includes(text));
+});
+test('high risk colors do not change scores or claim cheating',()=>{
+ const html=renderToStaticMarkup(createElement(AttemptRiskStats,{score:7,totalPoints:10,browserEvents:2,aiEvents:13,riskScore:65,riskLevel:'HIGH'}));
+ assert.match(html,/attempt-risk-score high/);assert.match(html,/aria-valuenow="65"/);assert.match(html,/Ưu tiên xem xét bằng chứng/);assert.ok(html.includes('7'));assert.ok(!html.includes('Đã gian lận'));
+ const low=renderToStaticMarkup(createElement(AttemptRiskStats,{score:7,totalPoints:10,browserEvents:0,aiEvents:0,riskScore:0,riskLevel:'LOW'}));assert.ok(!low.includes('attempt-risk-callout'));
+});

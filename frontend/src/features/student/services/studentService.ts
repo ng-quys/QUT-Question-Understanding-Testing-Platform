@@ -8,6 +8,8 @@ export interface StudentSession {
   courseCode: string;
   courseName: string;
   roomCode: string;
+  sessionName?: string;
+  roomName?: string;
   startTime: string;
   endTime: string;
   sessionStatus: string;
@@ -78,6 +80,7 @@ export interface ExamQuestion {
 
 
 export interface StudentProfile {
+  className?: string;
   studentId: number;
   username: string;
   email: string;
@@ -96,6 +99,7 @@ export interface ExamSearchResult {
   courseName: string;
   sessionName: string;
   roomCode: string;
+  roomName?: string;
   startTime: string;
   endTime: string;
   sessionStatus: string;
@@ -116,6 +120,8 @@ export interface JoinExamResult {
   courseCode: string;
   courseName: string;
   roomCode: string;
+  sessionName?: string;
+  roomName?: string;
   startTime: string;
   endTime: string;
   message: string;
@@ -150,6 +156,8 @@ export type BrowserViolation =
   | 'RIGHT_CLICK';
 
 export interface AiStatus {
+  captureAllowed?: boolean;
+  lease?: number;
   required: boolean;
   ready: boolean;
   status: string;
@@ -157,8 +165,11 @@ export interface AiStatus {
 }
 
 export const studentApi = {
-  aiStatus: (id: number) => apiFetch<AiStatus>(`/student/attempts/${id}/ai-status`),
-  dashboard: () => apiFetch<StudentDashboard>('/student/dashboard'),
+  clock:()=>apiFetch<{serverTime:string}>('/student/clock',{signal:AbortSignal.timeout(10000)}),
+  aiStatus: (id: number,signal?:AbortSignal) => apiFetch<AiStatus>(`/student/attempts/${id}/ai-status`,{signal}),
+  aiFrame:(id:number,body:{lease:number;jpeg:string;audioPcm16:string},signal?:AbortSignal)=>apiFetch<{accepted:boolean}>(`/student/attempts/${id}/ai-frame`,{method:'POST',body:JSON.stringify(body),signal}),
+  reconnectAi:(id:number)=>apiFetch(`/student/attempts/${id}/ai-reconnect`,{method:'POST',signal:AbortSignal.timeout(6000)}),
+  dashboard: (signal?:AbortSignal) => apiFetch<StudentDashboard>('/student/dashboard',{signal}),
 
   sessions: () =>
     apiFetch<StudentSession[]>('/student/sessions'),
@@ -169,7 +180,7 @@ export const studentApi = {
   result: (attemptId: number) =>
     apiFetch<StudentResult>(`/student/results/${attemptId}`),
 
-  startExam: (sessionId: number, roomCode: string, accessCode?: string) =>
+  startExam: (sessionId: number, roomCode?: string, accessCode?: string) =>
     apiFetch<StudentAttempt>(
       `/student/sessions/${sessionId}/start`,
       {
@@ -195,6 +206,7 @@ export const studentApi = {
       `/student/attempts/${attemptId}/answer`,
       {
         method: 'PUT',
+        signal: AbortSignal.timeout(8000),
         body: JSON.stringify({
           questionId,
           answerId,
@@ -213,6 +225,7 @@ export const studentApi = {
       `/student/attempts/${attemptId}/submit`,
       {
         method: 'POST',
+        signal: AbortSignal.timeout(10000),
         body: JSON.stringify({ answers }),
       },
     ),

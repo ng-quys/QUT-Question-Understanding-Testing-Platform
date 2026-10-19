@@ -3,7 +3,6 @@ import {
   FileCheck,
   Sparkles,
   Layers,
-  Clock,
   Shuffle,
   Printer,
   FileSpreadsheet,
@@ -57,7 +56,6 @@ export const ExamMatrixBuilderPage: React.FC<ExamMatrixBuilderPageProps> = ({
     `Đề thi Kết thúc học phần - ${selectedCourse?.name || 'Trí tuệ nhân tạo'}`
   );
   const [examCode, setExamCode] = useState<string>(`${selectedCourse?.code || 'TI01'}-CK-2026`);
-  const [durationMinutes, setDurationMinutes] = useState<number>(60);
   const [totalQuestions, setTotalQuestions] = useState<number>(40);
   const [variantCount, setVariantCount] = useState<number>(4); // 4 mã đề: 101, 102, 103, 104
 
@@ -271,23 +269,7 @@ export const ExamMatrixBuilderPage: React.FC<ExamMatrixBuilderPageProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-2 sm:col-span-2">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Thời lượng thi
-                </label>
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <input
-                    type="number"
-                    min={15}
-                    max={180}
-                    value={durationMinutes}
-                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                    className="w-12 bg-transparent text-xs font-bold text-slate-800 focus:outline-none"
-                  />
-                  <span className="text-slate-500 text-[11px]">phút</span>
-                </div>
-              </div>
+              <p className="text-xs text-slate-500">Thời gian làm bài theo lịch ca thi.</p>
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
@@ -529,7 +511,7 @@ export const ExamMatrixBuilderPage: React.FC<ExamMatrixBuilderPageProps> = ({
       {/* Bottom Actions Bar */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="text-xs text-slate-500">
-          Cấu trúc đề: <strong className="text-slate-800">{totalQuestions} câu trắc nghiệm</strong> • {variantCount} mã đề hoán vị • Thời lượng {durationMinutes} phút
+          Cấu trúc đề: <strong className="text-slate-800">{totalQuestions} câu trắc nghiệm</strong> • {variantCount} mã đề hoán vị • Thời gian theo ca thi
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -567,7 +549,7 @@ export const ExamMatrixBuilderPage: React.FC<ExamMatrixBuilderPageProps> = ({
                   Xem trước Bộ đề thi chính thức
                 </h3>
                 <p className="text-xs text-slate-500">
-                  {examTitle} • Mã gốc: {examCode} • {totalQuestions} câu • {durationMinutes} phút
+                  {examTitle} • Mã gốc: {examCode} • {totalQuestions} câu • Theo lịch ca thi
                 </p>
               </div>
               <button
@@ -617,7 +599,7 @@ export const ExamMatrixBuilderPage: React.FC<ExamMatrixBuilderPageProps> = ({
                 </div>
                 <div className="text-sm font-bold text-slate-900">{examTitle}</div>
                 <div className="text-xs text-slate-600">
-                  Mã đề: <strong className="font-bold text-indigo-700">{activeVariantTab}</strong> • Thời gian làm bài: {durationMinutes} phút (Không kể thời gian phát đề)
+                  Mã đề: <strong className="font-bold text-indigo-700">{activeVariantTab}</strong> • Thời gian làm bài: theo lịch ca thi
                 </div>
               </div>
 

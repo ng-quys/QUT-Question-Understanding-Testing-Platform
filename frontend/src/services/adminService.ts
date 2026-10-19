@@ -7,7 +7,7 @@ export interface AdminDashboard {
 }
 export interface AdminUser { id:number; username:string; email:string; fullName:string; role:string; department?:string; status:string; createdAt:string; }
 export interface AdminCourse { id:number; code:string; name:string; department?:string; status:string; questionCount:number; examCount:number; sessionCount:number; }
-export interface AdminExam { id:number; code:string; title:string; courseCode:string; courseName:string; durationMinutes:number; totalQuestions:number; totalPoints:number; status:string; examDate?:string; antiCheatMode:boolean; sessionCount:number; attemptCount:number; averageScore:number; }
+export interface AdminExam { id:number; code:string; title:string; courseCode:string; courseName:string; totalQuestions:number; totalPoints:number; status:string; examDate?:string; antiCheatMode:boolean; sessionCount:number; attemptCount:number; averageScore:number; }
 export interface AdminSession { id:number; examId:number; examCode:string; examTitle:string; className:string; roomCode:string; accessCode?:string; startTime:string; endTime:string; status:string; registeredCount:number; attemptCount:number; }
 export interface AdminAttempt { id:number; sessionId:number; studentUsername:string; studentName:string; examCode:string; examTitle:string; startedAt:string; submittedAt?:string; score?:number; totalPoints:number; status:string; browserEvents:number; }
 export interface BrowserEvent { id:number; event:string; active:boolean; occurredAt:string; module:string; duration:number; riskScore:number; riskLevel:string; sourceModule?:string; evidencePath?:string; }

@@ -18,6 +18,8 @@ public class ExamSession {
     @Column(name = "class_id")
     private Long classId;
     private String name;
+    @Column(name="room_id") private Long roomId;
+    @Column(name="published_at") private java.time.Instant publishedAt;
     @Column(name = "room_code", nullable = false, unique = true)
     private String roomCode;
     @Column(name = "access_code")
@@ -28,4 +30,5 @@ public class ExamSession {
     private LocalDateTime endTime;
     @Column(nullable = false)
     private String status;
+    @Column(name="ai_enabled") private Boolean aiEnabled;
 }

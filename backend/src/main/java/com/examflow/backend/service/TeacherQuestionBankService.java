@@ -139,9 +139,15 @@ public class TeacherQuestionBankService {
         return jdbc.queryForObject("select q.id,q.course_id,q.chapter_id,q.topic_id,q.clo_id,coalesce(cl.code, cast(q.cognitive_level_id as text)) bloom,coalesce(dl.code, cast(q.difficulty_level_id as text)) difficulty,q.content,q.explanation,q.status,q.source,q.default_score,q.updated_at from questions q left join cognitive_levels cl on cl.id=q.cognitive_level_id left join difficulty_levels dl on dl.id=q.difficulty_level_id where q.id=?",(rs,n)->mapRow(rs.getLong("id"),rs.getLong("course_id"),nullableLong(rs,"chapter_id"),nullableLong(rs,"topic_id"),nullableLong(rs,"clo_id"),rs.getString("bloom"),rs.getString("difficulty"),rs.getString("content"),rs.getString("explanation"),rs.getString("status"),rs.getString("source"),rs.getBigDecimal("default_score"),rs.getTimestamp("updated_at")),id);
     }
 
+    private void requireUnusedQuestion(long id) {
+        jdbc.queryForObject("SELECT id FROM questions WHERE id=? FOR UPDATE",Long.class,id);
+        Long count=jdbc.queryForObject("SELECT COUNT(*) FROM exam_questions WHERE question_id=?",Long.class,id);
+        if(count!=null&&count>0)throw new ApiException(HttpStatus.CONFLICT,"Câu hỏi đã được gắn vào đề. Hãy tạo câu hỏi mới để giữ nguyên đề, đáp án và lịch sử bài làm.");
+    }
+
     @Transactional
     public QuestionResponse update(long id, SaveQuestionRequest r, Jwt jwt) {
-        requireQuestion(id,jwt); requireOwnedCourse(r.courseId(),jwt); validateReferences(r);
+        requireQuestion(id,jwt); requireUnusedQuestion(id); requireOwnedCourse(r.courseId(),jwt); validateReferences(r);
         jdbc.update("update questions set course_id=?,chapter_id=?,topic_id=?,clo_id=?,cognitive_level_id=?,difficulty_level_id=?,content=?,explanation=?,status=?,default_score=?,updated_at=current_timestamp where id=?",r.courseId(),r.chapterId(),r.topicId(),r.cloId(),cognitiveId(r.bloom()),difficultyId(r.difficulty()),r.content().trim(),clean(r.explanation()),r.status()==null?"approved":r.status(),r.defaultScore()==null?BigDecimal.ONE:r.defaultScore(),id);
         jdbc.update("delete from answers where question_id=?",id); saveAnswers(id,r); return get(id,jwt);
     }

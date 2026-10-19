@@ -28,52 +28,26 @@ export interface AuthSession {
  * =========================================================
  */
 
-export function saveAuthSession(
-  session: AuthSession,
-  remember: boolean
-) {
-  localStorage.removeItem('examflow_auth');
-  sessionStorage.removeItem('examflow_auth');
-
-  const storage = remember
-    ? localStorage
-    : sessionStorage;
-
-  storage.setItem(
-    'examflow_auth',
-    JSON.stringify(session)
-  );
+// Credentials and the matching profile belong to the current browser tab.
+// Shared localStorage lets a student login overwrite an admin in another tab.
+export function saveAuthSession(session: AuthSession, _remember: boolean) {
+  sessionStorage.setItem('examflow_auth', JSON.stringify(session));
 }
 
 export function getAuthSession(): AuthSession | null {
-  const raw =
-    localStorage.getItem('examflow_auth') ??
-    sessionStorage.getItem('examflow_auth');
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as AuthSession;
-  } catch {
-    return null;
-  }
+  const raw = sessionStorage.getItem('examflow_auth');
+  if (!raw) return null;
+  try { return JSON.parse(raw) as AuthSession; } catch { return null; }
 }
 
 export function clearAuthSession() {
-  localStorage.removeItem('examflow_auth');
   sessionStorage.removeItem('examflow_auth');
 }
 
-/**
- * Remove tokens created by Direct Grant login.
- */
-const clearLocalAuth = () => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-  localStorage.removeItem('id_token');
-
+export const clearTabAuth = () => {
+  for (const key of ['access_token', 'refresh_token', 'id_token']) {
+    sessionStorage.removeItem(key);
+  }
   clearAuthSession();
 };
 
@@ -89,7 +63,7 @@ const clearLocalAuth = () => {
  * keycloak-js manages browser/social login separately.
  */
 export const loginWithCredentials = async (
-  email: string,
+  username: string,
   password: string
 ) => {
   // Direct Grant and browser SSO must not be active at the same time.
@@ -98,13 +72,13 @@ export const loginWithCredentials = async (
     keycloak.clearToken();
   }
 
-  clearLocalAuth();
+  clearTabAuth();
 
   const params = new URLSearchParams();
 
   params.append('client_id', CLIENT_ID);
   params.append('grant_type', 'password');
-  params.append('username', email);
+  params.append('username', username);
   params.append('password', password);
 
   const response = await axios.post(
@@ -124,20 +98,20 @@ export const loginWithCredentials = async (
     id_token,
   } = response.data;
 
-  localStorage.setItem(
+  sessionStorage.setItem(
     'access_token',
     access_token
   );
 
   if (refresh_token) {
-    localStorage.setItem(
+    sessionStorage.setItem(
       'refresh_token',
       refresh_token
     );
   }
 
   if (id_token) {
-    localStorage.setItem(
+    sessionStorage.setItem(
       'id_token',
       id_token
     );
@@ -154,39 +128,33 @@ export const loginWithCredentials = async (
  * role, because the access token issued before the role change still contains
  * the old realm_access.roles claim.
  */
-export const refreshCredentialToken = async () => {
-  const refreshToken = localStorage.getItem('refresh_token');
-
-  if (!refreshToken) {
-    throw new Error('Refresh token was not found');
-  }
-
-  const params = new URLSearchParams();
-  params.append('client_id', CLIENT_ID);
-  params.append('grant_type', 'refresh_token');
-  params.append('refresh_token', refreshToken);
-
-  const response = await axios.post(
-    `${KEYCLOAK_URL}/realms/${REALM_NAME}/protocol/openid-connect/token`,
-    params,
-    {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }
-  );
-
-  localStorage.setItem('access_token', response.data.access_token);
-
-  if (response.data.refresh_token) {
-    localStorage.setItem('refresh_token', response.data.refresh_token);
-  }
-
-  if (response.data.id_token) {
-    localStorage.setItem('id_token', response.data.id_token);
-  }
-
-  return response.data;
+let credentialRefresh: {token:string;promise:Promise<any>} | undefined;
+export const refreshCredentialToken = (): Promise<any> => {
+  const refreshToken = sessionStorage.getItem('refresh_token');
+  if (!refreshToken) return Promise.reject({response:{status:401},message:'Refresh token was not found'});
+  if(credentialRefresh?.token===refreshToken)return credentialRefresh.promise;
+  const promise=(async()=>{
+    const params = new URLSearchParams();
+    params.append('client_id', CLIENT_ID);
+    params.append('grant_type', 'refresh_token');
+    params.append('refresh_token', refreshToken);
+    const response = await axios.post(
+      `${KEYCLOAK_URL}/realms/${REALM_NAME}/protocol/openid-connect/token`, params,
+      {headers:{'Content-Type':'application/x-www-form-urlencoded'},timeout:8000},
+    ).catch(error=>{
+      if(sessionStorage.getItem('refresh_token')!==refreshToken)throw new Error('Phiên đăng nhập đã thay đổi.');
+      throw error;
+    });
+    // A delayed refresh must never resurrect a logout or replace another login in this tab.
+    if(sessionStorage.getItem('refresh_token')!==refreshToken)throw new Error('Phiên đăng nhập đã thay đổi.');
+    if(!response.data.access_token)throw new Error('Dịch vụ đăng nhập chưa trả về phiên hợp lệ.');
+    sessionStorage.setItem('access_token',response.data.access_token);
+    if(response.data.refresh_token)sessionStorage.setItem('refresh_token',response.data.refresh_token);
+    if(response.data.id_token)sessionStorage.setItem('id_token',response.data.id_token);
+    return response.data;
+  })().finally(()=>{if(credentialRefresh?.promise===promise)credentialRefresh=undefined;});
+  credentialRefresh={token:refreshToken,promise};
+  return promise;
 };
 
 /**
@@ -201,13 +169,13 @@ export const refreshCredentialToken = async () => {
  */
 export const logout = async () => {
   const refreshToken =
-    localStorage.getItem('refresh_token');
+    sessionStorage.getItem('refresh_token');
 
   /**
    * Browser / Google / Microsoft login
    */
   if (keycloak.authenticated) {
-    clearLocalAuth();
+    clearTabAuth();
 
     try {
       await keycloak.logout({
@@ -264,7 +232,7 @@ export const logout = async () => {
       error
     );
   } finally {
-    clearLocalAuth();
+    clearTabAuth();
 
     window.location.replace('/login');
   }
@@ -278,7 +246,7 @@ export const logout = async () => {
 export const isAuthenticated = (): boolean => {
   // Email/password Direct Grant
   const localToken =
-    localStorage.getItem('access_token');
+    sessionStorage.getItem('access_token');
 
   if (localToken) {
     return true;
@@ -303,7 +271,7 @@ export const getToken = (): string | undefined => {
   }
 
   // Email/password Direct Grant.
-  return localStorage.getItem('access_token') ?? undefined;
+  return sessionStorage.getItem('access_token') ?? undefined;
 };
 
 /**

@@ -22,31 +22,7 @@ public class RegistrationService {
     }
 
     public void register(RegisterRequest request) {
-
-        String email = request.email()
-                .trim()
-                .toLowerCase(Locale.ROOT);
-
-        String username = resolveUsername(request);
-
-        // 1. Tạo user trong Keycloak và lấy UUID
-        String keycloakUserId =
-                keycloakAdminService.createUser(request);
-
-        // 2. Tạo user tương ứng trong database
-        UserEntity user = new UserEntity();
-
-        user.setKeycloakUserId(keycloakUserId);
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setFullName(resolveFullName(request, username));
-        user.setRole(request.role().name().toLowerCase(Locale.ROOT));
-        user.setStatus("active");
-
-        // Password do Keycloak quản lý
-        user.setPasswordHash(null);
-
-        userRepository.save(user);
+        throw new com.examflow.backend.exception.ApiException(org.springframework.http.HttpStatus.FORBIDDEN,"Tài khoản do quản trị viên cấp");
     }
 
     private String resolveUsername(RegisterRequest request) {

@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.examflow.backend.entity.UserEntity;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select u from UserEntity u where u.id = :id")
+    Optional<UserEntity> findForPhotoUpdate(@org.springframework.data.repository.query.Param("id") Long id);
 
     Optional<UserEntity> findByEmailIgnoreCaseOrUsernameIgnoreCase(
             String email,

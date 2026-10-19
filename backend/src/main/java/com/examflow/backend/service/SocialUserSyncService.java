@@ -30,79 +30,10 @@ public class SocialUserSyncService {
             Jwt jwt,
             RegistrationRole requestedRole
     ) {
-        String keycloakUserId = requireClaim(jwt.getSubject(), "sub");
-        String email = requireClaim(
-                jwt.getClaimAsString("email"),
-                "email"
-        ).trim().toLowerCase(Locale.ROOT);
-
-        UserEntity existingByKeycloakId = userRepository
-                .findByKeycloakUserId(keycloakUserId)
-                .orElse(null);
-
-        if (existingByKeycloakId != null) {
-            // Keep the application DB role and the Keycloak realm role in sync.
-            // Otherwise authorization may pass in Spring Security while the
-            // controller rejects the same user based on the stale DB role.
-            // Login must NEVER change the role chosen during registration.
-            // The DB is the application source of truth for an existing user.
-            UserEntity saved = existingByKeycloakId;
-            keycloakAdminService.setApplicationRealmRole(
-                    keycloakUserId,
-                    toKeycloakRole(saved.getRole())
-            );
-            return toResponse(saved, false);
-        }
-
-        UserEntity existingByEmail = userRepository
-                .findByEmailIgnoreCase(email)
-                .orElse(null);
-
-        if (existingByEmail != null) {
-            // Keep an existing Keycloak link stable. Different social providers
-            // can produce different broker identities for the same verified
-            // email; CurrentUserService therefore also has an email fallback.
-            if (existingByEmail.getKeycloakUserId() == null ||
-                    existingByEmail.getKeycloakUserId().isBlank()) {
-                existingByEmail.setKeycloakUserId(keycloakUserId);
-            }
-            // Preserve the role selected at registration. Never overwrite it
-            // from the role toggle on the login screen.
-            UserEntity saved = userRepository.save(existingByEmail);
-
-            keycloakAdminService.setApplicationRealmRole(
-                    keycloakUserId,
-                    toKeycloakRole(saved.getRole())
-            );
-
-            return toResponse(saved, false);
-        }
-
-        String username = resolveUsername(jwt, email);
-        username = makeUsernameUnique(username);
-
-        String fullName = resolveFullName(jwt, username);
-        String role = requestedRole.name().toLowerCase(Locale.ROOT);
-
-        UserEntity user = new UserEntity();
-        user.setKeycloakUserId(keycloakUserId);
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setFullName(fullName);
-        user.setRole(role);
-        user.setStatus("active");
-        user.setPasswordHash(null);
-
-        UserEntity saved = userRepository.save(user);
-
-        // Social users are created by Keycloak's broker flow, so assign the
-        // application realm role after the user exists in Keycloak.
-        keycloakAdminService.setApplicationRealmRole(
-                keycloakUserId,
-                requestedRole.getKeycloakRole()
-        );
-
-        return toResponse(saved, true);
+        if(jwt==null)throw new com.examflow.backend.exception.ApiException(org.springframework.http.HttpStatus.UNAUTHORIZED,"Chưa đăng nhập");
+        UserEntity user=userRepository.findByKeycloakUserId(jwt.getSubject()).orElseThrow(()->new com.examflow.backend.exception.ApiException(org.springframework.http.HttpStatus.FORBIDDEN,"Tài khoản chưa được quản trị viên cấp"));
+        if(!"active".equals(user.getStatus()))throw new com.examflow.backend.exception.ApiException(org.springframework.http.HttpStatus.FORBIDDEN,"Tài khoản ngưng hoạt động");
+        return toResponse(user,false);
     }
 
     private String toKeycloakRole(String databaseRole) {

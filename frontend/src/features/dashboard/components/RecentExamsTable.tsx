@@ -183,7 +183,7 @@ export const RecentExamsTable: React.FC<RecentExamsTableProps> = ({
                           {exam.title}
                         </div>
                         <div className="text-[11px] text-slate-400 font-normal">
-                          {exam.questionCount} câu • {exam.durationMinutes} phút
+                          {exam.questionCount} câu • Thời gian theo ca thi
                         </div>
                       </div>
                     </div>

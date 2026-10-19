@@ -7,6 +7,7 @@ import threading
 from pathlib import Path
 from collections import deque
 from runtime_state import publish, fail, install_error_handler
+from device_config import camera_index, audio_input_device, read_reference_image
 
 install_error_handler()
 publish("loading", "Đang tải thư viện và model")
@@ -33,6 +34,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 
+from src.head_direction_model import TrainedHeadClassifier
 from src.temporal.temporal_tracker import create_anticheating_tracker
 from src.fusion.risk_engine import RiskEngine
 from src.evidence.evidence_logger import EvidenceLogger
@@ -101,8 +103,8 @@ M5_FALLBACK_STUDY_CONF = 0.45
 M5_MIN_OBJECT_PERSON_AREA_RATIO = 0.01
 M5_MAX_OBJECT_PERSON_AREA_RATIO = 0.35
 
-YAW_THRESHOLD = 20
-PITCH_THRESHOLD = 15
+M4_MODEL_PATH = PROJECT_ROOT / "models" / "head_pose" / "head_behavior_all_balanced.joblib"
+M4_MIN_CONFIDENCE = float(os.environ.get("M4_MIN_CONFIDENCE", "0.70"))
 
 
 # ============================================================
@@ -161,6 +163,10 @@ browser_states = {
 # LOAD M2
 # ============================================================
 
+publish("loading", "Đang tải model M4 đã huấn luyện")
+head_classifier = TrainedHeadClassifier(M4_MODEL_PATH, M4_MIN_CONFIDENCE)
+print(f"M4 trained model ready: {head_classifier.path}", flush=True)
+
 print("Loading M2 Person Detector...")
 
 person_model = YOLO(
@@ -200,6 +206,9 @@ face_app.prepare(
     det_size=(640, 640),
 )
 
+m4_landmark_model = face_app.models.get("landmark_3d_68")
+if m4_landmark_model is None:
+    raise RuntimeError("M4 requires buffalo_l/1k3d68.onnx")
 print("InsightFace ready.")
 
 
@@ -207,14 +216,7 @@ print("InsightFace ready.")
 # M1 REFERENCE FACE
 # ============================================================
 
-reference_img = cv2.imread(
-    str(REFERENCE_IMAGE)
-)
-
-if reference_img is None:
-    raise RuntimeError(
-        "Cannot read reference image"
-    )
+reference_img = read_reference_image(REFERENCE_IMAGE)
 
 reference_faces = face_app.get(
     reference_img
@@ -222,7 +224,7 @@ reference_faces = face_app.get(
 
 if len(reference_faces) != 1:
     raise RuntimeError(
-        "Reference image must contain exactly one face"
+        "Ảnh hồ sơ phải có đúng một khuôn mặt rõ ràng. Hãy tải lại ảnh trong Hồ sơ."
     )
 
 reference_embedding = (
@@ -511,24 +513,9 @@ def predict_liveness(
     }
 
 
-def classify_head_direction(
-    pitch,
-    yaw,
-):
-
-    if yaw > YAW_THRESHOLD:
-        return "RIGHT"
-
-    if yaw < -YAW_THRESHOLD:
-        return "LEFT"
-
-    if pitch < -PITCH_THRESHOLD:
-        return "DOWN"
-
-    if pitch > PITCH_THRESHOLD:
-        return "UP"
-
-    return "CENTER"
+def classify_head_direction(original_frame, verified_face):
+    return head_classifier.predict_verified_face(
+        original_frame, verified_face, m4_landmark_model)
 
 
 def point_near_box(
@@ -780,6 +767,7 @@ def audio_worker():
     try:
 
         with sd.InputStream(
+            device=audio_input_device(),
             samplerate=AUDIO_SAMPLE_RATE,
             channels=1,
             dtype="float32",
@@ -1021,33 +1009,23 @@ def post_backend_event(payload):
     if not ATTEMPT_ID:
         return
     try:
-        import urllib.request
-        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        req = urllib.request.Request(
-            BACKEND_CALLBACK_URL,
-            data=data,
-            headers={
-                "Content-Type": "application/json",
-                "X-AntiCheat-Secret": INTERNAL_SECRET,
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=2) as response:
-            response.read()
-    except Exception as exc:
-        print("Backend callback warning:", exc)
+        from evidence_delivery import enqueue
+        enqueue(payload)
+    except (OSError, ValueError, KeyError):
+        print("Evidence outbox write failed; local evidence retained", flush=True)
 
 
 # ============================================================
 # CAMERA
 # ============================================================
 
-cap = cv2.VideoCapture(0)
+selected_camera = camera_index()
+cap = cv2.VideoCapture(selected_camera)
 
 if not cap.isOpened():
 
     raise RuntimeError(
-        "Không mở được webcam. Hãy đóng ứng dụng đang dùng camera và kiểm tra quyền camera."
+        f"Không mở được webcam số {selected_camera}. Hãy đóng ứng dụng đang dùng camera và kiểm tra quyền camera."
     )
 
 
@@ -1066,7 +1044,7 @@ print("======================================")
 print("M1  Identity + Liveness")
 print("M2  Person")
 print("M3  Objects")
-print("M4  Head Pose")
+print("M4  Trained Head Direction (207 features)")
 print("M5  Hand-Object")
 print("M6  Audio VAD")
 print("M7  Browser")
@@ -1087,6 +1065,8 @@ while True:
 
     if not ok:
         raise RuntimeError("Webcam ngừng cung cấp hình ảnh")
+
+    m4_original_frame = frame.copy()
 
     frame = cv2.flip(
         frame,
@@ -1443,31 +1423,10 @@ while True:
     # Nếu voting đã VERIFIED nhưng frame hiện tại
     # bị nhiễu liveness thì không tạo head event giả.
 
+    head_result = head_classifier.unknown("No currently verified face.")
     if best_verified_face is not None:
-
-        pose = (
-            best_verified_face.pose
-        )
-
-        if (
-            pose is not None
-            and len(pose) >= 3
-        ):
-
-            pitch = float(
-                pose[0]
-            )
-
-            yaw = float(
-                pose[1]
-            )
-
-            head_direction = (
-                classify_head_direction(
-                    pitch,
-                    yaw,
-                )
-            )
+        head_result = classify_head_direction(m4_original_frame, best_verified_face)
+        head_direction = head_result["direction"]
 
 
     # ========================================================
@@ -2095,6 +2054,9 @@ while True:
             "riskLevel": risk_result.level,
             "sourceModule": "full_pipeline_voting",
             "evidencePath": evidence_data.get("evidence_image") if evidence_data else None,
+            "eventUuid": evidence_data["event_uuid"],
+            "evidenceStatus": "pending" if evidence_data.get("evidence_image") else "failed",
+            "evidenceError": evidence_data.get("evidence_error"),
         })
 
 
@@ -2304,7 +2266,7 @@ while True:
         ),
 
         (
-            f"M4 Head: {head_direction}",
+            f"M4 Head: {head_direction} ({head_result['score']:.2f})",
             (
                 0,
                 255,

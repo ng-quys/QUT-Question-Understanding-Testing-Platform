@@ -37,7 +37,10 @@ public class KeycloakAdminService {
     private String clientSecret;
 
     public KeycloakAdminService(RestClient.Builder builder) {
-        this.restClient = builder.build();
+        var requests=new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requests.setConnectTimeout(java.time.Duration.ofSeconds(5));
+        requests.setReadTimeout(java.time.Duration.ofSeconds(15));
+        this.restClient = builder.requestFactory(requests).build();
     }
 
     private String getAdminAccessToken() {
@@ -74,11 +77,11 @@ public class KeycloakAdminService {
 
             System.err.println("===== KEYCLOAK TOKEN ERROR =====");
             System.err.println("Status: " + e.getStatusCode());
-            System.err.println("Body: " + e.getResponseBodyAsString());
+            System.err.println("Body: " + "Keycloak request failed");
 
             throw new IllegalStateException(
                     "Cannot obtain Keycloak admin token: "
-                            + e.getResponseBodyAsString(),
+                            + "Keycloak request failed",
                     e
             );
         }
@@ -230,14 +233,14 @@ return userId;
 
                 System.err.println(
                         "Response: "
-                                + restException.getResponseBodyAsString()
+                                + "Keycloak request failed"
                 );
 
                 throw new IllegalStateException(
                         "Keycloak request failed: "
                                 + restException.getStatusCode()
                                 + " - "
-                                + restException.getResponseBodyAsString(),
+                                + "Keycloak request failed",
                         restException
                 );
             }
@@ -342,6 +345,56 @@ return userId;
         String adminToken = getAdminAccessToken();
         assignRealmRole(userId, roleName, adminToken);
     }
+
+    public void requireManagedAccount(String userId) {
+        String token = getAdminAccessToken();
+        List<?> roles = restClient.get().uri(serverUrl + "/admin/realms/" + realm + "/users/" + userId + "/role-mappings/realm/composite")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token).retrieve().body(List.class);
+        if (roles != null && roles.stream().anyMatch(role -> role instanceof Map<?, ?> map && "ADMIN".equalsIgnoreCase(String.valueOf(map.get("name")))))
+            throw new com.examflow.backend.exception.ApiException(org.springframework.http.HttpStatus.BAD_REQUEST, "Tài khoản quản trị cần được quản lý trực tiếp trong Keycloak");
+    }
+    public boolean usernameExists(String username) {
+        String token=getAdminAccessToken();
+        List<?> matches=restClient.get().uri(serverUrl+"/admin/realms/"+realm+"/users?username={username}&exact=true",username)
+                .header(HttpHeaders.AUTHORIZATION,"Bearer "+token).retrieve().body(List.class);
+        return matches!=null&&!matches.isEmpty();
+    }
+    /** Explicit administrator repair only; never infer an identity from a login email. */
+    public String findProvisionedAccount(String username,String email,String expectedRole) {
+        String token=getAdminAccessToken();
+        List<?> matches=restClient.get().uri(serverUrl+"/admin/realms/"+realm+"/users?username={username}&exact=true",username)
+                .header(HttpHeaders.AUTHORIZATION,"Bearer "+token).retrieve().body(List.class);
+        if(matches==null||matches.size()!=1||!(matches.get(0) instanceof Map<?,?> user)
+                ||!username.equalsIgnoreCase(String.valueOf(user.get("username")))
+                ||!email.equalsIgnoreCase(String.valueOf(user.get("email")))||!Boolean.TRUE.equals(user.get("enabled")))
+            throw new com.examflow.backend.exception.ApiException(org.springframework.http.HttpStatus.CONFLICT,"Không tìm thấy đúng một tài khoản Keycloak đang hoạt động khớp tên đăng nhập và email. Cần đối chiếu thủ công.");
+        String id=String.valueOf(user.get("id"));
+        List<?> roles=restClient.get().uri(serverUrl+"/admin/realms/"+realm+"/users/"+id+"/role-mappings/realm/composite")
+                .header(HttpHeaders.AUTHORIZATION,"Bearer "+token).retrieve().body(List.class);
+        boolean correct=roles!=null&&roles.stream().anyMatch(r->r instanceof Map<?,?> m&&expectedRole.equalsIgnoreCase(String.valueOf(m.get("name"))));
+        boolean elevated=roles!=null&&roles.stream().anyMatch(r->r instanceof Map<?,?> m&&"ADMIN".equalsIgnoreCase(String.valueOf(m.get("name"))));
+        if(!correct||elevated)throw new com.examflow.backend.exception.ApiException(org.springframework.http.HttpStatus.CONFLICT,"Vai trò Keycloak chưa khớp hồ sơ. Cần quản trị viên kiểm tra vai trò trước khi liên kết.");
+        return id;
+    }
+
+    public void updateManagedAccount(String userId, String fullName, boolean enabled) {
+        String token = getAdminAccessToken();
+        String name = fullName.trim().replaceAll("\\s+", " ");
+        int split = name.lastIndexOf(' ');
+        Map<String, Object> body = Map.of("firstName", split < 0 ? name : name.substring(split + 1),
+                "lastName", split < 0 ? "" : name.substring(0, split), "enabled", enabled);
+        restClient.put().uri(serverUrl + "/admin/realms/" + realm + "/users/" + userId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token).contentType(MediaType.APPLICATION_JSON).body(body).retrieve().toBodilessEntity();
+        if (!enabled) logoutManagedAccount(userId);
+    }
+
+    public void logoutManagedAccount(String userId) {
+        String token = getAdminAccessToken();
+        restClient.post().uri(serverUrl + "/admin/realms/" + realm + "/users/" + userId + "/logout")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token).retrieve().toBodilessEntity();
+    }
+
+    public void deleteCreatedAccount(String userId) { deleteUser(userId, getAdminAccessToken()); }
 
     /**
      * Keep exactly one application role (STUDENT or TEACHER) on the user.
@@ -451,11 +504,27 @@ return userId;
 
             System.err.println(
                     "Body: "
-                            + e.getResponseBodyAsString()
+                            + "Keycloak request failed"
             );
 
             throw e;
         }
+    }
+
+    public void resetPassword(String userId, String newPassword) {
+        String adminToken = getAdminAccessToken();
+        Map<String, Object> credential = Map.of(
+                "type", "password",
+                "value", newPassword,
+                "temporary", false
+        );
+        restClient.put()
+                .uri(serverUrl + "/admin/realms/" + realm + "/users/" + userId + "/reset-password")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(credential)
+                .retrieve()
+                .toBodilessEntity();
     }
 
     private void deleteUser(

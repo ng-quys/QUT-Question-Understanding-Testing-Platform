@@ -15,13 +15,16 @@ public final class AdminDto {
     ) {}
 
     public record UserRow(Long id, String username, String email, String fullName, String role,
-                          String department, String status, LocalDateTime createdAt) {}
+                          String department, String status, LocalDateTime createdAt,
+                          Long studentClassId, String classCode, String className) {
+        public UserRow(Long id,String username,String email,String fullName,String role,String department,String status,LocalDateTime createdAt){this(id,username,email,fullName,role,department,status,createdAt,null,null,null);}
+    }
 
     public record CourseRow(Long id, String code, String name, String department, String status,
                             long questionCount, long examCount, long sessionCount) {}
 
     public record ExamRow(Long id, String code, String title, String courseCode, String courseName,
-                          Integer durationMinutes, Integer totalQuestions, BigDecimal totalPoints,
+                          Integer totalQuestions, BigDecimal totalPoints,
                           String status, LocalDateTime examDate, Boolean antiCheatMode,
                           long sessionCount, long attemptCount, BigDecimal averageScore) {}
 

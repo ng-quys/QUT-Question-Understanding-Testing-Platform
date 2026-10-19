@@ -36,7 +36,15 @@ private String passwordHash;
     private String fullName;
 
     private String department;
+    @Column(name="student_class_id") private Long studentClassId;
     private String status;
+    @org.hibernate.annotations.UpdateTimestamp
+    @Column(name="updated_at")
+    private java.time.LocalDateTime updatedAt;
+    @Column(name = "photo_bucket")
+    private String photoBucket;
+    @Column(name = "photo_key")
+    private String photoKey;
 public Long getId() {
     return id;
 }

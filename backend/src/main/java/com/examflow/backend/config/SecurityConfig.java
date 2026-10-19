@@ -44,11 +44,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
 
+                        .requestMatchers("/api/auth/register").denyAll()
+
                         // PUBLIC APIs
                         .requestMatchers(
                                 "/api/health",
                                 "/api/auth/login",
-                                "/api/auth/register",
                                 "/api/test/public",
                                 "/error"
                         )
@@ -59,6 +60,8 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
 
                         // TEACHER APIs
+                        .requestMatchers("/api/teacher/organization/**")
+                        .denyAll()
                         .requestMatchers("/api/teacher/**")
                         .hasAnyRole("TEACHER", "ADMIN")
 

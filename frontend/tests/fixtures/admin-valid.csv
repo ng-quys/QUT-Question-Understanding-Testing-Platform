@@ -1,0 +1,3 @@
+username,email,fullName,password,role,department
+pass_demo,pass@example.com,Sinh viên thử,ExampleTest@2026,STUDENT,"Khoa Công nghệ, Thông tin"
+fail_demo,fail@example.com,Giảng viên thử,ExampleTest@2026,TEACHER,Khoa thử nghiệm

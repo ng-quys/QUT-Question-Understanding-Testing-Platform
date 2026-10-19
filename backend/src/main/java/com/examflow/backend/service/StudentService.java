@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -46,6 +47,7 @@ import com.examflow.backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
 @Service
 public class StudentService {
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
     private final UserRepository userRepository;
     private final ExamSessionStudentRepository registrationRepository;
     private final ExamSessionRepository sessionRepository;
@@ -129,6 +131,13 @@ public class StudentService {
         LocalDateTime now = now();
 
         return registrationRepository.findAllByStudentIdWithDetails(studentId).stream()
+                .filter(reg -> {
+                    ExamSession session=reg.getExamSession();
+                    ExamAttempt previous=attemptBySession.get(session.getId());
+                    boolean legacy=previous!=null && session.getRoomId()==null && "in_progress".equals(previous.getStatus()) && effectiveEnd(previous).isAfter(now);
+                    return !session.getStartTime().isAfter(now) && ((session.getPublishedAt()!=null
+                        && (previous!=null || (Set.of("scheduled","ongoing").contains(session.getStatus()) && session.getEndTime().isAfter(now)))) || legacy);
+                })
 
                 .map(reg -> {
 
@@ -140,7 +149,7 @@ public class StudentService {
 
                     boolean inWindow = !now.isBefore(s.getStartTime()) && now.isBefore(s.getEndTime());
 
-                    boolean canStart = inWindow
+                    boolean canStart = inWindow && Set.of("scheduled","ongoing").contains(s.getStatus())
 
                             && (a == null || "in_progress".equalsIgnoreCase(a.getStatus()));
 
@@ -150,12 +159,12 @@ public class StudentService {
 
                             s.getRoomCode(), s.getStartTime(), s.getEndTime(), s.getStatus(), reg.getStatus(),
 
-                            e.getDurationMinutes(), e.getTotalQuestions(), e.getTotalPoints(),
+                            SessionTiming.durationMinutes(s), e.getTotalQuestions(), e.getTotalPoints(),
 
                             a == null ? null : a.getId(), a == null ? null : a.getStatus(), a == null ? null : a.getScore(),
 
-                            canStart, s.getAccessCode() != null && !s.getAccessCode().isBlank()
-                                    && !s.getAccessCode().equals(s.getRoomCode())
+                            canStart && (a==null || effectiveEnd(a).isAfter(now)), false, s.getName(),
+                            s.getRoomId()==null?null:(String)em.createNativeQuery("SELECT name FROM exam_rooms WHERE id=:id").setParameter("id",s.getRoomId()).getSingleResult()
 
                     );
 
@@ -181,23 +190,10 @@ public class StudentService {
         UserEntity student = requireStudent(studentId);
         ExamSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy ca thi"));
-        String code = roomCode == null ? "" : roomCode.trim();
-        if (code.isBlank() || session.getRoomCode() == null
-                || !session.getRoomCode().trim().equalsIgnoreCase(code)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Mã ca thi không khớp");
-        }
-        if (!"scheduled".equalsIgnoreCase(session.getStatus())
-                && !"ongoing".equalsIgnoreCase(session.getStatus())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Ca thi không còn nhận người tham gia");
-        }
-        String expectedPassword = session.getAccessCode();
-        if (expectedPassword != null && !expectedPassword.isBlank()) {
-            // Legacy Uyen sessions store the public room code in access_code too.
-            boolean sameAsRoom = expectedPassword.equals(session.getRoomCode());
-            if (!sameAsRoom && !expectedPassword.equals(password)) {
-                throw new ApiException(HttpStatus.FORBIDDEN, "Mật khẩu ca thi không đúng");
-            }
-        }
+        em.find(Exam.class,session.getExam().getId(),jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        em.refresh(session,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        requireAssignment(studentId,session,true);
+        String code=session.getRoomCode();
         return startExamWithSessionAndRegistration(student, session, code);
     }
 
@@ -217,8 +213,8 @@ public class StudentService {
                 throw new ApiException(HttpStatus.CONFLICT, "Bạn đã nộp bài cho ca thi này");
             }
             if (effectiveEnd(a).isAfter(now)) {
-                if (antiCheatService.isRequired(exam.getId())) {
-                    antiCheatService.startSession(a.getId(), student.getId());
+                if (antiCheatService.isRequired(exam.getId(),session)) {
+                    antiCheatService.queueSession(a.getId(), student.getId());
                 }
                 if (!effectiveEnd(a).isAfter(now())) {
                     antiCheatService.stopSession(a.getId());
@@ -230,13 +226,7 @@ public class StudentService {
         }
 
         ExamSessionStudent reg = registrationRepository.findByStudentAndSession(student.getId(), session.getId())
-                .orElseGet(() -> {
-                    ExamSessionStudent created = new ExamSessionStudent();
-                    created.setExamSession(session);
-                    created.setStudent(student);
-                    created.setStatus("registered");
-                    return registrationRepository.save(created);
-                });
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,"Bạn không có trong danh sách dự thi"));
 
         ExamAttempt attempt = new ExamAttempt();
         attempt.setExamSession(session);
@@ -245,22 +235,10 @@ public class StudentService {
         attempt.setStartedAt(now);
         attempt.setStatus("in_progress");
         attempt = attemptRepository.save(attempt);
-        if (antiCheatService.isRequired(exam.getId())) {
-            try {
-                antiCheatService.startSession(attempt.getId(), student.getId(), true);
-                if (!isWithinSession(session, now())) {
-                    antiCheatService.stopSession(attempt.getId());
-                    throw new ApiException(HttpStatus.CONFLICT, "Ca thi đã kết thúc trong lúc chuẩn bị AI");
-                }
-            } catch (RuntimeException e) {
-                // Session may have started even when the HTTP response was lost.
-                antiCheatService.stopSession(attempt.getId());
-                throw e;
-            }
+        if (antiCheatService.isRequired(exam.getId(),session)) {
+            antiCheatService.queueSession(attempt.getId(), student.getId());
         }
-        // New attempts start counting only after the readiness handshake.
-        attempt.setStartedAt(now());
-        attemptRepository.save(attempt);
+        // The deadline is shared by the whole session; monitoring follows commit.
         return buildAttemptDto(attempt);
     }
 
@@ -268,6 +246,8 @@ public class StudentService {
     public StudentAttemptDto getAttempt(Long studentId, Long attemptId) {
         ExamAttempt attempt = attemptRepository.findOwnedAttempt(attemptId, studentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bài làm"));
+        requireAssignment(studentId,attempt.getExamSession(),true);
+        if(!effectiveEnd(attempt).isAfter(now()))throw new ApiException(HttpStatus.CONFLICT,"Thời gian làm bài đã kết thúc");
         return buildAttemptDto(attempt);
     }
 
@@ -301,6 +281,7 @@ public class StudentService {
     public StudentResultDto submit(Long studentId, Long attemptId, SubmitExamRequest request) {
         ExamAttempt attempt = attemptRepository.findOwnedAttempt(attemptId, studentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bài làm"));
+        requireAssignment(studentId,attempt.getExamSession(),false);
         if ("completed".equalsIgnoreCase(attempt.getStatus()) || "submitted".equalsIgnoreCase(attempt.getStatus())) {
             return getResult(studentId, attemptId);
         }
@@ -363,7 +344,7 @@ public class StudentService {
     private UserEntity requireStudent(Long studentId) {
         UserEntity user = userRepository.findById(studentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sinh viên"));
-        if (!"student".equalsIgnoreCase(user.getRole())) {
+        if (!"student".equalsIgnoreCase(user.getRole()) || !"active".equals(user.getStatus())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Tài khoản không phải sinh viên");
         }
         return user;
@@ -372,6 +353,7 @@ public class StudentService {
     private ExamAttempt requireInProgressAttempt(Long studentId, Long attemptId) {
         ExamAttempt attempt = attemptRepository.findOwnedAttempt(attemptId, studentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bài làm"));
+        requireAssignment(studentId,attempt.getExamSession(),true);
         if (!"in_progress".equalsIgnoreCase(attempt.getStatus())) {
             throw new ApiException(HttpStatus.CONFLICT, "Bài thi không còn ở trạng thái đang làm");
         }
@@ -379,6 +361,17 @@ public class StudentService {
             throw new ApiException(HttpStatus.CONFLICT, "Thời gian làm bài đã kết thúc");
         }
         return attempt;
+    }
+
+    private void requireAssignment(Long studentId,ExamSession session,boolean entering) {
+        requireStudent(studentId);
+        if(registrationRepository.findByStudentAndSession(studentId,session.getId()).isEmpty())
+            throw new ApiException(HttpStatus.FORBIDDEN,"Bạn không có trong danh sách dự thi");
+        boolean legacyContinuation=session.getPublishedAt()==null && session.getRoomId()==null
+                && attemptRepository.findByExamSessionIdAndStudentId(session.getId(),studentId)
+                    .filter(a->"in_progress".equals(a.getStatus()) && effectiveEnd(a).isAfter(now())).isPresent();
+        if(entering && ((session.getPublishedAt()==null&&!legacyContinuation) || !Set.of("scheduled","ongoing").contains(session.getStatus()) || !isWithinSession(session,now())))
+            throw new ApiException(HttpStatus.CONFLICT,"Ca thi chưa mở, đã hết giờ hoặc đã đóng");
     }
 
     private static final ZoneId APP_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -392,9 +385,7 @@ public class StudentService {
     }
 
     private LocalDateTime effectiveEnd(ExamAttempt attempt) {
-        LocalDateTime byDuration = attempt.getStartedAt().plusMinutes(attempt.getExam().getDurationMinutes());
-        LocalDateTime sessionEnd = attempt.getExamSession().getEndTime();
-        return byDuration.isBefore(sessionEnd) ? byDuration : sessionEnd;
+        return SessionTiming.deadline(attempt);
     }
 
     private void finalizeAttempt(ExamAttempt attempt) {
@@ -429,7 +420,7 @@ public class StudentService {
         Exam exam = attempt.getExam();
         return new StudentAttemptDto(
                 attempt.getId(), attempt.getExamSession().getId(), exam.getId(), exam.getCode(), exam.getTitle(),
-                exam.getCourse().getCode(), exam.getCourse().getName(), exam.getDurationMinutes(), exam.getTotalPoints(),
+                exam.getCourse().getCode(), exam.getCourse().getName(), SessionTiming.durationMinutes(attempt.getExamSession()), exam.getTotalPoints(),
                 attempt.getStartedAt(), effectiveEnd(attempt), attempt.getStatus(), questions
         );
     }

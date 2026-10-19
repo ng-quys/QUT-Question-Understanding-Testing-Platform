@@ -141,14 +141,14 @@ async function getValidAccessToken(): Promise<string | undefined> {
     token = refreshed.access_token;
     return token;
   } catch (error) {
-    console.error(
-      '[auth] Direct Grant session expired. Clearing local session.',
-      error
-    );
-
-    clearDirectGrantSession();
-
-    return undefined;
+    const status=(error as {response?:{status?:number}})?.response?.status;
+    if(status===400||status===401){
+      clearDirectGrantSession();
+      return undefined;
+    }
+    // A timeout, dropped network or temporarily unavailable identity service is not a logout.
+    // Keep the refresh token so the same exam can synchronize after reconnection.
+    throw new Error('Chưa kết nối được dịch vụ đăng nhập. Phiên đăng nhập được giữ để thử lại khi có mạng.');
   }
 }
 
@@ -213,7 +213,11 @@ export async function apiFetch<T>(
   // =========================================================
 
   if (!response.ok) {
-    let message = `HTTP ${response.status}`;
+    let message = response.status === 403
+      ? 'Tài khoản hiện tại không có quyền thực hiện thao tác này. Vui lòng đăng nhập đúng tài khoản quản trị ở tab admin.'
+      : response.status === 401
+        ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+        : `HTTP ${response.status}`;
 
     try {
       const body = await response.json();
@@ -254,6 +258,10 @@ export async function apiFetch<T>(
 
   if (contentType.includes('application/json')) {
     return response.json() as Promise<T>;
+  }
+
+  if (/^(image|video|audio)\//.test(contentType) || contentType.includes('application/octet-stream')) {
+    return response.blob() as Promise<T>;
   }
 
   return response.text() as Promise<T>;

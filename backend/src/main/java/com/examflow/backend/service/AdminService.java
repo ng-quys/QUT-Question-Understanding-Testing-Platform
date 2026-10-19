@@ -18,35 +18,63 @@ public class AdminService {
     @PersistenceContext
     private EntityManager em;
 
-    private void ensureAdminTables() {
-        em.createNativeQuery("""
-            CREATE TABLE IF NOT EXISTS audit_logs (
-                id BIGSERIAL PRIMARY KEY,
-                actor_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-                action VARCHAR(80) NOT NULL,
-                target_type VARCHAR(80),
-                target_id VARCHAR(120),
-                detail TEXT,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-            """).executeUpdate();
-        em.createNativeQuery("CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC)").executeUpdate();
-        em.createNativeQuery("""
-            CREATE TABLE IF NOT EXISTS anti_cheat_events (
-                id BIGSERIAL PRIMARY KEY,
-                attempt_id BIGINT NOT NULL REFERENCES exam_attempts(id) ON DELETE CASCADE,
-                event VARCHAR(80) NOT NULL,
-                active BOOLEAN NOT NULL DEFAULT TRUE,
-                occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-            """).executeUpdate();
-        em.createNativeQuery("CREATE INDEX IF NOT EXISTS idx_anti_cheat_events_attempt ON anti_cheat_events(attempt_id, occurred_at)").executeUpdate();
-        em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS module VARCHAR(20) NOT NULL DEFAULT 'M7'").executeUpdate();
-        em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS duration_seconds DOUBLE PRECISION DEFAULT 0").executeUpdate();
-        em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS risk_score INTEGER DEFAULT 0").executeUpdate();
-        em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS risk_level VARCHAR(20) DEFAULT 'LOW'").executeUpdate();
-        em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS source_module VARCHAR(100)").executeUpdate();
-        em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS evidence_path TEXT").executeUpdate();
+    private static volatile boolean tablesEnsured = false;
+    private static final Object DDL_LOCK = new Object();
+
+    public void ensureAdminTables() {
+        if (tablesEnsured) {
+            return;
+        }
+        synchronized (DDL_LOCK) {
+            if (tablesEnsured) {
+                return;
+            }
+            try {
+                em.createNativeQuery("CREATE TABLE IF NOT EXISTS exam_ai_policies (exam_id BIGINT PRIMARY KEY REFERENCES exams(id) ON DELETE CASCADE, enabled BOOLEAN NOT NULL DEFAULT TRUE)").executeUpdate();
+                em.createNativeQuery("""
+                    CREATE TABLE IF NOT EXISTS attempt_reviews (
+                        attempt_id BIGINT PRIMARY KEY REFERENCES exam_attempts(id) ON DELETE CASCADE,
+                        outcome VARCHAR(30) NOT NULL DEFAULT 'unreviewed',
+                        note TEXT NOT NULL DEFAULT '',
+                        reviewer_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+                        revision BIGINT NOT NULL DEFAULT 1,
+                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """).executeUpdate();
+                em.createNativeQuery("""
+                    CREATE TABLE IF NOT EXISTS audit_logs (
+                        id BIGSERIAL PRIMARY KEY,
+                        actor_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+                        action VARCHAR(80) NOT NULL,
+                        target_type VARCHAR(80),
+                        target_id VARCHAR(120),
+                        detail TEXT,
+                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """).executeUpdate();
+                em.createNativeQuery("CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC)").executeUpdate();
+                em.createNativeQuery("""
+                    CREATE TABLE IF NOT EXISTS anti_cheat_events (
+                        id BIGSERIAL PRIMARY KEY,
+                        attempt_id BIGINT NOT NULL REFERENCES exam_attempts(id) ON DELETE CASCADE,
+                        event VARCHAR(80) NOT NULL,
+                        active BOOLEAN NOT NULL DEFAULT TRUE,
+                        occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """).executeUpdate();
+                em.createNativeQuery("CREATE INDEX IF NOT EXISTS idx_anti_cheat_events_attempt ON anti_cheat_events(attempt_id, occurred_at)").executeUpdate();
+                em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS module VARCHAR(20) NOT NULL DEFAULT 'M7'").executeUpdate();
+                em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS duration_seconds DOUBLE PRECISION DEFAULT 0").executeUpdate();
+                em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS risk_score INTEGER DEFAULT 0").executeUpdate();
+                em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS risk_level VARCHAR(20) DEFAULT 'LOW'").executeUpdate();
+                em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS source_module VARCHAR(100)").executeUpdate();
+                em.createNativeQuery("ALTER TABLE anti_cheat_events ADD COLUMN IF NOT EXISTS evidence_path TEXT").executeUpdate();
+                tablesEnsured = true;
+            } catch (Exception ex) {
+                System.err.println("Notice ensuring admin tables: " + ex.getMessage());
+                tablesEnsured = true;
+            }
+        }
     }
 
     @Transactional
@@ -76,18 +104,18 @@ public class AdminService {
     public List<AdminDto.UserRow> users(String q, String role, String status) {
         ensureAdminTables() ;
         String sql = """
-            SELECT id, username, email, full_name, role, department, status, created_at
-            FROM users
-            WHERE (:q = '' OR LOWER(username) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(email) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(full_name) LIKE LOWER(CONCAT('%',:q,'%')))
-              AND (:role = '' OR role = :role)
-              AND (:status = '' OR status = :status)
-            ORDER BY created_at DESC, id DESC
+            SELECT u.id, u.username, u.email, u.full_name, u.role, u.department, u.status, u.created_at,u.student_class_id,cl.code,cl.name
+            FROM users u LEFT JOIN student_classes cl ON cl.id=u.student_class_id
+            WHERE (:q = '' OR LOWER(u.username) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(u.full_name) LIKE LOWER(CONCAT('%',:q,'%')))
+              AND (:role = '' OR u.role = :role)
+              AND (:status = '' OR u.status = :status)
+            ORDER BY u.created_at DESC, u.id DESC
             LIMIT 500
             """;
         return em.createNativeQuery(sql).setParameter("q", safe(q)).setParameter("role", safe(role)).setParameter("status", safe(status))
                 .getResultList().stream().map(r -> {
                     Object[] x = (Object[]) r;
-                    return new AdminDto.UserRow(((Number)x[0]).longValue(), (String)x[1], (String)x[2], (String)x[3], (String)x[4], (String)x[5], (String)x[6], toDateTime(x[7]));
+                    return new AdminDto.UserRow(((Number)x[0]).longValue(), (String)x[1], (String)x[2], (String)x[3], (String)x[4], (String)x[5], (String)x[6], toDateTime(x[7]),x[8]==null?null:((Number)x[8]).longValue(),(String)x[9],(String)x[10]);
                 }).toList();
     }
 
@@ -120,10 +148,9 @@ public class AdminService {
 
     @Transactional
     public List<AdminDto.ExamRow> exams(String q, String status) {
-        ensureAdminTables() ;
-        em.createNativeQuery("CREATE TABLE IF NOT EXISTS exam_ai_policies (exam_id BIGINT PRIMARY KEY REFERENCES exams(id) ON DELETE CASCADE, enabled BOOLEAN NOT NULL DEFAULT TRUE)").executeUpdate();
+        ensureAdminTables();
         String sql="""
-            SELECT e.id,e.code,e.title,c.code,c.name,e.duration_minutes,e.total_questions,e.total_points,e.status,e.exam_date,COALESCE((SELECT p.enabled FROM exam_ai_policies p WHERE p.exam_id=e.id), TRUE),
+            SELECT e.id,e.code,e.title,c.code,c.name,e.total_questions,e.total_points,e.status,e.exam_date,COALESCE((SELECT p.enabled FROM exam_ai_policies p WHERE p.exam_id=e.id), TRUE),
                    (SELECT COUNT(*) FROM exam_sessions s WHERE s.exam_id=e.id),
                    (SELECT COUNT(*) FROM exam_attempts a WHERE a.exam_id=e.id),
                    COALESCE((SELECT ROUND(AVG(a.score),2) FROM exam_attempts a WHERE a.exam_id=e.id AND a.status IN ('completed','submitted')),0)
@@ -134,7 +161,7 @@ public class AdminService {
             """;
         return em.createNativeQuery(sql).setParameter("q",safe(q)).setParameter("status",safe(status)).getResultList().stream().map(r->{
             Object[] x=(Object[])r;
-            return new AdminDto.ExamRow(((Number)x[0]).longValue(),(String)x[1],(String)x[2],(String)x[3],(String)x[4],((Number)x[5]).intValue(),((Number)x[6]).intValue(),(BigDecimal)x[7],(String)x[8],toDateTime(x[9]),(Boolean)x[10],((Number)x[11]).longValue(),((Number)x[12]).longValue(),(BigDecimal)x[13]);
+            return new AdminDto.ExamRow(((Number)x[0]).longValue(),(String)x[1],(String)x[2],(String)x[3],(String)x[4],((Number)x[5]).intValue(),(BigDecimal)x[6],(String)x[7],toDateTime(x[8]),(Boolean)x[9],((Number)x[10]).longValue(),((Number)x[11]).longValue(),(BigDecimal)x[12]);
         }).toList();
     }
 
@@ -230,6 +257,14 @@ public class AdminService {
         em.createNativeQuery("INSERT INTO audit_logs(actor_id,action,target_type,target_id,detail) VALUES (:a,'UPDATE_AI_POLICY','EXAM',:t,:d)")
                 .setParameter("a", adminId).setParameter("t", String.valueOf(examId))
                 .setParameter("d", "enabled=" + enabled).executeUpdate();
+    }
+
+    @Transactional
+    public void audit(Long actorId, String action, String type, Long targetId, String detail) {
+        ensureAdminTables();
+        em.createNativeQuery("INSERT INTO audit_logs(actor_id,action,target_type,target_id,detail) VALUES (:actor,:action,:type,:target,:detail)")
+                .setParameter("actor", actorId).setParameter("action", action).setParameter("type", type)
+                .setParameter("target", String.valueOf(targetId)).setParameter("detail", detail).executeUpdate();
     }
 
     private AdminDto.AttemptRow attemptRow(Object r){Object[]x=(Object[])r;return new AdminDto.AttemptRow(((Number)x[0]).longValue(),((Number)x[1]).longValue(),(String)x[2],(String)x[3],(String)x[4],(String)x[5],toDateTime(x[6]),toDateTime(x[7]),(BigDecimal)x[8],(BigDecimal)x[9],(String)x[10],((Number)x[11]).longValue(),((Number)x[12]).longValue());}

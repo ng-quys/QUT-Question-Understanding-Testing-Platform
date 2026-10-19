@@ -48,6 +48,8 @@ public class StudentController {
         this.currentUserService = currentUserService;
     }
 
+    @GetMapping("/clock") public java.util.Map<String,Object> clock(@AuthenticationPrincipal Jwt jwt){studentId(jwt);return java.util.Map.of("serverTime",java.time.Instant.now());}
+
     @GetMapping("/dashboard")
     public StudentDashboardDto dashboard(
             @AuthenticationPrincipal Jwt jwt
@@ -143,6 +145,13 @@ public class StudentController {
     public JsonNode aiStatus(@AuthenticationPrincipal Jwt jwt, @PathVariable Long attemptId) {
         return antiCheatService.studentRuntimeStatus(attemptId, studentId(jwt));
     }
+
+    @PostMapping("/attempts/{attemptId}/ai-frame")
+    public JsonNode frame(@AuthenticationPrincipal Jwt jwt,@PathVariable Long attemptId,@RequestBody com.examflow.backend.service.BatchMonitoringService.Frame frame){
+        return antiCheatService.cameraFrame(attemptId,studentId(jwt),frame);
+    }
+    @PostMapping("/attempts/{attemptId}/ai-reconnect")
+    public void reconnect(@AuthenticationPrincipal Jwt jwt,@PathVariable Long attemptId){antiCheatService.reconnect(attemptId,studentId(jwt));}
 
     private Long studentId(Jwt jwt) {
         if (jwt == null) {

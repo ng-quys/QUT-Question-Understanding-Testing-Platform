@@ -123,7 +123,6 @@ export interface MatrixExamConfig {
   title: string;
   courseId: string;
   code: string;
-  durationMinutes: number;
   totalPoints: number;
   requirements: MatrixRequirement[];
 }
@@ -136,7 +135,6 @@ export interface ExamRecord {
   avgScore: number | null;
   status: ExamStatus;
   examDate: string;
-  durationMinutes: number;
   questionCount: number;
   roomCode?: string;
 }
