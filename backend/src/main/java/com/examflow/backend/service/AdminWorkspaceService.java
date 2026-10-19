@@ -16,6 +16,7 @@ import java.util.*;
 /** Paged administrative reads. All SQL identifiers come from the resource whitelist. */
 @Service
 public class AdminWorkspaceService {
+    @org.springframework.beans.factory.annotation.Autowired private QuestionBankStatsService bankStats;
     @PersistenceContext private EntityManager em;
     private final AdminService admin;
 
@@ -137,7 +138,11 @@ public class AdminWorkspaceService {
         long total = ((Number) bind("SELECT COUNT(*) FROM " + d.from + w.sql, w).getSingleResult()).longValue();
         List<?> rows = bind("SELECT " + d.select + " FROM " + d.from + w.sql + " ORDER BY " + d.order, w)
                 .setFirstResult(page * size).setMaxResults(size).getResultList();
-        return new Page(rows.stream().map(row -> map(d.columns, (Object[]) row)).toList(), total, page, size);
+        return new Page(rows.stream().map(row -> {
+            var item=map(d.columns,(Object[])row);
+            if("courses".equals(resource)&&bankStats!=null)item.put("questionCount",bankStats.countByCourse(((Number)item.get("id")).longValue()));
+            return item;
+        }).toList(), total, page, size);
     }
 
     @Transactional

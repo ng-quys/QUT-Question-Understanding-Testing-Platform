@@ -18,7 +18,8 @@ class StudentSessionTimingTests {
     final ExamQuestionRepository questions=mock(ExamQuestionRepository.class);
     final AnswerRepository answers=mock(AnswerRepository.class);
     final StudentAnswerRepository saved=mock(StudentAnswerRepository.class);
-    final StudentService service=new StudentService(users,registrations,mock(ExamSessionRepository.class),attempts,questions,answers,saved,mock(AntiCheatService.class));
+    final ExamSnapshotReadService snapshots=mock(ExamSnapshotReadService.class);
+    final StudentService service=new StudentService(users,registrations,mock(ExamSessionRepository.class),attempts,questions,mock(CloRepository.class),saved,mock(AntiCheatService.class),snapshots);
     final LocalDateTime clock=LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
     Exam exam; ExamSession session; ExamAttempt attempt; ExamSessionStudent registration;
 
@@ -35,10 +36,11 @@ class StudentSessionTimingTests {
         when(attempts.findOwnedAttempt(4L,1L)).thenReturn(Optional.of(attempt));
         when(attempts.findAllByStudentIdWithDetails(1L)).thenReturn(List.of(attempt));
         Question question=new Question();question.setId(5L);
-        ExamQuestion link=new ExamQuestion();link.setExam(exam);link.setQuestion(question);link.setPoints(BigDecimal.TEN);
+        ExamQuestion link=new ExamQuestion();link.setId(15L);link.setExam(exam);link.setQuestionId(question.getId());link.setPoints(BigDecimal.TEN);
         when(questions.findByExamIdWithQuestion(2L)).thenReturn(List.of(link));
         Answer answer=new Answer();answer.setId(6L);answer.setQuestion(question);answer.setCorrect(true);
         when(answers.findByIdAndQuestionId(6L,5L)).thenReturn(Optional.of(answer));
+        when(snapshots.find(15L)).thenReturn(Optional.of(new ExamSnapshotReadService.Snapshot(15L,5L,null,"Frozen question","",6L,List.of(new ExamSnapshotReadService.Option(6L,"A","Correct"),new ExamSnapshotReadService.Option(7L,"B","Incorrect")))));
         when(saved.findByAttemptIdAndQuestionId(4L,5L)).thenReturn(Optional.empty());
     }
 

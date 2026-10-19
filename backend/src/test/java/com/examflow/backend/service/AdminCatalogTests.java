@@ -47,6 +47,12 @@ class AdminCatalogTests {
         doAnswer(call->{Object row=call.getArgument(0);if(row instanceof Course c){c.setId(10L);when(em.find(Course.class,10L)).thenReturn(c);}if(row instanceof ExamSession s){s.setId(30L);when(em.find(ExamSession.class,30L)).thenReturn(s);}return null;}).when(em).persist(any());
     }
     static LocalDateTime now(){return LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));}
+    @Test void courseWithExternalBankQuestionsCannotBeDeletedEvenWhenMainHasNoQuestions(){
+        var bank=mock(QuestionBankStatsService.class);ReflectionTestUtils.setField(service,"bankStats",bank);
+        when(bank.countByCourse(10L)).thenReturn(3L);
+        assertThrows(ApiException.class,()->service.delete(1L,"courses",10L));
+        verify(em,never()).remove(any());
+    }
     AdminCatalogService.CourseInput courseInput(){return new AdminCatalogService.CourseInput("web","Web",3,"CNTT","Description",6L,"active");}
     AdminCatalogService.SessionInput sessionInput(){return new AdminCatalogService.SessionInput(20L,"Ca mới","web-new",null,now().plusDays(2),now().plusDays(2).plusHours(2));}
     @Test void createCourseAssignsRealTeacherAndAudits() {

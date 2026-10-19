@@ -223,6 +223,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
               clos={clos}
               onUpdateQuestions={setQuestions}
               onOpenAIGenerator={handleOpenAIGenerator}
+              onNavigateNewQuestion={() => setActiveTab('new-question')}
               onShowToast={showToast}
               initialCourseFilter={qbCourseFilter}
               initialTopicFilter={qbTopicFilter}

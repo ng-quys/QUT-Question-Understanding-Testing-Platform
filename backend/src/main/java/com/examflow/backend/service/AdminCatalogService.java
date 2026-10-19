@@ -14,6 +14,8 @@ import java.util.*;
 /** Admin-only catalog mutations; existing student and teacher APIs are unchanged. */
 @Service
 public class AdminCatalogService {
+    @org.springframework.beans.factory.annotation.Autowired private QuestionBankStatsService bankStats;
+    @org.springframework.beans.factory.annotation.Autowired private ExamSnapshotReadService snapshots;
     @org.springframework.beans.factory.annotation.Autowired private AdminCodeGenerator codes;
     @PersistenceContext private EntityManager em;
     private final AdminService audit;
@@ -171,6 +173,14 @@ public class AdminCatalogService {
         boolean unused=count("SELECT COUNT(*) FROM exam_sessions WHERE exam_id=:id",id)==0&&count("SELECT COUNT(*) FROM exam_attempts WHERE exam_id=:id",id)==0;
         result.put("canEdit",unused&&"draft".equals(exam.getStatus()));result.put("canClose",unused&&!Set.of("cancelled","completed").contains(exam.getStatus()));
         List<Map<String,Object>> questions=new ArrayList<>();
+        if(snapshots!=null&&snapshots.usesSnapshots(id)){
+            for(Object raw:em.createNativeQuery("SELECT id,question_id,position,points FROM exam_questions WHERE exam_id=:id ORDER BY position").setParameter("id",id).getResultList()){
+                Object[] row=(Object[])raw;var snapshot=snapshots.find(((Number)row[0]).longValue()).orElseThrow(()->conflict("Đề thiếu bản lưu nội dung câu hỏi"));
+                var question=new LinkedHashMap<String,Object>();question.put("id",row[1]);question.put("content",snapshot.content());question.put("position",row[2]);question.put("points",row[3]);
+                question.put("answers",snapshot.options().stream().map(a->Map.of("label",a.label(),"content",a.content(),"correct",a.id()==snapshot.correctAnswerId())).toList());questions.add(question);
+            }
+            result.put("questions",questions);result.put("revisionToken",AdminExamContentService.token(result));return result;
+        }
         for(Object raw:em.createNativeQuery("SELECT q.id,q.content,eq.position,eq.points FROM exam_questions eq JOIN questions q ON q.id=eq.question_id WHERE eq.exam_id=:id ORDER BY eq.position").setParameter("id",id).getResultList()){
             Object[] row=(Object[])raw;var question=new LinkedHashMap<String,Object>();question.put("id",row[0]);question.put("content",row[1]);question.put("position",row[2]);question.put("points",row[3]);
             List<Map<String,Object>> answers=new ArrayList<>();for(Object answerRaw:em.createNativeQuery("SELECT label,content,is_correct FROM answers WHERE question_id=:id ORDER BY position").setParameter("id",row[0]).getResultList()){Object[] answer=(Object[])answerRaw;answers.add(Map.of("label",answer[0].toString(),"content",answer[1],"correct",Boolean.TRUE.equals(answer[2])));}question.put("answers",answers);questions.add(question);
@@ -216,6 +226,7 @@ public class AdminCatalogService {
         switch(resource) {
             case "courses" -> {
                 Course c=require(Course.class,id,true);
+                if(bankStats!=null&&bankStats.countByCourse(id)>0)throw conflict("Học phần đã có câu hỏi trong ngân hàng. Hãy ngưng hoạt động thay vì xóa.");
                 // Preserve the teacher's question bank and teaching structure, including empty chapters.
                 if(count("SELECT COUNT(*) FROM exams WHERE course_id=:id",id)>0 || count("SELECT COUNT(*) FROM questions WHERE course_id=:id",id)>0
                         || count("SELECT COUNT(*) FROM chapters WHERE course_id=:id",id)>0 || count("SELECT COUNT(*) FROM clos WHERE course_id=:id",id)>0)

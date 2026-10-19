@@ -95,7 +95,7 @@ export const QuestionReviewStep: React.FC<QuestionReviewStepProps> = ({
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] flex items-center gap-2">
+            <h2 className="text-base font-bold text-slate-900 font-sans flex items-center gap-2">
               <span>Kiểm duyệt câu hỏi do AI sinh</span>
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
                 {questions.length} câu • Trạng thái mặc định: Chờ duyệt

@@ -13,11 +13,8 @@ public interface StudentAnswerRepository extends JpaRepository<StudentAnswer, Lo
 
     @Query("""
         select sa from StudentAnswer sa
-        join fetch sa.question q
-        left join fetch q.clo
-        left join fetch sa.selectedAnswer
         where sa.attempt.id = :attemptId
-        order by q.id asc
+        order by sa.questionId asc
     """)
     List<StudentAnswer> findByAttemptIdWithDetails(@Param("attemptId") Long attemptId);
 }

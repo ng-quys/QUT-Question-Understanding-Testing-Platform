@@ -82,7 +82,7 @@ export const ExamWizardPage: React.FC<ExamWizardPageProps> = ({
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-extrabold app-text-main tracking-tight font-['Plus_Jakarta_Sans',sans-serif] truncate">
+                <h1 className="text-base sm:text-lg font-extrabold app-text-main tracking-tight font-sans truncate">
                   Tạo Đề Thi Trắc Nghiệm
                 </h1>
                 <span

@@ -151,9 +151,15 @@ class AdminCatalogPostgresTests {
         UserEntity teacher=new UserEntity();teacher.setUsername("synthetic-teacher");teacher.setEmail("teacher@example.invalid");
         teacher.setFullName("Giảng viên kiểm thử");teacher.setRole("teacher");teacher.setStatus("active");em.persist(teacher);teacherId=teacher.getId();
         JpaRepositoryFactory repos=new JpaRepositoryFactory(em);
-        TeacherExamService builder=new TeacherExamService(repos.getRepository(CourseRepository.class),repos.getRepository(QuestionRepository.class),
+        var bank=mock(QuestionBankExamBridge.class);
+        when(bank.approvedPool(anyLong(),anyList())).thenAnswer(call->{
+            Long course=call.getArgument(0);List<Long> clos=call.getArgument(1);
+            return repos.getRepository(QuestionRepository.class).findApprovedPool(course,clos.isEmpty()?List.of(-1L):clos,clos.isEmpty()).stream()
+                .map(q->new QuestionBankExamBridge.Candidate(q.getId(),q.getDifficultyLevelId())).toList();
+        });
+        TeacherExamService builder=new TeacherExamService(repos.getRepository(CourseRepository.class),bank,
                 repos.getRepository(ExamRepository.class),repos.getRepository(ExamQuestionRepository.class),repos.getRepository(DifficultyLevelRepository.class));
-        service=new AdminCatalogService(mock(AdminService.class),builder);ReflectionTestUtils.setField(service,"em",em);ReflectionTestUtils.setField(service,"codes",generator(em));
+        service=new AdminCatalogService(mock(AdminService.class),builder);ReflectionTestUtils.setField(service,"em",em);ReflectionTestUtils.setField(service,"codes",generator(em));ReflectionTestUtils.setField(service,"snapshots",snapshots(em));
     }
     @AfterEach void rollback(){if(em!=null){if(em.getTransaction().isActive())em.getTransaction().rollback();em.close();}}
     Long course(String code){return ((Number)service.course(teacherId,null,new AdminCatalogService.CourseInput(code,"Học phần kiểm thử",3,"CNTT","Synthetic",teacherId,"active")).get("id")).longValue();}
@@ -166,7 +172,7 @@ class AdminCatalogPostgresTests {
         Question question=new Question();question.setCourse(course);question.setCognitiveLevelId((short)1);question.setDifficultyLevelId((short)1);
         question.setContent("Câu hỏi tổng hợp");question.setStatus("approved");question.setSource("manual");question.setDefaultScore(BigDecimal.ONE);em.persist(question);
         for(short i=1;i<=2;i++){Answer answer=new Answer();answer.setQuestion(question);answer.setLabel(i==1?"A":"B");answer.setContent("Đáp án tổng hợp "+i);answer.setCorrect(i==1);answer.setPosition(i);em.persist(answer);}
-        ExamQuestion link=new ExamQuestion();link.setExam(exam);link.setQuestion(question);link.setPosition(1);link.setPoints(BigDecimal.TEN);em.persist(link);em.flush();return exam.getId();
+        ExamQuestion link=new ExamQuestion();link.setExam(exam);link.setQuestionId(question.getId());link.setPosition(1);link.setPoints(BigDecimal.TEN);em.persist(link);em.flush();return exam.getId();
     }
 
     @Test void realCourseExamSessionCrudPreservesBankQuestions(){
@@ -288,8 +294,8 @@ class AdminCatalogPostgresTests {
         assertEquals(false,service.reviewExam(exam).get("canEdit"));
     }
     @Test void editingExamClonesBankQuestionsAndUsedExamRevisionLeavesHistoryUntouched(){
-        long id=simpleExam();var original=service.reviewExam(id);var question=em.createQuery("SELECT eq.question FROM ExamQuestion eq WHERE eq.exam.id=:id",Question.class).setParameter("id",id).getSingleResult();String oldText=question.getContent();
-        var editor=new AdminExamContentService(service,mock(AdminService.class));ReflectionTestUtils.setField(editor,"em",em);ReflectionTestUtils.setField(editor,"codes",generator(em));
+        long id=simpleExam();var original=service.reviewExam(id);var question=em.createQuery("SELECT q FROM Question q WHERE q.id IN (SELECT eq.questionId FROM ExamQuestion eq WHERE eq.exam.id=:id)",Question.class).setParameter("id",id).getSingleResult();String oldText=question.getContent();
+        var editor=new AdminExamContentService(service,mock(AdminService.class));ReflectionTestUtils.setField(editor,"em",em);ReflectionTestUtils.setField(editor,"codes",generator(em));ReflectionTestUtils.setField(editor,"snapshots",snapshots(em));
         var answers=List.of(new AdminExamContentService.AnswerInput("Đáp án mới đúng",true),new AdminExamContentService.AnswerInput("Đáp án mới sai",false));
         var input=new AdminExamContentService.Input((String)original.get("revisionToken"),"Đề đã chỉnh sửa",List.of(new AdminExamContentService.QuestionInput(question.getId(),"Nội dung đã chỉnh sửa",BigDecimal.TEN,answers)));
         var saved=editor.save(teacherId,id,input,false);assertEquals("Đề đã chỉnh sửa",saved.get("title"));assertEquals(oldText,question.getContent());assertEquals(2,count("questions"));
@@ -300,6 +306,27 @@ class AdminCatalogPostgresTests {
         var revisedInput=new AdminExamContentService.Input((String)used.get("revisionToken"),"Bản sửa mới",List.of(new AdminExamContentService.QuestionInput(((Number)changedQuestion.get("id")).longValue(),"Nội dung bản mới",BigDecimal.TEN,answers)));
         assertThrows(ApiException.class,()->editor.save(teacherId,id,revisedInput,false));var copy=editor.save(teacherId,id,revisedInput,true);
         assertNotEquals(id,((Number)copy.get("id")).longValue());assertEquals("draft",copy.get("status"));assertEquals("Đề đã chỉnh sửa",em.find(Exam.class,id).getTitle());assertEquals(1,count("exam_sessions"));
+    }
+    @Test void snapshotExamCanBeReviewedEditedAndRevisedWithoutChangingTheQuestionBank(){
+        long id=simpleExam();var link=em.createQuery("SELECT eq FROM ExamQuestion eq WHERE eq.exam.id=:id",ExamQuestion.class).setParameter("id",id).getSingleResult();
+        em.createNativeQuery("CREATE TABLE exam_question_snapshots(exam_question_id bigint PRIMARY KEY REFERENCES exam_questions(id) ON DELETE CASCADE,exam_id bigint NOT NULL REFERENCES exams(id),question_id bigint NOT NULL,course_id bigint NOT NULL,clo_id bigint,question_content text NOT NULL,question_explanation text,options jsonb NOT NULL,correct_answer_id bigint NOT NULL)").executeUpdate();
+        // Positive ID exists only in the external bank; no Main DB Question entity with this ID.
+        link.setQuestionId(7654321L);em.flush();
+        em.createNativeQuery("INSERT INTO exam_question_snapshots VALUES(:link,:exam,7654321,:course,NULL,'Frozen bank content','',cast(:options as jsonb),101)")
+            .setParameter("link",link.getId()).setParameter("exam",id).setParameter("course",link.getExam().getCourse().getId())
+            .setParameter("options","[{\"id\":101,\"label\":\"A\",\"content\":\"Correct\"},{\"id\":102,\"label\":\"B\",\"content\":\"Incorrect\"}]").executeUpdate();
+        var view=service.reviewExam(id);assertEquals("Frozen bank content",((Map<?,?>)((List<?>)view.get("questions")).get(0)).get("content"));
+        long questions=count("questions"),answers=count("answers");
+        var editor=new AdminExamContentService(service,mock(AdminService.class));ReflectionTestUtils.setField(editor,"em",em);ReflectionTestUtils.setField(editor,"codes",generator(em));ReflectionTestUtils.setField(editor,"snapshots",snapshots(em));
+        var choices=List.of(new AdminExamContentService.AnswerInput("Corrected A",false),new AdminExamContentService.AnswerInput("Corrected B",true));
+        var edit=new AdminExamContentService.Input((String)view.get("revisionToken"),"Edited snapshot paper",List.of(new AdminExamContentService.QuestionInput(7654321L,"Admin-corrected content",BigDecimal.TEN,choices),new AdminExamContentService.QuestionInput(null,"Additional question",BigDecimal.ONE,choices)));
+        var changed=editor.save(teacherId,id,edit,false);assertEquals(questions,count("questions"));assertEquals(answers,count("answers"));
+        var first=(Map<?,?>)((List<?>)changed.get("questions")).get(0);long negative=((Number)first.get("id")).longValue();assertTrue(negative<0);assertEquals("Admin-corrected content",first.get("content"));
+        var freshLink=em.createQuery("SELECT eq FROM ExamQuestion eq WHERE eq.exam.id=:id AND eq.position=1",ExamQuestion.class).setParameter("id",id).getSingleResult();
+        var frozen=snapshots(em).find(freshLink.getId()).orElseThrow();assertEquals(negative,frozen.questionId());assertTrue(frozen.isCorrect(2));assertFalse(frozen.isCorrect(1));
+        var revision=editor.save(teacherId,id,new AdminExamContentService.Input((String)changed.get("revisionToken"),"Snapshot revision",List.of(new AdminExamContentService.QuestionInput(negative,"Revision only",BigDecimal.TEN,choices))),true);
+        assertNotEquals(id,((Number)revision.get("id")).longValue());assertEquals("Admin-corrected content",((Map<?,?>)((List<?>)service.reviewExam(id).get("questions")).get(0)).get("content"));
+        assertEquals(questions,count("questions"));assertEquals(answers,count("answers"));
     }
     @Test void shortRoomMigrationPreservesIdsAndCustomCodes()throws Exception{
         var actor=account("room-migration-admin","admin");organization().saveRoom(actor,null,new ExamOrganizationService.RoomInput("PH-1234567890ABCDEF1234567890ABCDEF","A101","active",40));organization().saveRoom(actor,null,new ExamOrganizationService.RoomInput("LAB-A","Phòng riêng","active",40));
@@ -321,7 +348,11 @@ class AdminCatalogPostgresTests {
     }
     ExamOrganizationService organization(){var value=new ExamOrganizationService(mock(AdminService.class),workspace());ReflectionTestUtils.setField(value,"em",em);ReflectionTestUtils.setField(value,"codes",generator(em));return value;}
     StudentService studentService(){return studentService(em);}
-    StudentService studentService(EntityManager context){var r=new JpaRepositoryFactory(context);var value=new StudentService(r.getRepository(UserRepository.class),r.getRepository(ExamSessionStudentRepository.class),r.getRepository(ExamSessionRepository.class),r.getRepository(ExamAttemptRepository.class),r.getRepository(ExamQuestionRepository.class),r.getRepository(AnswerRepository.class),r.getRepository(StudentAnswerRepository.class),mock(AntiCheatService.class));ReflectionTestUtils.setField(value,"em",context);return value;}
+    ExamSnapshotReadService snapshots(EntityManager context){
+        var jdbc=context.unwrap(org.hibernate.Session.class).doReturningWork(connection->new org.springframework.jdbc.core.JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(connection,true)));
+        return new ExamSnapshotReadService(jdbc,new com.fasterxml.jackson.databind.ObjectMapper());
+    }
+    StudentService studentService(EntityManager context){var r=new JpaRepositoryFactory(context);var value=new StudentService(r.getRepository(UserRepository.class),r.getRepository(ExamSessionStudentRepository.class),r.getRepository(ExamSessionRepository.class),r.getRepository(ExamAttemptRepository.class),r.getRepository(ExamQuestionRepository.class),r.getRepository(CloRepository.class),r.getRepository(StudentAnswerRepository.class),mock(AntiCheatService.class),snapshots(context));ReflectionTestUtils.setField(value,"em",context);return value;}
     @Test void publishedRosterIsExplicitIdempotentAndIndependentFromRoomTemplate(){
         var org=organization();var admin=account("assigned-admin","admin");var teacher=em.find(UserEntity.class,teacherId);var a=account("SV001","student");var b=account("SV002","student");var outsider=account("SV003","student");
         long examId=simpleExam();org.saveRoom(admin,null,new ExamOrganizationService.RoomInput("ROOM-A","Phòng A","active"));long roomId=((Number)em.createNativeQuery("SELECT id FROM exam_rooms WHERE code='ROOM-A'").getSingleResult()).longValue();
@@ -629,4 +660,3 @@ class AdminCatalogPostgresTests {
         finally{go.countDown();workers.shutdownNow();workers.awaitTermination(5,TimeUnit.SECONDS);}
     }
 }
-

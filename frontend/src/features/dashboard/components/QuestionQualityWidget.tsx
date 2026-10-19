@@ -7,7 +7,7 @@ export const QuestionQualityWidget: React.FC = () => {
     <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between h-full">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 font-['Space_Grotesk'] tracking-tight">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 font-sans tracking-tight">
             Chất lượng câu hỏi
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">

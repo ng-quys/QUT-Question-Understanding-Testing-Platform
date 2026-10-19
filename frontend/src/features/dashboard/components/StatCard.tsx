@@ -35,7 +35,7 @@ export const StatCard: React.FC<StatCardProps> = ({ stat }) => {
       </div>
 
       <div className="mt-3 flex items-baseline justify-between gap-2">
-        <div className="text-2xl sm:text-3xl font-extrabold app-text-main tracking-tight font-['Plus_Jakarta_Sans',sans-serif]">
+        <div className="text-2xl sm:text-3xl font-extrabold app-text-main tracking-tight font-sans">
           {stat.value}
         </div>
       </div>

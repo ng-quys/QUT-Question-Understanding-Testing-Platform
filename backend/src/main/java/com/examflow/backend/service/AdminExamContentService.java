@@ -13,13 +13,14 @@ import java.util.*;
 
 @Service
 public class AdminExamContentService {
+    @org.springframework.beans.factory.annotation.Autowired private ExamSnapshotReadService snapshots;
     @org.springframework.beans.factory.annotation.Autowired private AdminCodeGenerator codes;
     @PersistenceContext private EntityManager em;
     private final AdminCatalogService catalog;
     private final AdminService audit;
     public AdminExamContentService(AdminCatalogService catalog,AdminService audit){this.catalog=catalog;this.audit=audit;}
     public record AnswerInput(@NotBlank @Size(max=10000) String content,boolean correct){}
-    public record QuestionInput(@Positive Long id,@NotBlank @Size(max=20000) String content,
+    public record QuestionInput(Long id,@NotBlank @Size(max=20000) String content,
         @NotNull @DecimalMin("0.01") @DecimalMax("100") @Digits(integer=3,fraction=2) BigDecimal points,
         @NotNull @Size(min=2,max=10) List<@Valid AnswerInput> answers){}
     public record Input(@NotBlank String expectedToken,@NotBlank @Size(max=200) String title,
@@ -47,10 +48,13 @@ public class AdminExamContentService {
         if(!copy&&!Boolean.TRUE.equals(original.get("canEdit")))throw conflict("Đề đã được sử dụng. Chọn Tạo bản chỉnh sửa để giữ nguyên bài làm cũ.");
         if(input.questions()==null||input.questions().isEmpty()||input.questions().size()>500)throw bad("Đề cần từ 1 đến 500 câu hỏi");
         Map<Long,Question> originals=new HashMap<>();
-        for(Question q:em.createQuery("SELECT eq.question FROM ExamQuestion eq WHERE eq.exam.id=:id",Question.class).setParameter("id",id).getResultList())originals.put(q.getId(),q);
+        boolean snapshotMode=snapshots!=null&&snapshots.usesSnapshots(id);
+        Map<Long,ExamSnapshotReadService.Snapshot> frozen=new HashMap<>();
+        if(snapshotMode){for(ExamQuestion link:em.createQuery("SELECT eq FROM ExamQuestion eq WHERE eq.exam.id=:id",ExamQuestion.class).setParameter("id",id).getResultList())frozen.put(link.getQuestionId(),snapshots.find(link.getId()).orElseThrow(()->conflict("Đề thiếu bản lưu câu hỏi")));}
+        else for(Question q:em.createQuery("SELECT q FROM Question q WHERE q.id IN (SELECT eq.questionId FROM ExamQuestion eq WHERE eq.exam.id=:id)",Question.class).setParameter("id",id).getResultList())originals.put(q.getId(),q);
         Set<Long> seen=new HashSet<>();BigDecimal total=BigDecimal.ZERO;
         for(var q:input.questions()){
-            if(q.id()!=null&&(!originals.containsKey(q.id())||!seen.add(q.id())))throw bad("Danh sách câu hỏi không khớp đề đang chỉnh sửa");
+            if(q.id()!=null&&(!(snapshotMode?frozen.containsKey(q.id()):originals.containsKey(q.id()))||!seen.add(q.id())))throw bad("Danh sách câu hỏi không khớp đề đang chỉnh sửa");
             if(q.content()==null||q.content().isBlank()||q.points()==null||q.points().signum()<=0||q.points().compareTo(BigDecimal.valueOf(100))>0)throw bad("Nội dung và điểm câu hỏi không hợp lệ");
             if(q.answers()==null||q.answers().size()<2||q.answers().size()>10||q.answers().stream().filter(AnswerInput::correct).count()!=1||q.answers().stream().anyMatch(a->a.content()==null||a.content().isBlank()))throw bad("Mỗi câu cần 2–10 lựa chọn và đúng một đáp án đúng");
             total=total.add(q.points());
@@ -63,15 +67,24 @@ public class AdminExamContentService {
         }
         target.setTitle(input.title().trim());target.setTotalQuestions(input.questions().size());target.setTotalPoints(total);
         if(copy){em.persist(target);em.flush();em.createNativeQuery("INSERT INTO exam_ai_policies(exam_id,enabled) SELECT :target,COALESCE((SELECT enabled FROM exam_ai_policies WHERE exam_id=:source),TRUE)").setParameter("target",target.getId()).setParameter("source",id).executeUpdate();}
-        else em.createNativeQuery("DELETE FROM exam_questions WHERE exam_id=:id").setParameter("id",id).executeUpdate();
+        else {
+            if(snapshotMode)em.createNativeQuery("DELETE FROM exam_question_snapshots WHERE exam_id=:id").setParameter("id",id).executeUpdate();
+            em.createNativeQuery("DELETE FROM exam_questions WHERE exam_id=:id").setParameter("id",id).executeUpdate();
+        }
         int position=0;
         for(var item:input.questions()){
+            if(snapshotMode){
+                ExamQuestion link=new ExamQuestion();link.setExam(target);link.setQuestionId(item.id()==null?1:item.id());link.setPosition(++position);link.setPoints(item.points());em.persist(link);em.flush();
+                link.setQuestionId(-link.getId());em.flush();
+                snapshots.saveAdminSnapshot(link.getId(),target.getId(),source.getCourse().getId(),item.id()==null?null:frozen.get(item.id()),item.content(),item.answers());
+                continue;
+            }
             Question old=item.id()==null?null:originals.get(item.id());Question question=new Question();question.setCourse(source.getCourse());question.setContent(item.content().trim());question.setStatus("approved");question.setSource("manual");question.setDefaultScore(item.points());
             question.setCognitiveLevelId(old==null?(short)1:old.getCognitiveLevelId());question.setDifficultyLevelId(old==null?(short)1:old.getDifficultyLevelId());
             if(old!=null){question.setChapterId(old.getChapterId());question.setTopicId(old.getTopicId());question.setClo(old.getClo());question.setExplanation(old.getExplanation());}
             em.persist(question);short answerPosition=0;
             for(var answer:item.answers()){Answer entity=new Answer();entity.setQuestion(question);entity.setContent(answer.content().trim());entity.setCorrect(answer.correct());entity.setLabel(String.valueOf((char)('A'+answerPosition)));entity.setPosition(++answerPosition);em.persist(entity);}
-            ExamQuestion link=new ExamQuestion();link.setExam(target);link.setQuestion(question);link.setPosition(++position);link.setPoints(item.points());em.persist(link);
+            ExamQuestion link=new ExamQuestion();link.setExam(target);link.setQuestionId(question.getId());link.setPosition(++position);link.setPoints(item.points());em.persist(link);
         }
         em.flush();audit.audit(actor,copy?"REVISE_EXAM":"EDIT_EXAM_CONTENT","EXAM",target.getId(),"sourceExamId="+id+"; questions="+position);
         return catalog.reviewExam(target.getId());

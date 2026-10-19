@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import {useAiQuota} from '../hooks/useAiQuota';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Sparkles,
   ArrowLeft,
@@ -19,6 +20,7 @@ import { QuestionReviewStep } from '../components/QuestionReviewStep';
 import { MatrixPage } from '../../matrix/pages/MatrixPage';
 import { MatrixGenerationProgress } from '../components/MatrixGenerationProgress';
 import { MatrixKnowledgeUnit, MatrixSummaryStats } from '../../matrix/types';
+import { apiFetch } from '../../../services/api';
 
 interface AIGeneratorPageProps {
   courses: Course[];
@@ -51,6 +53,17 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
   // Bước 3: AI sinh câu hỏi (Biên soạn theo phân bổ ma trận và tài liệu)
   // Bước 4: Duyệt & Chỉnh sửa (Kiểm định chất lượng & Lưu vào Ngân hàng câu hỏi)
   const [currentStep, setCurrentStep] = useState<AIWorkflowStep>(1);
+  const {quota,error:quotaError}=useAiQuota();
+  const [jobKey,setJobKey]=useState('');
+  const [resumeJobId,setResumeJobId]=useState<number|undefined>();
+  const [creditsUsed,setCreditsUsed]=useState<number|null>(null);
+  const [lastRequested,setLastRequested]=useState<number|null>(null);
+  const launching=useRef(false);
+  const [matrixVisited,setMatrixVisited]=useState(false);
+  useEffect(()=>{if(currentStep>=2)setMatrixVisited(true);},[currentStep]);
+  useEffect(()=>{if(currentStep!==3)launching.current=false;},[currentStep]);
+  const [provider, setProvider] = useState<'openai' | 'qwen'>('qwen');
+  const [saveError, setSaveError] = useState('');
   const [documents, setDocuments] = useState<SourceDocument[]>([]);
   const [, setExtractionSummary] = useState<DocumentExtractionSummary | null>(null);
 
@@ -87,7 +100,14 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
     aiInstruction: string;
     defaultScore?: number;
   }) => {
-    setActiveMatrixData(data);
+    const count=data.units.reduce((sum,u)=>sum+u.nb+u.th+u.vd,0);
+    if(launching.current)return;
+    if(!quota){onShowToast(quotaError || 'Đang tải AI Credits.');return;}
+    if(count<1 || count>quota.maxPerRequest){onShowToast('Mỗi lần chỉ được sinh tối đa '+quota.maxPerRequest+' câu hỏi. Vui lòng giảm số lượng hoặc chia thành nhiều lượt.');return;}
+    if(quota.activeJob){onShowToast('Bạn đang có job AI hoạt động. Vui lòng tiếp tục job hiện tại.');return;}
+    if(count>quota.remaining){onShowToast('Không đủ AI Credits khả dụng.');return;}
+    launching.current=true;setJobKey(crypto.randomUUID());setResumeJobId(undefined);setCreditsUsed(null);
+    setActiveMatrixData({...data,totalQuestions:count});
     setCurrentStep(3);
     onShowToast(`Bắt đầu sinh ${data.totalQuestions} câu hỏi theo ma trận và tài liệu nguồn.`);
   };
@@ -95,15 +115,17 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
   // ----------------------------------------------------
   // STEP 3 HANDLERS: AI GENERATION COMPLETION -> BƯỚC 4 DUYỆT
   // ----------------------------------------------------
-  const handleMatrixGenerationComplete = (questionsGenerated: QuestionItem[]) => {
+  const handleMatrixGenerationComplete = (questionsGenerated: QuestionItem[], charged:number, requested:number) => {
     setGeneratedQuestions(questionsGenerated);
+    setCreditsUsed(charged);
+    setLastRequested(requested);
     setCurrentStep(4);
-    onShowToast(`Đã sinh xong ${questionsGenerated.length} câu hỏi theo ma trận. Hãy kiểm duyệt và chỉnh sửa.`);
+    onShowToast(`Đã sinh ${questionsGenerated.length} câu hợp lệ; đã trừ ${charged} credits. Hãy kiểm duyệt và chỉnh sửa.`);
   };
 
   const handleCancelMatrixGeneration = () => {
     setCurrentStep(2);
-    onShowToast('Đã dừng tiến trình sinh câu hỏi, quay lại Ma trận.');
+    onShowToast('Quay lại ma trận. Job đã gửi vẫn được quản lý trên Backend.');
   };
 
   // ----------------------------------------------------
@@ -120,22 +142,21 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
     onShowToast('Đã xóa câu hỏi khỏi danh sách xem trước');
   };
 
-  const handleSaveAll = (status: 'pending' | 'approved') => {
-    const finalizedQuestions = generatedQuestions.map((q) => ({
-      ...q,
-      status,
-      updatedAt: 'Vừa xong',
-    }));
-
-    onSaveQuestions(finalizedQuestions);
-    onShowToast(
-      status === 'approved'
-        ? `Đã thêm ${finalizedQuestions.length} câu hỏi vào Ngân hàng chính thức!`
-        : `Đã lưu ${finalizedQuestions.length} câu hỏi vào danh sách Chờ duyệt!`
-    );
-
-    // Direct user to question bank
-    onNavigateToQuestionBank();
+  const handleSaveAll = async (status: 'pending' | 'approved') => {
+    setSaveError('');
+    try {
+      for (const q of generatedQuestions) {
+        await apiFetch('/teacher/questions', {method:'POST',body:JSON.stringify({
+          courseId:Number(q.courseId),chapterId:Number(q.chapterId)||null,
+          topicId:null,cloId:Number(q.cloId)||null,bloom:q.bloom,
+          difficulty:'medium',content:q.content,explanation:q.explanation,
+          status,defaultScore:q.default_score ?? 0.5,
+          answers:q.options.map((content,i)=>({content,correct:i===q.correctIndex}))
+        })});
+      }
+      onSaveQuestions(generatedQuestions.map(q=>({...q,status,updatedAt:'Vừa xong'})));
+      onNavigateToQuestionBank();
+    } catch(e) {setSaveError(e instanceof Error?e.message:'Lưu câu hỏi thất bại');}
   };
 
   return (
@@ -154,7 +175,7 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-            <h1 className="text-xl font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900 font-sans flex items-center gap-2">
               <span>Trình AI sinh câu hỏi học phần</span>
               <span
                 className="text-[10px] font-bold px-2 py-0.5 rounded text-white tracking-wider uppercase shadow-2xs"
@@ -191,6 +212,11 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
         isProcessing={currentStep === 3}
       />
 
+      <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600 flex flex-wrap items-center gap-3">
+        <span>{quota ? 'AI Credits còn lại: '+quota.remaining+' · Cấp thêm: '+quota.extraBalance : quotaError || 'Đang tải AI Credits...'}</span>
+        {creditsUsed!==null && <span>Đã sử dụng lượt vừa rồi: {creditsUsed} credits</span>}
+        {quota?.activeJob && currentStep!==3 && <button type="button" className="font-semibold underline" onClick={()=>{setResumeJobId(quota.activeJob!.id);setJobKey('resume-'+quota.activeJob!.id);setCurrentStep(3);}}>Tiếp tục job #{quota.activeJob.id} ({quota.activeJob.status})</button>}
+      </div>
       {/* ======================================================== */}
       {/* BƯỚC 1: TẢI TÀI LIỆU NGUỒN                               */}
       {/* ======================================================== */}
@@ -210,8 +236,13 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
       {/* ======================================================== */}
       {/* BƯỚC 2: MA TRẬN CÂU HỎI HỌC PHẦN (Sau khi upload tài liệu) */}
       {/* ======================================================== */}
-      {currentStep === 2 && (
-        <div className="space-y-4 animate-in fade-in duration-200">
+      {(matrixVisited || currentStep===2) && (
+        <div className={currentStep===2 ? 'space-y-4 animate-in fade-in duration-200' : 'hidden'}>
+          <label className="flex items-center gap-3 text-sm">Mô hình AI:
+            <select className="border rounded px-3 py-2" value={provider} onChange={e=>setProvider(e.target.value as 'qwen'|'openai')}>
+              <option value="qwen">Qwen (Ollama local)</option><option value="openai">OpenAI API</option>
+            </select>
+          </label>
           <MatrixPage
             courses={courses}
             chapters={chapters}
@@ -223,6 +254,7 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
             onStartGenerationWithMatrix={handleStartMatrixGeneration}
             onBackToUpload={() => setCurrentStep(1)}
             uploadedDocuments={documents}
+            aiQuota={quota}
           />
         </div>
       )}
@@ -230,20 +262,29 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
       {/* ======================================================== */}
       {/* BƯỚC 3: AI TIẾN HÀNH SINH CÂU HỎI THEO MA TRẬN            */}
       {/* ======================================================== */}
-      {currentStep === 3 && activeMatrixData && (
+      {currentStep === 3 && (activeMatrixData || resumeJobId) && (
         <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3 mb-3 text-sm"><label htmlFor="ai-provider">Mô hình AI:</label>
+            <select id="ai-provider" className="border rounded px-3 py-2" disabled={currentStep===3} value={provider} onChange={e=>setProvider(e.target.value as 'openai'|'qwen')}>
+              <option value="qwen">Qwen (Ollama local)</option><option value="openai">OpenAI API</option>
+            </select></div>
           <MatrixGenerationProgress
-            courseId={activeMatrixData.courseId}
-            totalQuestions={activeMatrixData.totalQuestions}
-            units={activeMatrixData.units}
-            summary={activeMatrixData.summary}
-            aiInstruction={activeMatrixData.aiInstruction}
-            defaultScore={activeMatrixData.defaultScore}
+            courseId={activeMatrixData?.courseId ?? ''}
+            totalQuestions={activeMatrixData?.totalQuestions ?? quota?.activeJob?.requested ?? 0}
+            units={activeMatrixData?.units ?? []}
+            summary={activeMatrixData?.summary ?? {totalNB:0,totalTH:0,totalVD:0,matrixTotal:0,percentNB:0,percentTH:0,percentVD:0}}
+            aiInstruction={activeMatrixData?.aiInstruction ?? ''}
+            defaultScore={activeMatrixData?.defaultScore}
             courses={courses}
             chapters={chapters}
             clos={clos}
             onComplete={handleMatrixGenerationComplete}
             onCancel={handleCancelMatrixGeneration}
+            idempotencyKey={jobKey}
+            resumeJobId={resumeJobId}
+            sourceProof={documents[0]?.aiSourceProof}
+            provider={provider}
+            sourceText={documents.map(d=>d.extractedText||'').join('\n\n')}
           />
         </div>
       )}
@@ -255,7 +296,7 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
         <div className="space-y-4 animate-in fade-in duration-200">
           <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 text-xs text-emerald-800">
             <span className="font-semibold">
-              ✓ AI đã hoàn thành biên soạn {generatedQuestions.length} câu hỏi theo đúng ma trận học phần.
+              ✓ AI đã sinh {generatedQuestions.length}/{lastRequested} câu hợp lệ · Đã sử dụng {creditsUsed ?? 0} credits.{lastRequested && generatedQuestions.length<lastRequested ? " Còn thiếu "+(lastRequested-generatedQuestions.length)+" câu; có thể cấu hình lượt tiếp theo tại Ma trận." : ""}
             </span>
             <button
               type="button"
@@ -266,6 +307,7 @@ export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
             </button>
           </div>
 
+          {saveError && <div role="alert" className="text-red-700 bg-red-50 p-3 rounded">{saveError}</div>}
           <QuestionReviewStep
             questions={generatedQuestions}
             documents={documents}

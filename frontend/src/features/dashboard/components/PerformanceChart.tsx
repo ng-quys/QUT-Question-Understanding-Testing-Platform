@@ -58,7 +58,7 @@ export const PerformanceChart: React.FC = () => {
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 font-['Space_Grotesk'] tracking-tight">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 font-sans tracking-tight">
               Kết quả thi gần đây
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -97,7 +97,7 @@ export const PerformanceChart: React.FC = () => {
               {metricView === 'avgScore' ? 'Điểm trung bình toàn khóa' : 'Tỉ lệ đạt trung bình'}
             </div>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-3xl font-extrabold text-slate-900 font-['Space_Grotesk']">
+              <span className="text-3xl font-extrabold text-slate-900 font-sans">
                 {metricView === 'avgScore' ? '7.8' : '89.4%'}
               </span>
               <span className="text-xs text-slate-400 font-medium">

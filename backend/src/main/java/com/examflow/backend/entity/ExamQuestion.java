@@ -15,9 +15,8 @@ public class ExamQuestion {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_id", nullable = false)
     private Exam exam;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_id", nullable = false)
-    private Question question;
+    @Column(name = "question_id", nullable = false)
+    private Long questionId;
     @Column(nullable = false)
     private Integer position;
     @Column(nullable = false)

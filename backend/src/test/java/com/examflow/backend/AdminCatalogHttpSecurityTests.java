@@ -80,4 +80,3 @@ class AdminCatalogHttpSecurityTests {
         verify(workspace).report(argThat(f->f.sessionCode().equals("TEST-CODE")));
     }
 }
-
