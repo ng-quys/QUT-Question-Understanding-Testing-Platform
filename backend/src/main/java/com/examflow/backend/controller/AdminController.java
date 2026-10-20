@@ -36,7 +36,8 @@ public class AdminController {
     @GetMapping("/anti-cheating/{attemptId}") public AdminDto.AntiCheatSummary antiCheat(@AuthenticationPrincipal Jwt u,@PathVariable Long attemptId){requireAdmin(u);return service.antiCheat(attemptId);}
     @GetMapping("/audit-logs") public List<AdminDto.AuditRow> auditLogs(@AuthenticationPrincipal Jwt u){requireAdmin(u);return service.auditLogs();}
     @PatchMapping("/users/{id}/status") public AdminDto.UserRow updateStatus(@AuthenticationPrincipal Jwt u,@PathVariable Long id,@RequestParam String status){return accounts.status(requireAdmin(u).getId(),id,status);}
-    @PostMapping("/users") public AdminDto.UserRow create(@AuthenticationPrincipal Jwt u,@jakarta.validation.Valid @RequestBody com.examflow.backend.service.AdminAccountService.Create request){return accounts.create(requireAdmin(u).getId(),request);}
+    @PostMapping("/users/reserve-code") public java.util.Map<String,String> reserveCode(@AuthenticationPrincipal Jwt u,@RequestParam com.examflow.backend.dto.RegistrationRole role){return accounts.reserveCode(requireAdmin(u).getId(),role);}
+    @PostMapping("/users") public AdminDto.UserRow create(@AuthenticationPrincipal Jwt u,@jakarta.validation.Valid @RequestBody com.examflow.backend.service.AdminAccountService.Create request,@RequestHeader(value="X-Account-Code-Reservation",required=false) String reservation){return accounts.create(requireAdmin(u).getId(),request,reservation);}
     @PutMapping("/users/{id}") public AdminDto.UserRow edit(@AuthenticationPrincipal Jwt u,@PathVariable Long id,@jakarta.validation.Valid @RequestBody com.examflow.backend.service.AdminAccountService.Edit request){return accounts.edit(requireAdmin(u).getId(),id,request);}
     @PutMapping("/users/{id}/password")
     public java.util.Map<String, String> resetPassword(@AuthenticationPrincipal Jwt u, @PathVariable Long id, @RequestBody java.util.Map<String, String> body) {

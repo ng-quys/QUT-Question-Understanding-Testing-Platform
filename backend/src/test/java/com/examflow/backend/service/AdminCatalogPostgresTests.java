@@ -43,13 +43,13 @@ class AdminCatalogPostgresTests {
     static AdminCodeGenerator generator(EntityManager manager){AdminCodeGenerator codes=new AdminCodeGenerator();ReflectionTestUtils.setField(codes,"em",manager);return codes;}
     @Test void automaticCodesSkipExistingValuesAndHaveRequestedFormats(){
         // Sequence state is not rolled back: set explicitly inside this disposable database.
-        em.createNativeQuery("ALTER SEQUENCE admin_student_code_seq RESTART WITH 1").executeUpdate();
-        em.createNativeQuery("ALTER SEQUENCE admin_teacher_code_seq RESTART WITH 1").executeUpdate();
+        em.createNativeQuery("ALTER SEQUENCE admin_student_account_v2_code_seq RESTART WITH 1").executeUpdate();
+        em.createNativeQuery("ALTER SEQUENCE admin_teacher_account_v2_code_seq RESTART WITH 1").executeUpdate();
         em.createNativeQuery("ALTER SEQUENCE admin_course_code_seq RESTART WITH 1").executeUpdate();
-        em.createNativeQuery("UPDATE users SET username='2000000001' WHERE id=:id").setParameter("id",teacherId).executeUpdate();
+        em.createNativeQuery("UPDATE users SET username='2001230001' WHERE id=:id").setParameter("id",teacherId).executeUpdate();
         var codes=generator(em);
-        assertEquals("2000000002",codes.next(AdminCodeGenerator.Kind.STUDENT));
-        assertEquals("3000000001",codes.next(AdminCodeGenerator.Kind.TEACHER));
+        assertEquals("2001230002",codes.next(AdminCodeGenerator.Kind.STUDENT));
+        assertEquals("3001240001",codes.next(AdminCodeGenerator.Kind.TEACHER));
         assertEquals("MH01",service.course(teacherId,null,new AdminCatalogService.CourseInput(null,"Môn tự động",3,"CNTT","",teacherId,"active")).get("code"));
         assertEquals("MH02",service.course(teacherId,null,new AdminCatalogService.CourseInput(null,"Môn tự động 2",3,"CNTT","",teacherId,"active")).get("code"));
         var admin=account("auto-code-admin","admin");
@@ -63,8 +63,8 @@ class AdminCatalogPostgresTests {
         assertEquals("DT01",period.get("code"));assertTrue(((Number)period.get("id")).longValue()>0);
         em.createNativeQuery("ALTER SEQUENCE admin_class_code_seq RESTART WITH 99").executeUpdate();
         assertEquals("L99",codes.next(AdminCodeGenerator.Kind.CLASS));assertEquals("L100",codes.next(AdminCodeGenerator.Kind.CLASS));
-        em.createNativeQuery("ALTER SEQUENCE admin_student_code_seq RESTART WITH 9999999").executeUpdate();
-        assertEquals("2009999999",codes.next(AdminCodeGenerator.Kind.STUDENT));
+        em.createNativeQuery("ALTER SEQUENCE admin_student_account_v2_code_seq RESTART WITH 9999").executeUpdate();
+        assertEquals("2001239999",codes.next(AdminCodeGenerator.Kind.STUDENT));
     }
     @Test @Order(Integer.MAX_VALUE) void concurrentReservationsAreUniqueAcrossConnections() throws Exception {
         // Commit schema before other connections allocate from the same sequence.
@@ -75,7 +75,7 @@ class AdminCatalogPostgresTests {
             for(int i=0;i<60;i++)jobs.add(()->{try(var connection=factory.createEntityManager()){
                 connection.getTransaction().begin();String code=generator(connection).next(AdminCodeGenerator.Kind.TEACHER);connection.getTransaction().rollback();return code;
             }});
-            var codes=new java.util.HashSet<String>();for(var result:executor.invokeAll(jobs)){String code=result.get();assertTrue(code.matches("300[0-9]{7}"));assertTrue(codes.add(code));}
+            var codes=new java.util.HashSet<String>();for(var result:executor.invokeAll(jobs)){String code=result.get();assertTrue(code.matches("300124[0-9]{4}"));assertTrue(codes.add(code));}
             assertEquals(60,codes.size());
         } finally {
             executor.shutdownNow();em.getTransaction().begin();
@@ -143,7 +143,7 @@ class AdminCatalogPostgresTests {
             }
         }catch(java.io.IOException error){throw new RuntimeException(error);}
         try {
-            for(String file:List.of("012_course_exam_allocation.sql","013_department_exam_sittings.sql","014_session_ai_policy.sql","017_admin_automatic_codes.sql")){
+            for(String file:List.of("012_course_exam_allocation.sql","013_department_exam_sittings.sql","014_session_ai_policy.sql","017_admin_automatic_codes.sql","018_account_code_prefixes.sql")){
                 String migration=java.nio.file.Files.readString(java.nio.file.Path.of("../database/migrations",file)).replaceAll("(?m)^BEGIN;\\s*$", "").replaceAll("(?m)^COMMIT;\\s*$", "");
                 em.unwrap(org.hibernate.Session.class).doWork(connection->{try(var statement=connection.createStatement()){statement.execute(migration);}});
             }
@@ -165,6 +165,23 @@ class AdminCatalogPostgresTests {
     Long course(String code){return ((Number)service.course(teacherId,null,new AdminCatalogService.CourseInput(code,"Học phần kiểm thử",3,"CNTT","Synthetic",teacherId,"active")).get("id")).longValue();}
     long count(String table){return ((Number)em.createNativeQuery("SELECT COUNT(*) FROM "+table).getSingleResult()).longValue();}
     AdminWorkspaceService workspace(){AdminWorkspaceService result=new AdminWorkspaceService(mock(AdminService.class));ReflectionTestUtils.setField(result,"em",em);return result;}
+    @Test void courseListSurvivesBankOutageWithoutReportingZeroQuestionsAndRecovers(){
+        Long courseId=course("BANK-OUTAGE");
+        var workspace=workspace();var bank=mock(QuestionBankStatsService.class);
+        ReflectionTestUtils.setField(workspace,"bankStats",bank);
+        when(bank.countByCourses(anyList())).thenThrow(new org.springframework.jdbc.CannotGetJdbcConnectionException("synthetic unavailable bank"));
+        var filters=new AdminWorkspaceService.Filters("","","","",null,null,null);
+        var unavailable=workspace.list("courses",filters,0,20);
+        assertEquals(1,unavailable.total());assertEquals("BANK-OUTAGE",unavailable.items().get(0).get("code"));
+        assertNull(unavailable.items().get(0).get("questionCount"));
+        assertEquals(true,unavailable.items().get(0).get("questionCountUnavailable"));
+        doReturn(Map.of(courseId,12L)).when(bank).countByCourses(anyList());
+        var recovered=workspace.list("courses",filters,0,20);
+        assertEquals(12L,recovered.items().get(0).get("questionCount"));
+        assertFalse(recovered.items().get(0).containsKey("questionCountUnavailable"));
+        doReturn(Map.of()).when(bank).countByCourses(anyList());
+        assertEquals(0L,workspace.list("courses",filters,0,20).items().get(0).get("questionCount"));
+    }
     Long simpleExam(){
         Course course=em.find(Course.class,course("STATUS-COURSE"));
         Exam exam=new Exam();exam.setCreatedBy(teacherId);exam.setCourse(course);exam.setCode("STATUS-EXAM");exam.setTitle("Đề kiểm thử trạng thái");

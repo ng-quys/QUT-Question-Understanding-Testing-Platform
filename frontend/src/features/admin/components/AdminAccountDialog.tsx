@@ -31,6 +31,17 @@ export function AdminAccountDialog({
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [confirmRepair,setConfirmRepair]=useState(false);
+  const [reservedCode,setReservedCode]=useState<{username:string;token:string;role:AccountInput['role']}|null>(null);
+  const [codeError,setCodeError]=useState('');
+  const codeReady=!!reservedCode&&reservedCode.role===input.role;
+  useEffect(()=>{
+    if(user)return;
+    let active=true;
+    setReservedCode(null);setCodeError('');
+    api.reserveAccountCode(input.role).then(result=>{if(active)setReservedCode({...result,role:input.role});})
+      .catch(cause=>{if(active)setCodeError(cause instanceof Error?cause.message:'Không cấp được mã đăng nhập.');});
+    return()=>{active=false;};
+  },[api,user,input.role]);
   const [classes,setClasses]=useState<AcademicClass[]>([]),[classesLoading,setClassesLoading]=useState(true),[classesError,setClassesError]=useState(''),[classesRevision,setClassesRevision]=useState(0);
   useEffect(()=>{let active=true;api.academicOptions().then(result=>{if(active){setClasses(result.classes);setClassesError('');}}).catch(cause=>{if(active)setClassesError(cause instanceof Error?cause.message:'Không tải được danh sách lớp');}).finally(()=>{if(active)setClassesLoading(false);});return()=>{active=false;};},[api,classesRevision]);
   const departments=[...new Set(classes.filter(c=>c.status==='active'||c.id===input.studentClassId).map(c=>c.department).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
@@ -47,12 +58,14 @@ export function AdminAccountDialog({
     setBusy(true);
     setError('');
     try {
+      if(classesLoading||classesError||!input.department||!departments.includes(input.department))throw new Error('Chọn khoa hợp lệ trước khi lưu tài khoản.');
       if(input.role==='STUDENT'&&(classesLoading||classesError||!input.studentClassId||!visibleClasses.some(c=>c.id===input.studentClassId)))throw new Error('Chọn khoa và lớp hành chính hợp lệ cho sinh viên trước khi lưu.');
       if (user) {
         await api.editUser(user.id, input);
         onSaved('Đã cập nhật thông tin tài khoản thành công.');
       } else {
-        const created=await api.createUser({...input,username:''});
+        if(!codeReady||!reservedCode)throw new Error('Chờ cấp mã đăng nhập trước khi tạo tài khoản.');
+        const created=await api.createUser({...input,username:reservedCode.username},reservedCode.token);
         onSaved(`Đã tạo tài khoản ${input.role==='STUDENT'?'sinh viên':'giảng viên'}. Mã đăng nhập: ${created.username}.`);
       }
     } catch (cause) {
@@ -137,8 +150,8 @@ export function AdminAccountDialog({
               </label>
               <label>
                 {input.role==='STUDENT'?'Mã sinh viên':'Mã giảng viên'} (tên đăng nhập)
-                <input readOnly value={user?input.username:input.role==='STUDENT'?'200•••••••':'300•••••••'} aria-describedby="account-code-hint" />
-                <small id="account-code-hint">{user?'Mã đăng nhập đã được cấp cho tài khoản.':`Tự động cấp khi lưu: đúng 10 chữ số, bắt đầu bằng ${input.role==='STUDENT'?'200':'300'}.`}</small>
+                <input readOnly value={user?input.username:codeReady?reservedCode!.username:''} placeholder={codeError?'Chưa cấp được mã':'Đang cấp mã…'} />
+                {!user&&codeError&&<Notice tone="error">{codeError}</Notice>}
               </label>
               <label className="full">
                 Email <span>*</span>
@@ -154,14 +167,13 @@ export function AdminAccountDialog({
                 {user && <small>Tên đăng nhập và email được cố định để giữ đúng tài khoản liên kết.</small>}
               </label>
               <label>
-                Khoa / Viện / Đơn vị
-                {input.role==='STUDENT'?<select required disabled={busy||classesLoading||!!classesError} value={input.department} onChange={event=>{const department=event.target.value;setInput(old=>({...old,department,studentClassId:null}));}}><option value="">Chọn khoa</option>{departments.map(name=><option key={name} value={name}>{name}</option>)}</select>:<input
-                  maxLength={150}
-                  value={input.department}
-                  disabled={busy}
-                  placeholder="Ví dụ: Công nghệ thông tin"
-                  onChange={event => field('department', event.target.value)}
-                />}
+                Khoa / Viện / Đơn vị <span>*</span>
+                <select required disabled={busy||classesLoading||!!classesError} value={input.department} onChange={event=>{const department=event.target.value;setInput(old=>({...old,department,studentClassId:null}));}}>
+                  <option value="">{classesLoading?'Đang tải danh sách khoa…':'Chọn khoa'}</option>
+                  {departments.map(name=><option key={name} value={name}>{name}</option>)}
+                </select>
+                {input.role==='TEACHER'&&classesError&&<><Notice tone="error">Không tải được danh sách khoa. Vui lòng thử lại.</Notice><button type="button" className="admin-button secondary" disabled={busy||classesLoading} onClick={()=>{setClassesLoading(true);setClassesRevision(value=>value+1);}}>Tải lại danh sách khoa</button></>}
+                {input.role==='TEACHER'&&!classesLoading&&!classesError&&!departments.length&&<small>Chưa có khoa trong danh sách lớp hành chính.</small>}
               </label>
               <label>
                 Vai trò
@@ -229,7 +241,7 @@ export function AdminAccountDialog({
             <button type="button" className="admin-button secondary" disabled={busy} onClick={onClose}>
               Hủy
             </button>
-            <button className="admin-button primary" disabled={busy}>
+            <button className="admin-button primary" disabled={busy||(!user&&!codeReady)}>
               {busy ? (
                 <Loader2 className="animate-spin" size={17} />
               ) : user ? (

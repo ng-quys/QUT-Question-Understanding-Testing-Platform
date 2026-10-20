@@ -16,6 +16,7 @@ import java.util.Set;
 @Service
 public class AdminAccountService {
     @org.springframework.beans.factory.annotation.Autowired private AdminCodeGenerator codes;
+    @org.springframework.beans.factory.annotation.Autowired private AccountCodeReservation codeReservations;
     @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
     private final UserRepository users;
     private final KeycloakAdminService keycloak;
@@ -35,11 +36,27 @@ public class AdminAccountService {
 
     @Transactional
     public AdminDto.UserRow create(Long actor, Create request) {
+        return create(actor, request, null);
+    }
+
+    @Transactional
+    public java.util.Map<String,String> reserveCode(Long actor, RegistrationRole role) {
+        for (int attempt=0; attempt<100; attempt++) {
+            String code=codes.next(role==RegistrationRole.STUDENT?AdminCodeGenerator.Kind.STUDENT:AdminCodeGenerator.Kind.TEACHER);
+            if (!keycloak.usernameExists(code)) return java.util.Map.of("username",code,"token",codeReservations.issue(actor,role,code));
+        }
+        throw new ApiException(HttpStatus.CONFLICT,"Chưa cấp được mã tài khoản. Vui lòng thử lại.");
+    }
+
+    @Transactional
+    public AdminDto.UserRow create(Long actor, Create request, String reservationToken) {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
         String department=academicDepartment(request.role(),request.studentClassId(),request.department(),null);
         // A supplied legacy username is ignored: all admin-created identities use this policy.
-        String username=null;
-        for(int attempt=0;attempt<100;attempt++) {
+        String username=reservationToken==null?null:codeReservations.verify(actor,request.role(),reservationToken);
+        if(username!=null && keycloak.usernameExists(username))
+            throw new ApiException(HttpStatus.CONFLICT,"Mã đăng nhập đã được sử dụng. Vui lòng cấp lại mã.");
+        for(int attempt=0;username==null && attempt<100;attempt++) {
             String candidate=codes.next(request.role()==RegistrationRole.STUDENT?AdminCodeGenerator.Kind.STUDENT:AdminCodeGenerator.Kind.TEACHER);
             if (users.findByEmailIgnoreCaseOrUsernameIgnoreCase(email,candidate).isPresent())
                 throw new ApiException(HttpStatus.CONFLICT,"Tên đăng nhập hoặc email đã được sử dụng");

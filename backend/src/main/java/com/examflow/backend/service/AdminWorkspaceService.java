@@ -16,6 +16,7 @@ import java.util.*;
 /** Paged administrative reads. All SQL identifiers come from the resource whitelist. */
 @Service
 public class AdminWorkspaceService {
+    private static final org.slf4j.Logger log=org.slf4j.LoggerFactory.getLogger(AdminWorkspaceService.class);
     @org.springframework.beans.factory.annotation.Autowired private QuestionBankStatsService bankStats;
     @PersistenceContext private EntityManager em;
     private final AdminService admin;
@@ -138,11 +139,18 @@ public class AdminWorkspaceService {
         long total = ((Number) bind("SELECT COUNT(*) FROM " + d.from + w.sql, w).getSingleResult()).longValue();
         List<?> rows = bind("SELECT " + d.select + " FROM " + d.from + w.sql + " ORDER BY " + d.order, w)
                 .setFirstResult(page * size).setMaxResults(size).getResultList();
-        return new Page(rows.stream().map(row -> {
-            var item=map(d.columns,(Object[])row);
-            if("courses".equals(resource)&&bankStats!=null)item.put("questionCount",bankStats.countByCourse(((Number)item.get("id")).longValue()));
-            return item;
-        }).toList(), total, page, size);
+        List<Map<String,Object>> items=rows.stream().map(row -> map(d.columns,(Object[])row)).toList();
+        if("courses".equals(resource)&&bankStats!=null&&!items.isEmpty()) {
+            try {
+                var counts=bankStats.countByCourses(items.stream().map(item->((Number)item.get("id")).longValue()).toList());
+                items.forEach(item->item.put("questionCount",counts.getOrDefault(((Number)item.get("id")).longValue(),0L)));
+            } catch (org.springframework.dao.DataAccessException unavailable) {
+                // Main catalog remains usable, but unknown counts must never be represented as zero.
+                items.forEach(item->{item.put("questionCount",null);item.put("questionCountUnavailable",true);});
+                log.warn("Course list loaded without Question Bank counts: database unavailable; check Question Bank connection configuration.");
+            }
+        }
+        return new Page(items, total, page, size);
     }
 
     @Transactional

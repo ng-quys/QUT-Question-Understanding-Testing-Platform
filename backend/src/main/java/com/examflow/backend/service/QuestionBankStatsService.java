@@ -16,6 +16,12 @@ public class QuestionBankStatsService {
         Long count = bank.queryForObject("select count(*) from public.questions where course_id=?", Long.class, courseId);
         return count == null ? 0 : count;
     }
+    public java.util.Map<Long,Long> countByCourses(java.util.List<Long> courseIds) {
+        if (courseIds.isEmpty()) return java.util.Map.of();
+        String placeholders=String.join(",",java.util.Collections.nCopies(courseIds.size(),"?"));
+        return bank.query("select course_id,count(*) from public.questions where course_id in ("+placeholders+") group by course_id",
+                result->{var counts=new java.util.HashMap<Long,Long>();while(result.next())counts.put(result.getLong(1),result.getLong(2));return counts;},courseIds.toArray());
+    }
     public long countByTopic(long courseId, long topicId) {
         Long count = bank.queryForObject("select count(*) from public.questions where course_id=? and topic_id=?", Long.class, courseId, topicId);
         return count == null ? 0 : count;

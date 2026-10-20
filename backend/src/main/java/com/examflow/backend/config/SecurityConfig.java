@@ -159,7 +159,8 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(
                 List.of(
                         "Authorization",
-                        "Content-Type"
+                        "Content-Type",
+                        "X-Account-Code-Reservation"
                 )
         );
 
