@@ -99,6 +99,20 @@ public class ExamSnapshotReadService {
             },examQuestionId);
     }
 
+    public void freezeLegacy(long linkId,long examId,long courseId) {
+        if(frozen(linkId).isPresent())return;
+        var snapshot=legacy(linkId).orElseThrow(()->new IllegalStateException("Đề thiếu nội dung câu hỏi"));
+        var options=new ArrayList<java.util.Map<String,Object>>();
+        for(int i=0;i<snapshot.options().size();i++) {
+            var option=snapshot.options().get(i);
+            options.add(java.util.Map.of("id",option.id(),"label",option.label(),"content",option.content(),"position",i+1,"is_correct",option.id()==snapshot.correctAnswerId()));
+        }
+        try {
+            main.update("insert into exam_question_snapshots(exam_question_id,exam_id,question_id,course_id,clo_id,question_content,question_explanation,options,correct_answer_id) values(?,?,?,?,?,?,?,cast(? as jsonb),?) ON CONFLICT(exam_question_id) DO NOTHING",
+                linkId,examId,snapshot.questionId(),courseId,snapshot.cloId(),snapshot.content(),snapshot.explanation(),mapper.writeValueAsString(options),snapshot.correctAnswerId());
+        }catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Không thể lưu nội dung đề thi",e);}
+    }
+
     public void saveAdminSnapshot(long linkId,long examId,long courseId,Snapshot source,String content,List<AdminExamContentService.AnswerInput> answers) {
         var options=new ArrayList<java.util.Map<String,Object>>();long correct=0;
         for(int i=0;i<answers.size();i++){

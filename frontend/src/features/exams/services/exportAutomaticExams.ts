@@ -1,7 +1,7 @@
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
-import type { AutomaticPreview } from './examService';
+interface ExportableExams {variants:{code:string;questions:{content:string;answers:{label:string;content:string;correct:boolean}[]}[]}[]}
 
-export async function exportAutomaticExams(title: string, preview: AutomaticPreview) {
+export async function exportAutomaticExams(title: string, preview: ExportableExams) {
   const children: Paragraph[] = [];
   preview.variants.forEach((variant, index) => {
     children.push(new Paragraph({ text: title, heading: HeadingLevel.HEADING_1, pageBreakBefore: index > 0 }));

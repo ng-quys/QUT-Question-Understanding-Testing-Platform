@@ -19,8 +19,12 @@ public class AutomaticExamService {
     @org.springframework.beans.factory.annotation.Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
     public List<CourseChoice> availableCourses(UserEntity actor) {
         boolean admin="admin".equals(actor.getRole());
-        return jdbc.query("select c.id,c.code,c.name from courses c where (? or c.created_by=? or exists (select 1 from course_faculties f where f.course_id=c.id and f.faculty_id=?)) order by c.code,c.id",
-            (rs,n)->new CourseChoice(rs.getLong("id"),rs.getString("code"),rs.getString("name")),admin,actor.getId(),actor.getId());
+        return jdbc.query("select c.id,c.code,c.name from courses c where (? or c.created_by=? or exists (select 1 from course_faculties f where f.course_id=c.id and f.faculty_id=?) or exists (select 1 from exam_sitting_groups g join exam_sittings s on s.id=g.sitting_id where s.course_id=c.id and g.teacher_id=? and g.status<>'cancelled')) order by c.code,c.id",
+            (rs,n)->new CourseChoice(rs.getLong("id"),rs.getString("code"),rs.getString("name")),admin,actor.getId(),actor.getId(),actor.getId());
+    }
+    public void requireCourse(UserEntity actor,long courseId) {
+        if(availableCourses(actor).stream().noneMatch(c->c.id()==courseId))
+            throw new ApiException(HttpStatus.FORBIDDEN,"Bạn chưa được phân công tạo đề cho học phần này hoặc phân công đã bị hủy.");
     }
     private final QuestionBankExamBridge bank;
     private final HybridExamOptimizer optimizer;

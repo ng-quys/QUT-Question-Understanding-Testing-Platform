@@ -515,6 +515,52 @@ class AdminCatalogPostgresTests {
     }
     // Simulates an exam link supplied by the separate teacher implementation; not an admin action.
     void linkExamFixture(long group,long exam){em.createNativeQuery("UPDATE exam_sitting_groups SET exam_id=:exam WHERE id=:id").setParameter("exam",exam).setParameter("id",group).executeUpdate();}
+    @Test void teacherChoosesIndependentExamForAssignedGroupThenAdminPublishes() {
+        long source=simpleExam();var first=em.find(Exam.class,source);long course=first.getCourse().getId();
+        var alternate=new Exam();alternate.setCourse(first.getCourse());alternate.setCreatedBy(teacherId);alternate.setCode("SECOND-INDEPENDENT");alternate.setTitle("Đề độc lập thứ hai");
+        alternate.setStatus("draft");alternate.setTotalQuestions(1);alternate.setTotalPoints(BigDecimal.TEN);alternate.setShuffleQuestions(true);alternate.setShuffleAnswers(true);alternate.setAntiCheatMode(false);em.persist(alternate);
+        long question=((Number)em.createNativeQuery("SELECT question_id FROM exam_questions WHERE exam_id=:id").setParameter("id",source).getSingleResult()).longValue();
+        var link=new ExamQuestion();link.setExam(alternate);link.setQuestionId(question);link.setPosition(1);link.setPoints(BigDecimal.TEN);em.persist(link);em.flush();
+        em.createNativeQuery("CREATE TABLE exam_question_snapshots(exam_question_id bigint PRIMARY KEY REFERENCES exam_questions(id) ON DELETE CASCADE,exam_id bigint NOT NULL REFERENCES exams(id),question_id bigint NOT NULL,course_id bigint NOT NULL,clo_id bigint,question_content text NOT NULL,question_explanation text,options jsonb NOT NULL,correct_answer_id bigint NOT NULL)").executeUpdate();
+        var frozen=snapshots(em);ReflectionTestUtils.setField(service,"snapshots",frozen);
+        var teacher=em.find(UserEntity.class,teacherId);var other=account("unassigned-selector","teacher");var admin=account("selection-admin","admin");
+        var dept=department();long period=period(allocation(),admin,"TEACHER-SELECT");
+        for(int n=0;n<31;n++){var student=account("780000"+String.format("%04d",n),"student");student.setDepartment("Công nghệ thông tin");}em.flush();
+        var request=java.util.UUID.randomUUID();var proposal=dept.preview(admin,departmentInput(request,period,course,null));
+        var sitting=dept.create(admin,departmentInput(request,period,course,(String)proposal.get("previewToken")));
+        @SuppressWarnings("unchecked") var groups=(List<Map<String,Object>>)sitting.get("groups");long group=((Number)groups.get(0).get("id")).longValue(),untouched=((Number)groups.get(1).get("id")).longValue();
+        long room=allocationRoom(admin,"SELECT-ROOM");dept.assign(admin,group,new DepartmentExamService.Assignment(room,teacherId,null));
+        var jdbc=em.unwrap(org.hibernate.Session.class).doReturningWork(connection->new org.springframework.jdbc.core.JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(connection,true)));
+        var assigned=new TeacherAssignedExamService(jdbc,service,frozen,mock(AdminService.class));ReflectionTestUtils.setField(assigned,"em",em);
+        assertEquals(1,assigned.list(teacher).size());assertTrue(assigned.list(other).isEmpty());assertEquals(2,assigned.choices(teacher,group,"").exams().size());
+        assertNull(assigned.list(teacher).get(0).examId());assertEquals(0,count("exam_sessions"));assertThrows(ApiException.class,()->assigned.choices(other,group,""));
+        assertEquals(1,assigned.choices(teacher,group,"SECOND-INDEPENDENT").exams().size());
+        first.setCreatedBy(other.getId());em.flush();assertEquals(1,assigned.choices(teacher,group,"").exams().size());assertThrows(ApiException.class,()->assigned.preview(teacher,group,source));
+        first.setCreatedBy(teacherId);var originalCourse=first.getCourse();first.setCourse(em.find(Course.class,course("OTHER-SELECT-COURSE")));em.flush();
+        assertEquals(1,assigned.choices(teacher,group,"").exams().size());assertThrows(ApiException.class,()->assigned.preview(teacher,group,source));first.setCourse(originalCourse);em.flush();
+        assertThrows(ApiException.class,()->assigned.list(admin));
+        var preview=assigned.preview(teacher,group,source);String token=(String)preview.get("revisionToken");
+        var saved=assigned.select(teacher,group,new TeacherAssignedExamService.Selection(source,null,token));
+        assertEquals(source,saved.examId());assertFalse(saved.published());assertTrue(saved.canChangeExam());assertEquals(0,count("exam_sessions"));
+        assertEquals(saved.examId(),assigned.select(teacher,group,new TeacherAssignedExamService.Selection(source,null,token)).examId());
+        assertNull(em.createNativeQuery("SELECT exam_id FROM exam_sitting_groups WHERE id=:id").setParameter("id",untouched).getSingleResult());
+        assertFalse((Boolean)service.reviewExam(source).get("canEdit"));assertEquals("Đề kiểm thử trạng thái",em.find(Exam.class,source).getTitle());
+        assertThrows(ApiException.class,()->assigned.select(other,group,new TeacherAssignedExamService.Selection(source,null,token)));
+        assertThrows(ApiException.class,()->assigned.select(teacher,group,new TeacherAssignedExamService.Selection(alternate.getId(),source,"stale-content")));
+        String secondToken=(String)assigned.preview(teacher,group,alternate.getId()).get("revisionToken");
+        assertEquals(alternate.getId(),assigned.select(teacher,group,new TeacherAssignedExamService.Selection(alternate.getId(),source,secondToken)).examId());
+        long sittingId=((Number)sitting.get("id")).longValue();
+        em.createNativeQuery("UPDATE exam_sittings SET start_time=:start WHERE id=:id").setParameter("start",ExamOrganizationService.now().minusMinutes(1)).setParameter("id",sittingId).executeUpdate();
+        assertThrows(ApiException.class,()->assigned.select(teacher,group,new TeacherAssignedExamService.Selection(source,alternate.getId(),token)));
+        em.createNativeQuery("UPDATE exam_sittings SET start_time=:start WHERE id=:id").setParameter("start",departmentInput(request,period,course,null).startTime()).setParameter("id",sittingId).executeUpdate();
+        String frozenContent=frozen.find(link.getId()).orElseThrow().content();
+        em.createNativeQuery("UPDATE questions SET content='Changed bank content' WHERE id=:id").setParameter("id",question).executeUpdate();
+        assertEquals(frozenContent,frozen.find(link.getId()).orElseThrow().content());
+        dept.publish(admin,group);em.flush();
+        var published=assigned.list(teacher).get(0);assertTrue(published.published());assertFalse(published.canChangeExam());assertEquals(1,count("exam_sessions"));assertEquals(30,count("exam_session_students"));
+        assertThrows(ApiException.class,()->assigned.select(teacher,group,new TeacherAssignedExamService.Selection(source,alternate.getId(),token)));
+        assertNotNull(assigned.preview(teacher,group,alternate.getId()).get("questions"));assertEquals(2,count("exams"));
+    }
     DepartmentExamService department(){return department(em);}
     @Test void minimal012CanRunAgainWithoutCreatingUnusedTablesOrChangingProfiles() throws Exception {
         var student=account("7500000001","student");student.setDepartment("Công nghệ thông tin");em.flush();long before=count("users");
@@ -524,7 +570,7 @@ class AdminCatalogPostgresTests {
         for(String unused:List.of("course_students","exam_allocation_batches","exam_student_allocations"))assertNull(em.createNativeQuery("SELECT CAST(to_regclass(:name) AS text)").setParameter("name","public."+unused).getSingleResult());
         assertEquals(0L,((Number)em.createNativeQuery("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='exam_sessions' AND column_name='allocation_batch_id'").getSingleResult()).longValue());
     }
-    DepartmentExamService department(EntityManager context){var workspace=new AdminWorkspaceService(mock(AdminService.class));ReflectionTestUtils.setField(workspace,"em",context);var org=new ExamOrganizationService(mock(AdminService.class),workspace);ReflectionTestUtils.setField(org,"em",context);var service=new DepartmentExamService(mock(AdminService.class),org);ReflectionTestUtils.setField(service,"em",context);return service;}
+    DepartmentExamService department(EntityManager context){var workspace=new AdminWorkspaceService(mock(AdminService.class));ReflectionTestUtils.setField(workspace,"em",context);var org=new ExamOrganizationService(mock(AdminService.class),workspace);ReflectionTestUtils.setField(org,"em",context);ReflectionTestUtils.setField(org,"snapshots",snapshots(context));var service=new DepartmentExamService(mock(AdminService.class),org);ReflectionTestUtils.setField(service,"em",context);return service;}
     DepartmentExamService.Input departmentInput(java.util.UUID request,long period,long course,String token){var start=ExamOrganizationService.now().plusDays(3).withHour(8).withMinute(0).withSecond(0).withNano(0);return new DepartmentExamService.Input(request,period,course,"Công nghệ thông tin","Ca Cơ sở dữ liệu",start,start.plusHours(1),30,token);}
     @Test void departmentSittingCreatesOneCommonWindowAndFourPendingGroupsWithoutEnrollment(){
         var service=department();var admin=account("department-admin","admin");long exam=simpleExam(),course=em.find(Exam.class,exam).getCourse().getId();long period=period(allocation(),admin,"DEP-FINAL");

@@ -18,6 +18,7 @@ import com.examflow.backend.repository.CourseRepository;
 
 @Service
 public class TeacherCourseService {
+    @org.springframework.beans.factory.annotation.Autowired private AutomaticExamService access;
 
     private final CourseRepository courseRepository;
     private final ChapterRepository chapterRepository;
@@ -48,10 +49,7 @@ public class TeacherCourseService {
         UserEntity currentUser =
                 currentUserService.getCurrentUser(jwt);
 
-        List<Course> courses =
-                courseRepository.findByCreatedByOrderByIdAsc(
-                        currentUser.getId()
-                );
+        List<Course> courses = courseRepository.findAllById(access.availableCourses(currentUser).stream().map(c->c.id()).toList());
 
         return courses.stream()
                 .map(this::toDto)
