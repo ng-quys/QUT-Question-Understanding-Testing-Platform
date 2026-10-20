@@ -29,7 +29,7 @@ const TAB_TITLES: Record<DashboardNavTab, string> = {
   'question-bank': 'Danh sách câu hỏi',
   'new-question': 'Tạo câu hỏi mới',
   'ai-generator': 'AI sinh câu hỏi',
-  'quick-exam': 'Tạo đề nhanh',
+  'quick-exam': 'Tạo đề tự động',
   exams: 'Quản lý đề thi',
   'exam-sessions': 'Ca thi trực tuyến',
   settings: 'Cài đặt',

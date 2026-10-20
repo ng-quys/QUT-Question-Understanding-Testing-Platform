@@ -9,6 +9,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import java.util.List;
 @RestController @RequestMapping("/api/teacher/exams")
 public class TeacherExamController {
+ @org.springframework.beans.factory.annotation.Autowired private AutomaticExamService automatic;
+ @GetMapping("/automatic/courses") public List<AutomaticExamDto.CourseChoice> automaticCourses(@AuthenticationPrincipal Jwt jwt){return automatic.availableCourses(actor(jwt));}
+ @GetMapping("/automatic/bank") public AutomaticExamDto.Bank bank(@AuthenticationPrincipal Jwt jwt,@RequestParam long courseId){organization.requireCourse(actor(jwt),courseId);return automatic.bank(courseId);}
+ @PostMapping("/automatic/check") public AutomaticExamDto.Check check(@AuthenticationPrincipal Jwt jwt,@Valid @RequestBody AutomaticExamDto.Request r){organization.requireCourse(actor(jwt),r.courseId());return automatic.check(r);}
+ @PostMapping("/automatic/preview") public AutomaticExamDto.Preview preview(@AuthenticationPrincipal Jwt jwt,@Valid @RequestBody AutomaticExamDto.Request r){var a=actor(jwt);organization.requireCourse(a,r.courseId());return automatic.generate(a.getId(),r);}
+ @PostMapping("/automatic/save") public java.util.Map<String,Object> save(@AuthenticationPrincipal Jwt jwt,@Valid @RequestBody AutomaticExamDto.Save r){var a=actor(jwt);organization.requireCourse(a,automatic.previewCourse(a.getId(),r.previewId()));return java.util.Map.of("examIds",automatic.save(a.getId(),r.previewId()));}
  private final TeacherExamService service;private final ExamOrganizationService organization;private final CurrentUserService users;private final AdminCatalogService catalog;
  public TeacherExamController(TeacherExamService service,ExamOrganizationService organization,CurrentUserService users,AdminCatalogService catalog){this.service=service;this.organization=organization;this.users=users;this.catalog=catalog;}
  private UserEntity actor(Jwt jwt){var user=users.getCurrentUser(jwt);if(!java.util.Set.of("admin","teacher","faculty").contains(user.getRole()))throw new com.examflow.backend.exception.ApiException(org.springframework.http.HttpStatus.FORBIDDEN,"Yêu cầu quyền giảng viên");return user;}

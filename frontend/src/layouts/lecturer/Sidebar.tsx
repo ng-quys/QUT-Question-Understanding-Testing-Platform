@@ -116,10 +116,10 @@ useEffect(() => {
     subItems: [
       {
         id: 'quick-exam',
-        label: 'Tạo đề nhanh',
+        label: 'Tạo đề tự động',
         icon: Zap,
         badge: '⚡',
-        tooltipDesc: 'Tính năng tạo nhanh đề thi ngẫu nhiên bám sát ma trận hoặc số lượng câu',
+        tooltipDesc: 'Cấu hình ma trận, tạo nhiều mã đề, kiểm soát trùng lặp và xem trước khi lưu',
       },
       {
         id: 'exams',

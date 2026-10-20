@@ -40,7 +40,7 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<DashboardNavTab>('overview');
+  const [activeTab, setActiveTab] = useState<DashboardNavTab>(() => new URLSearchParams(window.location.search).get('tab') === 'quick-exam' ? 'quick-exam' : 'overview');
   const [showProfile,setShowProfile]=useState(false);
   const [dashboardMode, setDashboardMode] = useState<'active' | 'onboarding'>('active');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
