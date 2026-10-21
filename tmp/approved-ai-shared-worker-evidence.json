@@ -1,0 +1,99 @@
+{
+  "local_clients": [
+    {
+      "pid": 32116,
+      "name": "java.exe",
+      "cwd": "D:\\baitap\\KLTN\\v2\\QUT-Question-Understanding-Testing-Platform\\backend",
+      "application_classes": [
+        "com.examflow.backend.BackendApplication"
+      ],
+      "jar_names": []
+    }
+  ],
+  "samples": [
+    {
+      "sample": 1,
+      "rows": [
+        {
+          "pid": 2271670,
+          "application_name": "PostgreSQL JDBC Driver",
+          "state": "idle",
+          "backend_start": "2026-10-21 16:01:12.829556+00:00",
+          "query_start": "2026-10-21 17:30:44.420419+00:00",
+          "query_class": "global_credit_worker_poll"
+        },
+        {
+          "pid": 2277994,
+          "application_name": "ExamFlow-Main",
+          "state": "idle",
+          "backend_start": "2026-10-21 17:20:05.641162+00:00",
+          "query_start": "2026-10-21 17:30:46.047919+00:00",
+          "query_class": "global_credit_worker_poll"
+        }
+      ]
+    },
+    {
+      "sample": 2,
+      "rows": [
+        {
+          "pid": 2271670,
+          "application_name": "PostgreSQL JDBC Driver",
+          "state": "idle",
+          "backend_start": "2026-10-21 16:01:12.829556+00:00",
+          "query_start": "2026-10-21 17:30:47.735312+00:00",
+          "query_class": "global_credit_worker_poll"
+        },
+        {
+          "pid": 2277994,
+          "application_name": "ExamFlow-Main",
+          "state": "idle",
+          "backend_start": "2026-10-21 17:20:05.641162+00:00",
+          "query_start": "2026-10-21 17:30:46.047919+00:00",
+          "query_class": "global_credit_worker_poll"
+        }
+      ]
+    },
+    {
+      "sample": 3,
+      "rows": [
+        {
+          "pid": 2271670,
+          "application_name": "PostgreSQL JDBC Driver",
+          "state": "idle",
+          "backend_start": "2026-10-21 16:01:12.829556+00:00",
+          "query_start": "2026-10-21 17:30:47.735312+00:00",
+          "query_class": "global_credit_worker_poll"
+        },
+        {
+          "pid": 2277994,
+          "application_name": "ExamFlow-Main",
+          "state": "idle",
+          "backend_start": "2026-10-21 17:20:05.641162+00:00",
+          "query_start": "2026-10-21 17:30:46.047919+00:00",
+          "query_class": "global_credit_worker_poll"
+        }
+      ]
+    },
+    {
+      "sample": 4,
+      "rows": [
+        {
+          "pid": 2271670,
+          "application_name": "PostgreSQL JDBC Driver",
+          "state": "idle",
+          "backend_start": "2026-10-21 16:01:12.829556+00:00",
+          "query_start": "2026-10-21 17:30:47.735312+00:00",
+          "query_class": "global_credit_worker_poll"
+        },
+        {
+          "pid": 2277994,
+          "application_name": "ExamFlow-Main",
+          "state": "idle",
+          "backend_start": "2026-10-21 17:20:05.641162+00:00",
+          "query_start": "2026-10-21 17:30:49.372098+00:00",
+          "query_class": "global_credit_worker_poll"
+        }
+      ]
+    }
+  ]
+}

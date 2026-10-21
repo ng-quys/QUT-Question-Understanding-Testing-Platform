@@ -86,6 +86,7 @@ export interface Course {
 
 // 3D Metadata Question
 export interface QuestionItem {
+  evidenceQuote?: string;
   id: string;
   courseId: string;
   chapterId: string;

@@ -1,0 +1,107 @@
+{
+  "approved_question_ids": [
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    145,
+    146,
+    147,
+    148,
+    149,
+    150,
+    151,
+    152
+  ],
+  "before_missing": 32,
+  "created": 32,
+  "updated": 0,
+  "skipped": 0,
+  "errors": 0,
+  "batches": [
+    {
+      "number": 1,
+      "exit_code": 0,
+      "created": 5,
+      "errors": 0,
+      "skipped": 0,
+      "updated": 0
+    },
+    {
+      "number": 2,
+      "exit_code": 0,
+      "created": 5,
+      "errors": 0,
+      "skipped": 0,
+      "updated": 0
+    },
+    {
+      "number": 3,
+      "exit_code": 0,
+      "created": 5,
+      "errors": 0,
+      "skipped": 0,
+      "updated": 0
+    },
+    {
+      "number": 4,
+      "exit_code": 0,
+      "created": 5,
+      "errors": 0,
+      "skipped": 0,
+      "updated": 0
+    },
+    {
+      "number": 5,
+      "exit_code": 0,
+      "created": 5,
+      "errors": 0,
+      "skipped": 0,
+      "updated": 0
+    },
+    {
+      "number": 6,
+      "exit_code": 0,
+      "created": 5,
+      "errors": 0,
+      "skipped": 0,
+      "updated": 0
+    },
+    {
+      "number": 7,
+      "exit_code": 0,
+      "created": 2,
+      "errors": 0,
+      "skipped": 0,
+      "updated": 0
+    }
+  ],
+  "complete": true,
+  "remaining_missing": 0,
+  "remaining_queue": 0,
+  "duplicate_check_http": 200,
+  "duplicate_detected": true,
+  "short_source_questions_unchanged": 1,
+  "original_snapshot_gate_passed": true,
+  "original_probe_issue": "Selected existing question had content shorter than endpoint minimum; corrected read-only probe only"
+}

@@ -1,0 +1,44 @@
+{
+  "job_id": 8,
+  "execution_token": "cf06a610-c92c-4774-8c1a-c5ce08d16389",
+  "backend_state": "unknown",
+  "upstream_http": 200,
+  "upstream_state": "succeeded",
+  "upstream_questions": 1,
+  "validation": [
+    {
+      "clo_bloom_structure_evidence_valid": true,
+      "duplicate_http": 200,
+      "suspected_duplicate": false,
+      "bloom": "understand",
+      "clo_id": 30
+    }
+  ],
+  "quota": {
+    "used": 1,
+    "reserved": 1,
+    "remaining": 198
+  },
+  "charged_for_job": 0,
+  "reservation_for_job": 1,
+  "questions": [
+    {
+      "content": "CLO3.2* Có thái độ khách quan, trung thực; có tác phong tỉ mỉ, cẩn thận, chính xác và có tinh thần hợp tác trong việc học tập môn công nghệ thông tin, cũng như trong việc áp dụng các hiểu biết đã đạt được.",
+      "options": [
+        "A) Không quan tâm đến thái độ học tập",
+        "B) Phân tích kỹ lưỡng và cẩn trọng trước khi thực hiện công việc",
+        "C) Lười biếng và không hợp tác với đồng nghiệp",
+        "D) Thường xuyên trễ hẹn và thiếu trách nhiệm"
+      ],
+      "correctIndex": 1,
+      "explanation": "Đáp án đúng là B) Phân tích kỹ lưỡng và cẩn trọng trước khi thực hiện công việc. Đây là thái độ có tác phong tỉ mỉ, cẩn thận, chính xác theo CLO3.2.",
+      "bloom": "understand",
+      "cloId": 30,
+      "evidenceQuote": "có tác phong tỉ mỉ, cẩn thận, chính xác",
+      "chapterId": null
+    }
+  ],
+  "source_characters": 66143,
+  "admin_reconciliation_performed": false,
+  "new_jobs_created_by_observer": 0
+}

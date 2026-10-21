@@ -20,7 +20,17 @@ public class MainDataSourceConfig {
     @Primary
     @ConfigurationProperties("spring.datasource.hikari")
     public HikariDataSource mainDataSource(DataSourceProperties mainDataSourceProperties) {
-        return mainDataSourceProperties.initializeDataSourceBuilder()
+        HikariDataSource dataSource = mainDataSourceProperties.initializeDataSourceBuilder()
                 .type(HikariDataSource.class).build();
+        // Session-mode Supabase slots stay occupied even when a JDBC client is idle.
+        // Leave headroom for other clients; explicit spring.datasource.hikari overrides still bind.
+        dataSource.setPoolName("MainPool");
+        dataSource.setMaximumPoolSize(5);
+        dataSource.setMinimumIdle(0);
+        dataSource.setIdleTimeout(60_000);
+        dataSource.setMaxLifetime(600_000);
+        dataSource.setConnectionTimeout(10_000);
+        dataSource.addDataSourceProperty("ApplicationName", "ExamFlow-Main/ai-worker-v1");
+        return dataSource;
     }
 }

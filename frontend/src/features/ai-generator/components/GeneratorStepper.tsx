@@ -16,9 +16,9 @@ interface StepMeta {
 
 const STEPS: StepMeta[] = [
   { step: 1, title: 'Tài liệu nguồn', shortDesc: 'Tải lên & trích xuất' },
-  { step: 2, title: 'Ma trận câu hỏi', shortDesc: 'Phân bổ CLO & Bloom' },
-  { step: 3, title: 'AI sinh câu hỏi', shortDesc: 'Phân tích & biên soạn' },
-  { step: 4, title: 'Duyệt & Chỉnh sửa', shortDesc: 'Kiểm duyệt nội dung' },
+  { step: 2, title: 'Chọn CLO', shortDesc: 'Chọn chuẩn đầu ra' },
+  { step: 3, title: 'Số lượng câu hỏi', shortDesc: 'Từ 1 đến 45 câu' },
+  { step: 4, title: 'Sinh & Xem xét', shortDesc: 'Hiệu chỉnh và duyệt' },
 ];
 
 export const GeneratorStepper: React.FC<GeneratorStepperProps> = ({

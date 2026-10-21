@@ -1,0 +1,135 @@
+{
+  "inspected_utc": "2026-10-21T17:56:05.454221+00:00",
+  "job": {
+    "id": 8,
+    "execution_token": "cf06a610-c92c-4774-8c1a-c5ce08d16389",
+    "credit_state": "unknown",
+    "accepted_count": 0,
+    "charged_monthly": 0,
+    "charged_extra": 0,
+    "reserved_monthly": 1,
+    "reserved_extra": 0,
+    "selected_clos": [
+      {
+        "id": 25,
+        "code": "CLO1.1*",
+        "description": "Trình bày và giải thích được các khái niệm cơ bản về hệ điều hành."
+      },
+      {
+        "id": 26,
+        "code": "CLO1.2*",
+        "description": "Phân tích được cấu trúc, nguyên lý hoạt động của một số thành phần cơ bản của hệ thống."
+      },
+      {
+        "id": 27,
+        "code": "CLO2.1*",
+        "description": "Làm chủ các hệ thống mạng máy tính cục bộ ở các trường học, các công ty, xí nghiêp vừa và nhỏ"
+      },
+      {
+        "id": 28,
+        "code": "CLO2.2*",
+        "description": "Vận dụng kiến thức có được để sử dụng, khai thác và bảo trì hệ thống mạng máy tính trên hai mô hình workgroup và domain một cách hiệu quả"
+      },
+      {
+        "id": 29,
+        "code": "CLO3.1*",
+        "description": "Có hứng thú học công nghệ thông tin, yêu thích và tìm tòi khoa học; trân trọng với những đóng góp của công nghệ thông tin cho sự tiến bộ của xã hội và đối với công lao của các nhà khoa học."
+      },
+      {
+        "id": 30,
+        "code": "CLO3.2*",
+        "description": "Có thái độ khách quan, trung thực; có tác phong tỉ mỉ, cẩn thận, chính xác và có tinh thần hợp tác trong việc học tập môn công nghệ thông tin, cũng như trong việc áp dụng các hiểu biết đã đạt được."
+      },
+      {
+        "id": 31,
+        "code": "CLO3.3*",
+        "description": "Có ý thức vận dụng những hiểu biết công nghệ thông tin vào trong các khoa học khác, vào đời sống nhằm cải thiện điều kiện sống, học tập, cũng như giữ gìn bảo quản thiết bị, ý thức tiết kiệm"
+      }
+    ]
+  },
+  "upstream_http": 200,
+  "upstream_state": "succeeded",
+  "questions": [
+    {
+      "content": "CLO3.2* Có thái độ khách quan, trung thực; có tác phong tỉ mỉ, cẩn thận, chính xác và có tinh thần hợp tác trong việc học tập môn công nghệ thông tin, cũng như trong việc áp dụng các hiểu biết đã đạt được.",
+      "options": [
+        "A) Không quan tâm đến thái độ học tập",
+        "B) Phân tích kỹ lưỡng và cẩn trọng trước khi thực hiện công việc",
+        "C) Lười biếng và không hợp tác với đồng nghiệp",
+        "D) Thường xuyên trễ hẹn và thiếu trách nhiệm"
+      ],
+      "correctIndex": 1,
+      "explanation": "Đáp án đúng là B) Phân tích kỹ lưỡng và cẩn trọng trước khi thực hiện công việc. Đây là thái độ có tác phong tỉ mỉ, cẩn thận, chính xác theo CLO3.2.",
+      "bloom": "understand",
+      "cloId": 30,
+      "evidenceQuote": "có tác phong tỉ mỉ, cẩn thận, chính xác",
+      "chapterId": null
+    }
+  ],
+  "worker_samples": [
+    [
+      {
+        "pid": 2271670,
+        "application_name": "PostgreSQL JDBC Driver",
+        "backend_start": "2026-10-21 16:01:12.829556+00:00",
+        "query_start": "2026-10-21 17:56:06.570352+00:00",
+        "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128"
+      }
+    ],
+    [
+      {
+        "pid": 2271670,
+        "application_name": "PostgreSQL JDBC Driver",
+        "backend_start": "2026-10-21 16:01:12.829556+00:00",
+        "query_start": "2026-10-21 17:56:06.570352+00:00",
+        "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128"
+      },
+      {
+        "pid": 2277836,
+        "application_name": "ExamFlow-Main",
+        "backend_start": "2026-10-21 17:12:55.625140+00:00",
+        "query_start": "2026-10-21 17:56:07.492163+00:00",
+        "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128"
+      }
+    ],
+    [
+      {
+        "pid": 2277836,
+        "application_name": "ExamFlow-Main",
+        "backend_start": "2026-10-21 17:12:55.625140+00:00",
+        "query_start": "2026-10-21 17:56:07.492163+00:00",
+        "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128"
+      }
+    ],
+    [
+      {
+        "pid": 2255752,
+        "application_name": "PostgreSQL JDBC Driver",
+        "backend_start": "2026-10-21 12:35:59.299133+00:00",
+        "query_start": "2026-10-21 17:56:10.151874+00:00",
+        "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128"
+      },
+      {
+        "pid": 2277836,
+        "application_name": "ExamFlow-Main",
+        "backend_start": "2026-10-21 17:12:55.625140+00:00",
+        "query_start": "2026-10-21 17:56:07.492163+00:00",
+        "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128"
+      }
+    ]
+  ],
+  "ledger": [
+    {
+      "event_type": "reserve",
+      "monthly_used_delta": 0,
+      "monthly_reserved_delta": 1
+    }
+  ],
+  "local_backends": [
+    {
+      "pid": 32116,
+      "started_utc": "2026-10-21T16:57:48.882152+00:00",
+      "cwd": "D:\\baitap\\KLTN\\v2\\QUT-Question-Understanding-Testing-Platform\\backend"
+    }
+  ]
+}

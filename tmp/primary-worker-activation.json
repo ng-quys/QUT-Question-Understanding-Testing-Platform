@@ -1,0 +1,98 @@
+{
+  "old_backend_pid": 28304,
+  "backend_pid": 9104,
+  "backend_log": "D:\\baitap\\KLTN\\v2\\QUT-Question-Understanding-Testing-Platform\\.env.examflow.runtime\\logs\\Backend-primary-20261022-015433.log",
+  "ai_pid": 9348,
+  "registry_id": "ac285c5e-ca18-4650-8bcd-29ed3ea9a9a0",
+  "backend_health_http": 200,
+  "internal_key_http": 204,
+  "primary_poll_samples": [
+    [],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:54:46.469354+00:00"
+      }
+    ],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:54:49.943528+00:00"
+      }
+    ],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:54:53.422459+00:00"
+      }
+    ],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:54:56.893815+00:00"
+      }
+    ],
+    [],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:55:07.313713+00:00"
+      }
+    ],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:55:10.794899+00:00"
+      }
+    ],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:55:14.268013+00:00"
+      }
+    ],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:55:17.740503+00:00"
+      }
+    ],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:55:21.225831+00:00"
+      }
+    ],
+    [
+      {
+        "pid": 2285819,
+        "application_name": "ExamFlow-Main/ai-worker-v1",
+        "query_start": "2026-10-21 18:55:24.706712+00:00"
+      }
+    ]
+  ],
+  "legacy_poller_observed": false,
+  "advisory_lock_smoke": {
+    "first_acquired": true,
+    "second_blocked": true,
+    "first_released": true,
+    "second_acquired_after_release": true
+  },
+  "worker_enabled": true,
+  "cluster_ready": true,
+  "fastapi_unchanged": true,
+  "job8_verified": true,
+  "production_job_posts": 0,
+  "production_sql_mutations": 0,
+  "local_flags_persisted": true,
+  "finished_utc": "2026-10-21T18:55:30.998228+00:00"
+}

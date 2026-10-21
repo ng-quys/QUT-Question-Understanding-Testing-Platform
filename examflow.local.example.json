@@ -1,8 +1,11 @@
 {
   "Environment": {
     "AI_INTERNAL_KEY": "",
+    "AI_CREDITS_WORKER_ENABLED": "true",
+    "AI_CREDITS_WORKER_CLUSTER_READY": "false",
     "ANTICHEAT_INTERNAL_SECRET": "",
-    "QUESTION_BANK_DB_PASSWORD": ""
+    "QUESTION_BANK_DB_PASSWORD": "",
+    "EXAMFLOW_QUESTIONBANK_DSN": ""
   },
   "MavenPath": "",
   "Ports": {

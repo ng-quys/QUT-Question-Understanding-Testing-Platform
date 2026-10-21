@@ -33,7 +33,7 @@ export async function uploadAndExtractDocuments(
     documents: processed,
     totalDocuments: processed.length,
     totalWords: processed.reduce((sum, doc) => sum + (doc.wordCount || 0), 0),
-    summary: `Đã trích xuất văn bản thật từ ${processed.length} tài liệu. Sẵn sàng cho RAG và ma trận Bloom.`,
+    summary: `Đã trích xuất văn bản thật từ ${processed.length} tài liệu. Sẵn sàng chọn CLO và sinh câu hỏi.`,
     keyConcepts: [],
   };
 }
