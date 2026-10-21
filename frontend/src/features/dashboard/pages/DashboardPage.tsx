@@ -1,12 +1,11 @@
 import {SimpleOverview} from '../components/SimpleOverview';
 import {TeacherProfilePage} from '../../profile-teacher/pages/TeacherProfilePage';
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { TeacherMonitoringPage } from '../../sessions/pages/TeacherMonitoringPage';
+import '../../../layouts/lecturer/lecturer.css';
 import { Sidebar } from '../../../layouts/lecturer/Sidebar';
 import { TopHeader } from '../../../layouts/lecturer/TopHeader';
-import { DashboardHeader } from '../components/DashboardHeader';
-import { OnboardingDashboard } from './OnboardingDashboard';
-import { ActiveDashboard } from './ActiveDashboard';
 import { CourseListPage } from '../../courses/pages/CourseListPage';
 import { QuestionBankPage } from '../../question-bank/pages/QuestionBankPage';
 import { QuestionFormModal } from '../../question-bank/components/QuestionFormModal';
@@ -16,7 +15,6 @@ import { QuickExamPage } from '../../exams/pages/QuickExamPage';
 import { AIGeneratorPage } from '../../ai-generator/pages/AIGeneratorPage';
 import { AIGenerateModal } from '../../ai-generator/components/AIGenerateModal';
 import { CreateExamModal } from '../../exams/components/CreateExamModal';
-import { ExamWizardPage } from '../../exam-wizard/pages/ExamWizardPage';
 import { ExamSessionsPage } from '../../sessions/pages/ExamSessionsPage';
 import { SettingsPage } from '../../settings/pages/SettingsPage';
 import { ROUTES } from '../../../app/routes';
@@ -31,8 +29,6 @@ import type{
   QuestionItem,
 } from '../../../types';
 
-// Dev flag to display the demo state switcher in the Dashboard Header
-const SHOW_DASHBOARD_DEMO_SWITCHER = true;
 
 interface DashboardPageProps {
   onLogout?: () => void;
@@ -40,9 +36,12 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<DashboardNavTab>('overview');
+  const [searchParams,setSearchParams]=useSearchParams();
+  const tabs:DashboardNavTab[]=['overview','courses','question-bank','new-question','ai-generator','quick-exam','exams','exam-sessions','monitoring','settings'];
+  const requestedTab=searchParams.get('tab') as DashboardNavTab;
+  const activeTab:DashboardNavTab=tabs.includes(requestedTab)?requestedTab:'overview';
+  const setActiveTab=useCallback((tab:DashboardNavTab)=>{setSearchParams(previous=>{const next=new URLSearchParams(previous);next.set('tab',tab);if(tab!=='monitoring')next.delete('session');return next;});},[setSearchParams]);
   const [showProfile,setShowProfile]=useState(false);
-  const [dashboardMode, setDashboardMode] = useState<'active' | 'onboarding'>('active');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
@@ -82,7 +81,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const [qbTopicFilter, setQbTopicFilter] = useState<string | undefined>(undefined);
 
   // Toggle between Matrix Builder and Step-by-Step Wizard for Exams
-  const [examMode, setExamMode] = useState<'matrix' | 'wizard'>('matrix');
 
   const handleLogout = () => {
     if (onLogout) {
@@ -92,15 +90,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     }
   };
 
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
     }, 3500);
-  };
+  }, []);
 
   const handleTabChange = (tab: DashboardNavTab) => {
-    setShowProfile(false);
     setShowProfile(false);
     setActiveTab(tab);
     if (tab === 'question-bank') {
@@ -108,9 +105,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       setQbCourseFilter(undefined);
       setQbTopicFilter(undefined);
     }
-    if (tab !== 'overview' && tab !== 'exams') {
-      showToast(`Đã chuyển tới phân hệ: ${tab}`);
-    }
+    setIsMobileSidebarOpen(false);
+    window.scrollTo({top:0,behavior:'smooth'});
   };
 
   const handleOpenCreateExam = () => {
@@ -145,21 +141,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // If user is in wizard mode for exams
-  if (activeTab === 'exams' && examMode === 'wizard') {
-    return (
-      <ExamWizardPage
-        onBackToDashboard={() => setExamMode('matrix')}
-        onShowToast={showToast}
-      />
-    );
-  }
-
   return (
     <div
-      className="min-h-screen text-slate-900 flex flex-col lg:flex-row antialiased font-sans"
+      className="lecturer-workspace min-h-screen flex flex-col lg:flex-row"
       style={{ backgroundColor: 'var(--bg-main)' }}
     >
+      <a className="t-skip" href="#lecturer-main">Đến nội dung chính</a>
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
@@ -183,7 +170,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       {/* Main Content Area */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-[margin] duration-200 ${
-          isSidebarCollapsed ? 'lg:ml-[76px]' : 'lg:ml-[235px]'
+          isSidebarCollapsed ? 'lg:ml-[76px]' : 'lg:ml-[248px]'
         }`}
       >
         {/* Top Header */}
@@ -196,7 +183,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         />
 
         {/* Dashboard Scrollable Body */}
-        <main className="flex-1 p-4 sm:p-5 lg:p-6 max-w-6xl w-full mx-auto space-y-4">
+        <main id="lecturer-main" className="lecturer-main flex-1 w-full mx-auto space-y-5">
           {/* TAB 1: OVERVIEW (Tổng quan) */}
           {showProfile ? <TeacherProfilePage onBack={()=>setShowProfile(false)}/> : activeTab === 'overview' && <SimpleOverview onNavigateTab={handleTabChange}/>}
           {!showProfile && <>
@@ -283,29 +270,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
 
           {/* TAB 5B: EXAMS MANAGEMENT (Quản lý đề thi) */}
           {activeTab === 'exams' && (
-            <ExamManagementPage
-              courses={courses}
-              chapters={chapters}
-              clos={clos}
-              questions={questions}
-              onUpdateQuestions={setQuestions}
-              onNavigateToWizard={() => setExamMode('wizard')}
-              onCreateSessionFromExam={(examTitle) => {
-                showToast(`Đã chọn đề "${examTitle}" để mở ca thi`);
-                setActiveTab('exam-sessions');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onShowToast={showToast}
-            />
+            <ExamManagementPage onShowToast={showToast} onCreateExam={()=>setActiveTab('quick-exam')} />
           )}
 
           {/* TAB 6: EXAM SESSIONS (Ca thi / Đợt kiểm tra) */}
           {activeTab === 'exam-sessions' && (
             <ExamSessionsPage
               courses={courses}
+              onCreateExam={() => { setActiveTab('quick-exam'); window.scrollTo({top:0,behavior:'smooth'}); }}
               onShowToast={showToast}
             />
           )}
+
+          {activeTab === 'monitoring' && <TeacherMonitoringPage/>}
 
           {/* TAB 7: SETTINGS (Cài đặt) */}
           {activeTab === 'settings' && (
@@ -314,38 +291,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
             />
           )}
 
-          {/* Clean Administrative Footer */}
-          <footer className="pt-8 pb-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
-            <div>
-              ExamFlow AI © 2026 — Hệ thống Quản lý Khảo thí & Đánh giá Chuẩn đầu ra.
-            </div>
-            <div className="flex items-center gap-4 text-slate-500">
-              <button
-                type="button"
-                onClick={() => setDashboardMode((m) => (m === 'active' ? 'onboarding' : 'active'))}
-                className="text-[11px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                title="Chuyển đổi giao diện Active / Onboarding trong môi trường phát triển"
-              >
-                Chế độ: {dashboardMode === 'active' ? 'Đã có dữ liệu' : 'Người dùng mới'}
-              </button>
-              <span>•</span>
-              <button
-                type="button"
-                onClick={() => showToast('Hỗ trợ kỹ thuật: support@examflow.edu.vn')}
-                className="hover:text-[var(--primary)] transition-colors cursor-pointer"
-              >
-                Trợ giúp
-              </button>
-              <span>•</span>
-              <button
-                type="button"
-                onClick={() => showToast('Đang ở phiên bản v2.4.0')}
-                className="hover:text-[var(--primary)] transition-colors cursor-pointer"
-              >
-                Phiên bản v2.4.0
-              </button>
-            </div>
-          </footer>
+          <footer className="t-footer">ExamFlow · Không gian giảng viên · Dữ liệu trong phạm vi được phân công</footer>
           </>}
         </main>
       </div>

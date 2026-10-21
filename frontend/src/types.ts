@@ -9,6 +9,7 @@ export type DashboardNavTab =
   | 'quick-exam'
   | 'exams'
   | 'exam-sessions'
+  | 'monitoring'
   | 'settings';
 
 export interface SlideData {

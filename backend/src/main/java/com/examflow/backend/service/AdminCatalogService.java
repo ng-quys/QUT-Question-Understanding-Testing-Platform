@@ -64,7 +64,7 @@ public class AdminCatalogService {
             throw conflict("Không sửa học phần khi có sinh viên đang làm bài");
     }
     private void noExamUsage(Long id) {
-        if(count("SELECT COUNT(*) FROM exam_sessions WHERE exam_id=:id",id)>0 || count("SELECT COUNT(*) FROM exam_attempts WHERE exam_id=:id",id)>0)
+        if(count("SELECT COUNT(*) FROM exam_sessions WHERE exam_id=:id",id)>0 || count("SELECT COUNT(*) FROM exam_attempts WHERE exam_id=:id",id)>0 || count("SELECT COUNT(*) FROM exam_sitting_groups WHERE exam_id=:id",id)>0)
             throw conflict("Đề đã có ca thi hoặc bài làm. Không sửa/xóa cấu trúc đề; hãy tạo đề mới.");
     }
     private void noSessionUsage(Long id) {
@@ -170,7 +170,7 @@ public class AdminCatalogService {
     public Map<String,Object> reviewExam(Long id){
         Exam exam=require(Exam.class,id,false);var result=new LinkedHashMap<>(detail("exams",id));
         result.put("courseName",exam.getCourse().getName());result.put("totalPoints",exam.getTotalPoints());
-        boolean unused=count("SELECT COUNT(*) FROM exam_sessions WHERE exam_id=:id",id)==0&&count("SELECT COUNT(*) FROM exam_attempts WHERE exam_id=:id",id)==0;
+        boolean unused=count("SELECT COUNT(*) FROM exam_sessions WHERE exam_id=:id",id)==0&&count("SELECT COUNT(*) FROM exam_attempts WHERE exam_id=:id",id)==0&&count("SELECT COUNT(*) FROM exam_sitting_groups WHERE exam_id=:id",id)==0;
         result.put("canEdit",unused&&"draft".equals(exam.getStatus()));result.put("canClose",unused&&!Set.of("cancelled","completed").contains(exam.getStatus()));
         List<Map<String,Object>> questions=new ArrayList<>();
         if(snapshots!=null&&snapshots.usesSnapshots(id)){

@@ -37,7 +37,9 @@ public class EvidenceAccessService {
         return user;
     }
     private boolean canRead(UserEntity viewer,ExamAttempt attempt) {
-        return viewer.getId().equals(attempt.getExam().getCourse().getCreatedBy());
+        if(attempt.getExamSession()==null)return false;
+        return ((Number)em.createNativeQuery("SELECT COUNT(*) FROM exam_sessions s WHERE s.id=:session AND s.published_at IS NOT NULL AND (EXISTS(SELECT 1 FROM exam_sitting_groups g WHERE g.session_id=s.id AND g.teacher_id=:actor) OR (NOT EXISTS(SELECT 1 FROM exam_sitting_groups g WHERE g.session_id=s.id) AND EXISTS(SELECT 1 FROM exam_room_teachers rt WHERE rt.room_id=s.room_id AND rt.teacher_id=:actor)))")
+            .setParameter("session",attempt.getExamSession().getId()).setParameter("actor",viewer.getId()).getSingleResult()).longValue()>0;
     }
     @Transactional
     public ExamAttempt require(Jwt jwt,Long attemptId) {

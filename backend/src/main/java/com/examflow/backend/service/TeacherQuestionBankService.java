@@ -109,7 +109,7 @@ public class TeacherQuestionBankService {
         long uid = userId(jwt);
         List<Long> owned = jdbc.query(
             "select distinct c.id from courses c left join course_faculties cf on cf.course_id=c.id " +
-            "where c.created_by=? or cf.faculty_id=?", (rs,n) -> rs.getLong(1), uid, uid);
+            "where c.created_by=? or cf.faculty_id=? or exists(select 1 from exam_sitting_groups g join exam_sittings s on s.id=g.sitting_id where s.course_id=c.id and g.teacher_id=? and g.status<>'cancelled')", (rs,n) -> rs.getLong(1), uid, uid, uid);
         if (owned.isEmpty()) return List.of();
         if (courseId != null) {
             if (!owned.contains(courseId)) throw new ApiException(HttpStatus.FORBIDDEN, "Không có quyền quản lý học phần");
