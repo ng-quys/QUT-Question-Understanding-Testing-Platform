@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-let server, AssignedExams, ExamOrganization, LoginForm, StudentMonitoring, ExamSessionsPage, examDate, sidebarStructure, ReportSummary, LiveSessionBoard, SessionRosterPanel, AttemptRiskStats;
+let server, AssignedExams, ExamOrganization, LoginForm, StudentMonitoring, ExamSessionsPage, examDate, sidebarStructure, ReportSummary, LiveSessionBoard, SessionRosterPanel, AttemptRiskStats, SittingCandidateStatus;
 before(async()=>{
  server=await createServer({server:{middlewareMode:true,watch:null},appType:'custom'});
+ ({SittingCandidateStatus}=await server.ssrLoadModule('/src/features/sessions/components/SittingCandidateStatus.tsx'));
  ({LiveSessionBoard}=await server.ssrLoadModule('/src/features/sessions/components/LiveSessionBoard.tsx'));
  ({SessionRosterPanel}=await server.ssrLoadModule('/src/features/sessions/components/SessionRosterPanel.tsx'));
  ({AttemptRiskStats}=await server.ssrLoadModule('/src/features/admin/components/AttemptRiskStats.tsx'));
@@ -19,6 +20,17 @@ before(async()=>{
  ({StudentMonitoring}=await server.ssrLoadModule('/src/features/student/components/StudentMonitoring.tsx'));
 });
 after(async()=>{await server?.close();});
+
+test('fully allocated students explain why another sitting cannot be created',()=>{
+ const html=renderToStaticMarkup(createElement(SittingCandidateStatus,{id:'candidates',selected:true,loading:false,error:'',counts:{total:10,assigned:10,remaining:0},busy:false,onRetry:()=>{}}));
+ assert.match(html,/Cả 10 sinh viên đã được xếp môn này trong đợt thi đã chọn/);
+ assert.match(html,/Danh sách ca thi/);assert.match(html,/đợt thi khác/);
+});
+test('candidate connection failure offers retry and is distinct from no eligible students',()=>{
+ const html=renderToStaticMarkup(createElement(SittingCandidateStatus,{id:'candidates',selected:true,loading:false,error:'Máy chủ chưa phản hồi',counts:null,busy:false,onRetry:()=>{}}));
+ assert.match(html,/role="alert"/);assert.match(html,/Thử tải lại danh sách/);
+ assert.doesNotMatch(html,/Cả 0 sinh viên|đã được xếp môn này|Không còn sinh viên/);
+});
 test('exam opens without a blocking model-loading screen',()=>{const html=renderToStaticMarkup(createElement(StudentMonitoring,{attemptId:1}));assert.match(html,/Bài thi đang diễn ra/);assert.doesNotMatch(html,/Đang tải model|90 giây|student-start-overlay/);});
 const sample={sessionId:1,examId:10,examCode:'WEB-01',examTitle:'Đề Web',sessionName:'Ca Web 1',courseCode:'WEB',courseName:'Lập trình Web',roomCode:'P101',roomName:'Phòng 101',startTime:'2030-10-16T09:00:00+07:00',endTime:'2030-10-16T10:00:00+07:00',sessionStatus:'ongoing',durationMinutes:60,questionCount:20,canStart:true,attemptId:null,attemptStatus:null};
 const renderStudent=(sessions,busy=false)=>renderToStaticMarkup(createElement(AssignedExams,{sessions,busy,onStart:async()=>{},onRefresh:async()=>{}}));

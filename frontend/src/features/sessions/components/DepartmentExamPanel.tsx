@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { CalendarDays, Check, Pencil, Save, Plus, ChevronRight, DoorOpen, FileText, Users } from 'lucide-react';
 import { apiFetch } from '../../../services/api';
 import { examDate } from '../../../utils/examTime';
+import { SittingCandidateStatus } from './SittingCandidateStatus';
 
 type Item={id:number;code?:string;name?:string;status?:string;capacity?:number;courseId?:number;authorId?:number};
 type Student={id:number;username:string;name:string;className?:string;department?:string;releasedAt?:string};
@@ -22,6 +23,8 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
  const [loading,setLoading]=useState(true),[rows,setRows]=useState<Sitting[]>([]),[total,setTotal]=useState(0),[page,setPage]=useState(0),[search,setSearch]=useState(''),[query,setQuery]=useState(''),[status,setStatus]=useState('');
  const [form,setForm]=useState({periodId:'',courseId:'',department:'',name:'',startTime:'',endTime:'',studentsPerGroup:'30'});
  const [counts,setCounts]=useState<Counts|null>(null),[preview,setPreview]=useState<Preview|null>(null),[proposed,setProposed]=useState<Input|null>(null);
+ const [countsLoading,setCountsLoading]=useState(false),[countsError,setCountsError]=useState(''),[countsRevision,setCountsRevision]=useState(0);
+ const candidateStatusId=useId();
  const [periodName,setPeriodName]=useState('');
  const [detail,setDetail]=useState<Sitting|null>(null),[assignment,setAssignment]=useState<{id:number;roomId:string;teacherId:string}|null>(null),[cancelId,setCancelId]=useState<number|null>(null),[confirmPublish,setConfirmPublish]=useState(false);
  const [scheduleEdit,setScheduleEdit]=useState<{name:string;startTime:string;endTime:string;expectedStartTime:string;expectedEndTime:string}|null>(null);
@@ -31,7 +34,17 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
  const dialog=useRef<HTMLDialogElement>(null);
  useEffect(()=>{const c=new AbortController();request<Options>(`${base}/options`,{signal:c.signal}).then(setOptions).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[revision,request]);
  useEffect(()=>{if(view==='create')return;const c=new AbortController();setLoading(true);request<{total:number;items:Sitting[]}>(`${base}?${new URLSearchParams({page:String(page),search,status})}`,{signal:c.signal}).then(v=>{setRows(v.items);setTotal(v.total);}).catch(e=>{if(!c.signal.aborted)setError(e.message);}).finally(()=>{if(!c.signal.aborted)setLoading(false);});return()=>c.abort();},[page,search,status,revision,request,view]);
- useEffect(()=>{const c=new AbortController();if(form.courseId&&form.periodId&&form.department){const params=new URLSearchParams({courseId:form.courseId,periodId:form.periodId,department:form.department});request<Counts>(`${base}/candidates?${params}`,{signal:c.signal}).then(setCounts).catch(e=>{if(!c.signal.aborted)setError(e.message);});}return()=>c.abort();},[form.courseId,form.periodId,form.department,revision,request]);
+ useEffect(()=>{
+  const c=new AbortController();setCounts(null);setCountsError('');
+  if(!form.courseId||!form.periodId||!form.department){setCountsLoading(false);return()=>c.abort();}
+  setCountsLoading(true);
+  const params=new URLSearchParams({courseId:form.courseId,periodId:form.periodId,department:form.department});
+  request<Counts>(`${base}/candidates?${params}`,{signal:AbortSignal.any([c.signal,AbortSignal.timeout(20000)])})
+   .then(value=>{if(!c.signal.aborted)setCounts(value);})
+   .catch(cause=>{if(!c.signal.aborted)setCountsError(cause instanceof Error?cause.message:'Không kết nối được máy chủ.');})
+   .finally(()=>{if(!c.signal.aborted)setCountsLoading(false);});
+  return()=>c.abort();
+ },[form.courseId,form.periodId,form.department,revision,countsRevision,request]);
  useEffect(()=>{if(!initialSittingId)return;const c=new AbortController();request<Sitting>(`${base}/${initialSittingId}`,{signal:c.signal}).then(setDetail).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[initialSittingId,request]);
  useEffect(()=>{const element=dialog.current;if(detail){if(!element?.open)element?.showModal();}else element?.close();},[detail]);
  const detailId=detail?.id;
@@ -39,7 +52,7 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
  const update=(key:keyof typeof form,value:string)=>{setPreview(null);setProposed(null);setStep(1);setNotice('');if(['courseId','periodId','department'].includes(key))setCounts(null);setForm(f=>({...f,[key]:value}));};
  async function run(action:()=>Promise<unknown>,message:string){if(busy)return false;setBusy(true);setError('');setNotice('');try{await action();setNotice(message);setRevision(v=>v+1);return true;}catch(e){setError(e instanceof Error?e.message:'Thao tác chưa thành công');return false;}finally{setBusy(false);}}
  async function open(row:Sitting){if(row.kind==='legacy'){onOpenSession?.(row.id);return;}await run(async()=>{setDetail(await request<Sitting>(`${base}/${row.id}`));setAssignment(null);setCancelId(null);setConfirmPublish(false);},'');}
- async function prepare(){setBusy(true);setError('');setPreview(null);setProposed(null);const input:Input={requestId:crypto.randomUUID(),periodId:Number(form.periodId),courseId:Number(form.courseId),department:form.department,name:form.name.trim(),startTime:form.startTime,endTime:form.endTime,studentsPerGroup:Number(form.studentsPerGroup)};try{setPreview(await request<Preview>(`${base}/preview`,{method:'POST',body:JSON.stringify(input),signal:AbortSignal.timeout(60000)}));setProposed(input);setPreviewGroup(0);setRosterPage(0);setStep(2);}catch(e){setError(e instanceof Error?e.message:'Không xem trước được danh sách');}finally{setBusy(false);}}
+ async function prepare(){if(busy||countsLoading||countsError||!counts?.remaining)return;setBusy(true);setError('');setPreview(null);setProposed(null);const input:Input={requestId:crypto.randomUUID(),periodId:Number(form.periodId),courseId:Number(form.courseId),department:form.department,name:form.name.trim(),startTime:form.startTime,endTime:form.endTime,studentsPerGroup:Number(form.studentsPerGroup)};try{setPreview(await request<Preview>(`${base}/preview`,{method:'POST',body:JSON.stringify(input),signal:AbortSignal.timeout(60000)}));setProposed(input);setPreviewGroup(0);setRosterPage(0);setStep(2);}catch(e){setError(e instanceof Error?e.message:'Không xem trước được danh sách');}finally{setBusy(false);}}
  const close=()=>{if(!busy){setDetail(null);setAssignment(null);setCancelId(null);setConfirmPublish(false);setScheduleEdit(null);}};
  const active=detail?.groups.filter(g=>g.status!=='cancelled')||[];
  const canPublish=active.length>0&&active.every(g=>g.publishedAt||g.ready)&&active.some(g=>!g.publishedAt);
@@ -62,10 +75,9 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
      <label>Kết thúc<input required type="datetime-local" min={form.startTime} value={form.endTime} onChange={e=>update('endTime',e.target.value)}/></label>
      <label>Sinh viên tối đa mỗi phòng<input required type="number" min={1} max={1000} value={form.studentsPerGroup} onChange={e=>update('studentsPerGroup',e.target.value)}/><small>Ví dụ 100 sinh viên, 30 người/phòng → 30 · 30 · 30 · 10.</small></label>
      <div className="sitting-hint"><Users size={20}/><p>Danh sách lấy từ khoa đã chọn, sắp theo tên tiếng Việt và loại sinh viên đã xếp môn này trong cùng đợt.</p></div>
-    </fieldset><footer className="sitting-form-footer"><span>Thời gian theo giờ Việt Nam (UTC+7).</span><button className="org-primary" disabled={busy||!counts?.remaining}>{busy?'Đang xử lý…':'Xem trước danh sách'}<ChevronRight size={16}/></button></footer></form>
+    </fieldset><SittingCandidateStatus id={candidateStatusId} selected={!!(form.courseId&&form.periodId&&form.department)} loading={countsLoading} error={countsError} counts={counts} busy={busy} onRetry={()=>setCountsRevision(value=>value+1)}/><footer className="sitting-form-footer"><span>Thời gian theo giờ Việt Nam (UTC+7).</span><button className="org-primary" aria-describedby={candidateStatusId} disabled={busy||countsLoading||!!countsError||!counts?.remaining}>{busy?'Đang xử lý…':countsLoading?'Đang kiểm tra danh sách…':'Xem trước danh sách'}<ChevronRight size={16}/></button></footer></form>
    </section>
    <details className="sitting-period"><summary><span className="sitting-period-icon"><Plus size={19}/></span><span><strong>Thêm đợt thi</strong><small>Tạo đợt mới nếu chưa có lựa chọn phù hợp.</small></span><ChevronRight size={17} className="sitting-period-chevron"/></summary><form onSubmit={e=>{e.preventDefault();void run(async()=>{const result=await request<{id:number}>('/admin/organization/allocation/periods',{method:'POST',body:JSON.stringify({name:periodName})});if(result.id)update('periodId',String(result.id));setPeriodName('');},'Đã thêm đợt thi.');}}><div className="allocation-fields"><label>Mã đợt<input readOnly value="Tự động cấp khi lưu"/><small>Mã ngắn như DT01, DT02 do hệ thống cấp.</small></label><label>Tên đợt<input required disabled={busy} maxLength={150} placeholder="Cuối học kỳ 1" value={periodName} onChange={e=>setPeriodName(e.target.value)}/></label></div><button className="org-primary" disabled={busy}><Plus size={16}/>Thêm đợt thi</button></form></details>
-   {counts&&<div className="allocation-stats"><span>Sinh viên trong khoa<strong>{counts.total}</strong></span><span>Đã xếp môn / đợt<strong>{counts.assigned}</strong></span><span>Sẵn sàng xếp ca<strong>{counts.remaining}</strong></span></div>}
    </>}
    {step===2&&preview&&proposed&&<section className="allocation-card allocation-preview sitting-review"><header><div><h3>Kiểm tra danh sách dự thi</h3><p>Danh sách được chia theo tên tiếng Việt. Chọn nhóm để kiểm tra trước khi tiếp tục.</p></div><Users size={24}/></header>
     <div className="sitting-review-metrics"><span><strong>{preview.remaining}</strong>Sinh viên dự thi</span><span><strong>{preview.groups.length}</strong>Nhóm dự thi</span><span><strong>{proposed.studentsPerGroup}</strong>Tối đa mỗi nhóm</span></div>
