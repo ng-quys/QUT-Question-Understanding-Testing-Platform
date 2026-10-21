@@ -1,5 +1,6 @@
 import { AdminExamReviewDialog } from './AdminExamReviewDialog';
 import { ExamOrganization } from '../../sessions/components/ExamOrganization';
+import { ADMIN_REFRESH_INTERVAL_MS } from '../../sessions/services/visiblePolling';
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import {
@@ -308,6 +309,8 @@ export function AdminWorkspace({
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing,setRefreshing]=useState(false);
+  const loadedTableKey=useRef<string|null>(null);
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
   const [toast, setToast] = useState('');
@@ -362,10 +365,10 @@ export function AdminWorkspace({
   }, [mobile, compact]);
 
   useEffect(() => {
-    if (tab !== 'monitor' || !autoRefresh || loading || mobile || account !== undefined || attemptId !== null || sessionId !== null || resource || catalog || showImport || confirm || exporting) return;
-    const timer = setInterval(() => { if (document.visibilityState === 'visible') setRevision(value => value + 1); }, 15000);
+    if (tab !== 'monitor' || !autoRefresh || loading || refreshing || mobile || account !== undefined || attemptId !== null || sessionId !== null || resource || catalog || showImport || confirm || exporting) return;
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') setRevision(value => value + 1); }, ADMIN_REFRESH_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [tab, autoRefresh, loading, mobile, account, attemptId, sessionId, resource, catalog, showImport, confirm, exporting]);
+  }, [tab, autoRefresh, loading, refreshing, mobile, account, attemptId, sessionId, resource, catalog, showImport, confirm, exporting]);
 
   // Resolve effective backend tab + filters for composite tabs
   const effectiveApiResource = (() => {
@@ -386,12 +389,14 @@ export function AdminWorkspace({
 
   // Load data — sequence-guarded so a slow earlier response never overwrites newer filters.
   useEffect(() => {
-    if(['organization','studentClasses','sessionList','sessions','liveSessions'].includes(tab)){setLoading(false);return;}
+    if(['organization','studentClasses','sessionList','sessions','liveSessions'].includes(tab)){setLoading(false);setRefreshing(false);return;}
     const seq = ++loadSeq.current;
     let active = true;
-    setLoading(true);
-    setError('');
-    setLoadError('');
+    const queryKey=JSON.stringify([tab,effectiveApiResource,filters,pageIndex,size,warnedSession?.id,monitorSubTab]);
+    const background=tab==='monitor'&&loadedTableKey.current===queryKey;
+    setLoading(!background);
+    setRefreshing(background);
+    if(!background){setError('');setLoadError('');}
 
     async function load() {
       try {
@@ -410,18 +415,20 @@ export function AdminWorkspace({
           if (active && loadSeq.current === seq) {
             const last = Math.max(0, Math.ceil(data.total / size) - 1);
             if (pageIndex > last) setPageIndex(last);
-            else setPage(data);
+            else {setPage(data);loadedTableKey.current=queryKey;}
             if (summary) setReport(summary);
+            setError('');setLoadError('');
             setLastUpdated(new Date());
           }
         }
       } catch (cause) {
         if (active && loadSeq.current === seq) {
           const message = cause instanceof Error ? cause.message : 'Không thể tải dữ liệu';
-          setError(message); setLoadError(message);
+          if(background)setToast('Chưa cập nhật được cảnh báo. Đang giữ dữ liệu gần nhất; hệ thống sẽ thử lại.');
+          else {setError(message);setLoadError(message);}
         }
       } finally {
-        if (active && loadSeq.current === seq) setLoading(false);
+        if (active && loadSeq.current === seq) {setLoading(false);setRefreshing(false);}
       }
     }
 
@@ -457,6 +464,7 @@ export function AdminWorkspace({
   useEffect(() => () => { exportCancelled.current = true; }, []);
 
   function go(next: AdminTab, sub?: string) {
+    loadedTableKey.current=null;
     exportCancelled.current = true;
     loadSeq.current++;
     setTab(next);
@@ -792,8 +800,8 @@ export function AdminWorkspace({
             </div>
 
             <div className="admin-heading-actions">
-              <button className="admin-button secondary" disabled={loading} onClick={refresh}>
-                <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              <button className="admin-button secondary" disabled={loading||refreshing} onClick={refresh}>
+                <RefreshCw size={15} className={loading||refreshing ? 'animate-spin' : ''} />
                 Làm mới
               </button>
 
@@ -983,7 +991,7 @@ export function AdminWorkspace({
               {tab === 'reports' && report && !loading && !loadError && <ReportSummary report={report} />}
 
               {tab==='monitor'&&monitorSubTab==='warned'&&warnedSession&&<div className="admin-warning-context"><button className="admin-button secondary" onClick={()=>selectWarningSession(null)}>← Tất cả ca có cảnh báo</button><div><strong>{value(warnedSession,'name')}</strong><span>{value(warnedSession,'sessionCode')} · {value(warnedSession,'examCode')}</span></div></div>}
-              <div className="admin-result-toolbar"><h2>{tab === 'reports' ? 'Chi tiết kết quả' : tab === 'accounts' ? 'Danh sách tài khoản' : tab === 'monitor' ? monitorSubTab === 'warned' ? warnedSession?'Sinh viên có cảnh báo trong ca':'Ca thi có cảnh báo' : 'Danh sách lượt thi' : current.label}<small>{!loading && !loadError ? `${page.total.toLocaleString('vi-VN')} kết quả` : loadError ? 'Chưa tải được' : 'Đang cập nhật'}</small></h2>{tab === 'monitor' && <label className="admin-live-control"><input type="checkbox" checked={autoRefresh} onChange={event => setAutoRefresh(event.target.checked)} />Tự cập nhật mỗi 15 giây</label>}</div>
+              <div className="admin-result-toolbar"><h2>{tab === 'reports' ? 'Chi tiết kết quả' : tab === 'accounts' ? 'Danh sách tài khoản' : tab === 'monitor' ? monitorSubTab === 'warned' ? warnedSession?'Sinh viên có cảnh báo trong ca':'Ca thi có cảnh báo' : 'Danh sách lượt thi' : current.label}<small>{!loading && !loadError ? `${page.total.toLocaleString('vi-VN')} kết quả` : loadError ? 'Chưa tải được' : 'Đang cập nhật'}</small></h2>{tab === 'monitor' && <label className="admin-live-control"><input type="checkbox" checked={autoRefresh} onChange={event => setAutoRefresh(event.target.checked)} />Tự cập nhật mỗi {ADMIN_REFRESH_INTERVAL_MS/1000} giây</label>}</div>
               <DataTable
                 columns={columns}
                 page={{ ...page, page: pageIndex, size }}
@@ -998,7 +1006,7 @@ export function AdminWorkspace({
 
           <footer className="admin-page-footer">
             <span>ExamFlow</span>
-            <span>{lastUpdated ? `Cập nhật lúc ${lastUpdated.toLocaleTimeString('vi-VN')}${tab === 'monitor' && autoRefresh ? ' · Tự cập nhật 15 giây' : ' · Bấm Làm mới để cập nhật'}` : 'Chưa có dữ liệu cập nhật'}</span>
+            <span>{lastUpdated ? `Cập nhật lúc ${lastUpdated.toLocaleTimeString('vi-VN')}${tab === 'monitor' && autoRefresh ? ` · Tự cập nhật ${ADMIN_REFRESH_INTERVAL_MS/1000} giây` : ' · Bấm Làm mới để cập nhật'}` : 'Chưa có dữ liệu cập nhật'}</span>
           </footer>
         </main>
       </div>

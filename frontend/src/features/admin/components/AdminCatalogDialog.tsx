@@ -1,3 +1,4 @@
+import { DateTime24Field } from '../../../shared/components/DateTime24Field';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Loader2, RefreshCw, Save } from 'lucide-react';
 import type { CatalogKind, CatalogOptions, WorkspaceApi } from '../services/adminWorkspaceApi';
@@ -79,8 +80,8 @@ export function AdminCatalogDialog({ kind, id, api, onClose, onSaved }: { kind:C
           <label>Tên ca thi<input required maxLength={200} value={draft.name} onChange={e=>update('name',e.target.value)}/></label>
           <label>Đề thi<select required disabled={id!==null} value={draft.examId} onChange={e=>update('examId',e.target.value)}><option value="">Chọn đề thi có câu hỏi</option>{draft.examId&&!options?.exams.some(e=>String(e.id)===draft.examId)&&<option value={draft.examId}>Đề #{draft.examId} không còn khả dụng</option>}{options?.exams.map(e=><option key={e.id} value={e.id}>{e.code} · {e.name}</option>)}</select></label>
           <label>Lớp (không bắt buộc)<select value={draft.classId} onChange={e=>update('classId',e.target.value)}><option value="">Không gắn lớp</option>{options?.classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-          <label>Bắt đầu<input required type="datetime-local" value={draft.startTime} onChange={e=>update('startTime',e.target.value)}/></label>
-          <label>Kết thúc<input required type="datetime-local" min={draft.startTime||undefined} value={draft.endTime} onChange={e=>update('endTime',e.target.value)}/></label>
+          <label>Bắt đầu<DateTime24Field label="Bắt đầu" required value={draft.startTime} onChange={value=>update('startTime',value)}/></label>
+          <label>Kết thúc<DateTime24Field label="Kết thúc" required min={draft.startTime||undefined} value={draft.endTime} onChange={value=>update('endTime',value)}/></label>
           <p className="admin-catalog-help full">Giờ Việt Nam (UTC+7). Chỉ sửa ca chưa bắt đầu và chưa có bài làm. Mã ca thi không được trùng ca khác.</p>
         </>}
       </div></fieldset></div>

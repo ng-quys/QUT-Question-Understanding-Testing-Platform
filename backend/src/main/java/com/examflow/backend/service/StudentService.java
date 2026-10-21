@@ -445,15 +445,15 @@ public class StudentService {
 
     private StudentResultDto buildResultDto(ExamAttempt attempt, List<ExamQuestion> examQuestions, List<StudentAnswer> savedAnswers) {
         int correct = (int) savedAnswers.stream().filter(sa -> Boolean.TRUE.equals(sa.getCorrect())).count();
+        Map<Long, Long> linkClos = snapshotReadService.findCloIds(examQuestions.stream().map(ExamQuestion::getId).toList());
+        Map<Long, Long> questionClos = new java.util.HashMap<>();
+        for (ExamQuestion question : examQuestions) {
+            Long cloId = linkClos.get(question.getId());
+            if (cloId != null) questionClos.putIfAbsent(question.getQuestionId(), cloId);
+        }
         Map<Long, List<StudentAnswer>> byClo = savedAnswers.stream()
-                .filter(sa -> examQuestions.stream().anyMatch(eq -> eq.getQuestionId().equals(sa.getQuestionId())))
-                .filter(sa -> examQuestions.stream().filter(eq -> eq.getQuestionId().equals(sa.getQuestionId()))
-                        .findFirst().map(eq -> snapshotReadService.find(eq.getId())
-                                .map(snap -> snap.cloId() != null).orElse(false)).orElse(false))
-                .collect(Collectors.groupingBy(sa -> examQuestions.stream()
-                        .filter(eq -> eq.getQuestionId().equals(sa.getQuestionId())).findFirst()
-                        .flatMap(eq -> snapshotReadService.find(eq.getId()))
-                        .orElseThrow().cloId()));
+                .filter(sa -> questionClos.containsKey(sa.getQuestionId()))
+                .collect(Collectors.groupingBy(sa -> questionClos.get(sa.getQuestionId())));
         List<CloAchievementDto> cloAchievement = byClo.entrySet().stream().map(entry -> {
             Clo clo = cloRepository.findById(entry.getKey())
                     .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "CLO không tồn tại trong Main DB"));

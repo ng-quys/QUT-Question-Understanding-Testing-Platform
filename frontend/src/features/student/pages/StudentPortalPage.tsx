@@ -1,5 +1,7 @@
 import { AttemptRecovery, indexedDraftStore, type RecoveryState } from '../services/attemptRecovery';
 import { AttemptSyncNotice } from '../components/AttemptSyncNotice';
+import { ExamConnection, type ExamConnectionPhase } from '../services/examConnection';
+import { ExamConnectionScreen } from '../components/ExamConnectionScreen';
 import { examDate } from '../../../utils/examTime';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -46,6 +48,9 @@ export const StudentPortalPage: React.FC = () => {
   const [attempt, setAttempt] = useState<StudentAttempt | null>(null);
 
   const [result, setResult] = useState<StudentResult | null>(null);
+  const [resultsOpened,setResultsOpened]=useState(false);
+  const resultsScroll=useRef(0);
+  const resultRequest=useRef(0);
 
   const [selected, setSelected] = useState<Record<number, number>>({});
   const selectedRef = useRef<Record<number, number>>({});
@@ -56,21 +61,34 @@ export const StudentPortalPage: React.FC = () => {
   const [failedQuestions, setFailedQuestions] = useState<number[]>([]);
   const recoveryRef = useRef<AttemptRecovery | null>(null);
   const [recoveryState,setRecoveryState]=useState<RecoveryState>({pending:[],localSaving:false,storageError:false,syncing:false,syncError:false});
-  const [online,setOnline]=useState(()=>navigator.onLine!==false);
+  const [connectionPhase,setConnectionPhase]=useState<ExamConnectionPhase>('active');
+  const [connectionError,setConnectionError]=useState<string|null>(null);
+  const connectionRef=useRef<ExamConnection|null>(null);
+  const retryConnectionRef=useRef<()=>void>(()=>{});
   const [recoveryNotice,setRecoveryNotice]=useState('');
   const owner=auth?.username?.trim().toLowerCase()||'';
   const recoveryStateRef=useRef(recoveryState);
   recoveryStateRef.current=recoveryState;
   useEffect(()=>()=>{recoveryRef.current?.stop();},[owner]);
   useEffect(()=>{
-    if(!attempt||view!=='exam')return;
-    const retry=()=>{
-      setOnline(navigator.onLine!==false);
-      if(navigator.onLine===false)return;
+    if(!attempt)return;
+    const connection=new ExamConnection({
+      online:()=>navigator.onLine!==false,
+      probe:async()=>{const clock=await studentApi.clock();serverOffset.current=Date.parse(clock.serverTime)-Date.now();},
+      onChange:setConnectionPhase,
+      onDisconnect:()=>{
+        fullscreenMonitoringArmed.current=false;
+        setSubmitConfirm(false);setError(null);setView('overview');
+      },
+    });
+    connectionRef.current=connection;
+    const retry=async()=>{
+      if(!await connection.check())return;
       if(autoSubmittingRef.current)void handleSubmit(true);
       else void recoveryRef.current?.flush();
     };
-    const offline=()=>setOnline(false);
+    retryConnectionRef.current=()=>{void retry();};
+    const offline=()=>connection.disconnect();
     const beforeUnload=(event:BeforeUnloadEvent)=>{
       if(recoveryStateRef.current.localSaving||(recoveryStateRef.current.storageError&&recoveryStateRef.current.pending.length)){
         event.preventDefault();event.returnValue='';
@@ -78,9 +96,10 @@ export const StudentPortalPage: React.FC = () => {
     };
     window.addEventListener('online',retry);window.addEventListener('offline',offline);
     window.addEventListener('beforeunload',beforeUnload);
-    const timer=window.setInterval(retry,5000);
-    return()=>{window.clearInterval(timer);window.removeEventListener('online',retry);window.removeEventListener('offline',offline);window.removeEventListener('beforeunload',beforeUnload);};
-  },[attempt?.attemptId,view]);
+    if(navigator.onLine===false)offline();
+    const timer=window.setInterval(()=>void retry(),5000);
+    return()=>{connection.stop();if(connectionRef.current===connection)connectionRef.current=null;window.clearInterval(timer);window.removeEventListener('online',retry);window.removeEventListener('offline',offline);window.removeEventListener('beforeunload',beforeUnload);};
+  },[attempt?.attemptId]);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -151,6 +170,7 @@ export const StudentPortalPage: React.FC = () => {
   };
 
   const recordViolation = (type: BrowserViolation) => {
+    if(!fullscreenMonitoringArmed.current||connectionRef.current?.phase!=='active'||navigator.onLine===false)return;
     const currentTime = Date.now();
 
     if (
@@ -167,12 +187,6 @@ export const StudentPortalPage: React.FC = () => {
 
     setViolationCount(prev => {
       const next = prev + 1;
-
-      if (next === 1) {
-        setError(
-          'Cảnh báo: Bạn đã rời khỏi môi trường thi (1/3). Vui lòng quay lại trang thi và fullscreen.',
-        );
-      }
 
       if (next >= 3 && !autoSubmittingRef.current) {
         autoSubmittingRef.current = true;
@@ -338,14 +352,14 @@ export const StudentPortalPage: React.FC = () => {
   };
 
   useEffect(()=>{
-    if(view==='exam')return;
+    if(view==='exam'||attempt)return;
     let active=true;let timer:ReturnType<typeof setTimeout>;let controller:AbortController;
     const poll=async()=>{if(!active)return;if(document.hidden){timer=setTimeout(poll,8000);return;}controller=new AbortController();
       try{const [data,clock]=await Promise.all([studentApi.dashboard(AbortSignal.any([controller.signal,AbortSignal.timeout(15000)])),studentApi.clock()]);if(active){setDashboard(data);serverOffset.current=Date.parse(clock.serverTime)-Date.now();}}
       catch(e){if(active)setError(e instanceof Error?e.message:'Không cập nhật được danh sách thi');}
       finally{if(active)timer=setTimeout(poll,8000);}
     };timer=setTimeout(poll,8000);return()=>{active=false;clearTimeout(timer);controller?.abort();};
-  },[view]);
+  },[view,attempt?.attemptId]);
 
   const loadProfile = async () => {
     try {
@@ -382,6 +396,11 @@ export const StudentPortalPage: React.FC = () => {
   };
 
   const handleStart = async (session: StudentSession) => {
+    if(attemptRef.current){
+      if(attemptRef.current.sessionId===session.sessionId)await handleResume();
+      else setError('Vui lòng hoàn tất lượt thi đang làm trước khi vào ca khác.');
+      return;
+    }
 
     if (!profile?.hasFacePhoto) {
       setView('profile');
@@ -401,19 +420,19 @@ export const StudentPortalPage: React.FC = () => {
       // Always use start: the backend also checks/restarts AI for a resumed attempt.
       const data = await studentApi.startExam(session.sessionId);
 
-      const reconnecting = attemptRef.current?.attemptId === data.attemptId;
+      const reconnecting = recoveryRef.current?.attemptId === data.attemptId;
       if (!reconnecting) {
         recoveryRef.current?.stop();
         const recovery=new AttemptRecovery({owner,attempt:data,deadline:examDate(data.endTime).getTime(),
           clock:()=>Date.now()+serverOffset.current,
           send:(questionId,answerId)=>studentApi.saveAnswer(data.attemptId,questionId,answerId),
-          onChange:state=>{if(recoveryRef.current!==recovery)return;setRecoveryState(state);setFailedQuestions(state.pending);setPendingQuestions(state.syncing?state.pending:[]);}
+          onChange:state=>{if(recoveryRef.current!==recovery)return;setRecoveryState(state);setFailedQuestions(state.pending);setPendingQuestions(state.syncing?state.pending:[]);if(state.syncError)connectionRef.current?.disconnect();}
         });
         recoveryRef.current=recovery;
         const restored=await recovery.restore();
         selectedRef.current = restored.selected;
         setSelected(restored.selected);
-        setRecoveryNotice(restored.restored?`Đã khôi phục ${restored.restored} đáp án lưu tạm. Hệ thống sẽ tự đồng bộ khi kết nối được máy chủ.`:'');
+        setRecoveryNotice('');
 
         setViolationCount(0);
         setError(null);
@@ -424,6 +443,7 @@ export const StudentPortalPage: React.FC = () => {
       }
       setAttempt(data);
       attemptRef.current = data;
+      setConnectionPhase('active');setConnectionError(null);
       setView('exam');
       void recoveryRef.current?.flush();
 
@@ -440,32 +460,61 @@ export const StudentPortalPage: React.FC = () => {
 
   };
 
-  const handleViewResult = async (attemptId: number) => {
+  const handleViewResult = async (attemptId: number, cached?: StudentResult) => {
+    const requestId=++resultRequest.current;
+    resultsScroll.current=view==='results'?window.scrollY:0;
+    setError(null);
 
     try {
 
-      const data = await studentApi.result(attemptId);
+      const data = cached?.attemptId===attemptId ? cached : await studentApi.result(attemptId);
+      if(resultRequest.current!==requestId)return;
       // Also handles a successful submission whose HTTP response was lost before a reload.
       void indexedDraftStore.clear(owner,attemptId).catch(()=>{});
 
       setResult(data);
 
       setView('result-detail');
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'instant'}));
 
     } catch (e) {
 
-      setError(e instanceof Error ? e.message : 'Không thể tải kết quả');
+      if(resultRequest.current===requestId)setError(e instanceof Error ? e.message : 'Không thể tải kết quả');
 
     }
 
   };
 
   const handleChoose = (questionId: number, answerId: number) => {
-    if (!attempt || submitting || submitLock.current || !recoveryRef.current?.choose(questionId,answerId)) return;
+    if (!attempt || connectionRef.current?.phase!=='active'||navigator.onLine===false||submitting || submitLock.current || !recoveryRef.current?.choose(questionId,answerId)) return;
     selectedRef.current = { ...selectedRef.current, [questionId]: answerId };
     setSelected(selectedRef.current);
   };
+
+  async function handleResume(){
+    const current=attemptRef.current,connection=connectionRef.current;
+    if(!current||!connection||connection.phase!=='ready')return;
+    if(autoSubmittingRef.current||examDate(current.endTime).getTime()<=Date.now()+serverOffset.current){
+      autoSubmittingRef.current=true;void handleSubmit(true);return;
+    }
+    setConnectionError(null);
+    // Keep the browser's user activation for requesting fullscreen.
+    await enterExamFullscreen();
+    try{
+      let verified:StudentAttempt|undefined;
+      const resumed=await connection.resume(async()=>{
+        const data=await studentApi.startExam(current.sessionId);
+        if(data.attemptId!==current.attemptId||data.status!=='in_progress')throw new Error('Lượt thi không còn được phép tiếp tục.');
+        if(examDate(data.endTime).getTime()<=Date.now()+serverOffset.current)throw new Error('Đã hết giờ làm bài.');
+        verified=data;
+      });
+      if(!resumed||!verified)return;
+      setAttempt(verified);attemptRef.current=verified;
+      fullscreenMonitoringArmed.current=Boolean(document.fullscreenElement);
+      setError(null);setView('exam');
+      void recoveryRef.current?.flush();
+    }catch(e){setConnectionError(e instanceof Error?e.message:'Chưa thể mở lại bài thi. Vui lòng thử lại.');}
+  }
 
   async function handleSubmit(force = false) {
 
@@ -514,11 +563,12 @@ export const StudentPortalPage: React.FC = () => {
       void loadDashboard();
 
       setView('result-detail');
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'instant'}));
 
     } catch (e) {
 
       recoveryRef.current?.resume();
+      void connectionRef.current?.check();
       setError(e instanceof Error ? e.message : 'Chưa nộp được bài. Dữ liệu lưu tạm vẫn được giữ để thử lại.');
 
     } finally {
@@ -549,7 +599,7 @@ export const StudentPortalPage: React.FC = () => {
   }, [attempt, now]);
 
   useEffect(() => {
-    if (!attempt || view !== 'exam' || submitting || autoSubmittingRef.current) return;
+    if (!attempt || submitting || autoSubmittingRef.current) return;
     const end = examDate(attempt.endTime).getTime();
     if (Number.isFinite(end) && end <= now) {
       autoSubmittingRef.current = true;
@@ -562,10 +612,13 @@ export const StudentPortalPage: React.FC = () => {
 
   const navigateView = (next: View) => {
     if (view === 'exam') return;
+    resultRequest.current++;
+    if(next==='results')setResultsOpened(true);
     if (next === 'profile') void loadProfile();
     setError(null);
     setView(next);
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    const top=next==='results'&&view==='result-detail'?resultsScroll.current:0;
+    requestAnimationFrame(()=>window.scrollTo({top,behavior:'instant'}));
   };
 
   return (
@@ -583,7 +636,8 @@ export const StudentPortalPage: React.FC = () => {
       </StudentDialog>}
 
       {recoveryNotice&&<div className="student-notice warning" role="status" style={{marginBottom:16}}><span>{recoveryNotice}</span><button aria-label="Đóng thông báo khôi phục" onClick={()=>setRecoveryNotice('')}><X size={16}/></button></div>}
-      {error && <div role="alert" className="student-notice error" style={{ marginBottom: 20 }}>
+      {attempt&&connectionPhase!=='active'&&<ExamConnectionScreen phase={connectionPhase} remaining={remaining??'--:--:--'} expired={now>=examDate(attempt.endTime).getTime()} error={connectionError} storageError={recoveryState.storageError} onRetry={()=>retryConnectionRef.current()} onResume={()=>void handleResume()}/>}
+      {error && (!attempt||connectionPhase==='active') && <div role="alert" className="student-notice error" style={{ marginBottom: 20 }}>
         <AlertCircle size={18} />
         <span>
           {error}
@@ -613,9 +667,9 @@ export const StudentPortalPage: React.FC = () => {
         </button>
       </div> : <>
         {view === 'overview' && <Overview dashboard={dashboard} profile={profile} loading={loading} onRefresh={loadDashboard} onViewResult={handleViewResult} onJoin={() => navigateView('join')} onProfile={() => navigateView('profile')} />}
-        {view === 'results' && <Results onViewResult={handleViewResult} loadResults={studentApi.results} />}
-        {view === 'exam' && attempt && <>
-          <AttemptSyncNotice state={recoveryState} online={online} expired={now>=examDate(attempt.endTime).getTime()} onRetry={()=>void recoveryRef.current?.flush()}/>
+        {resultsOpened&&<div hidden={view!=='results'} style={view!=='results'?{display:'none'}:undefined}><Results onViewResult={handleViewResult} loadResults={studentApi.results} refreshKey={dashboard?.completedExams} /></div>}
+        {view === 'exam' && attempt && connectionPhase==='active' && <>
+          <AttemptSyncNotice state={recoveryState} online={true} expired={now>=examDate(attempt.endTime).getTime()} onRetry={()=>void recoveryRef.current?.flush()}/>
           <ExamRunner key={attempt.attemptId} monitoring={<StudentMonitoring key={attempt.attemptId} attemptId={attempt.attemptId}/>} attempt={attempt} selected={selected} remaining={remaining ?? '--:--:--'} savingQuestion={savingQuestion} pendingQuestions={pendingQuestions} failedQuestions={failedQuestions} onChoose={handleChoose} onSubmit={() => void handleSubmit()} submitting={submitting} expired={now>=examDate(attempt.endTime).getTime()} violationCount={violationCount} fullscreenActive={fullscreenActive} onFullscreen={() => void enterExamFullscreen()} />
         </>}
         {(view === 'join'||view === 'sessions') && <AssignedExams sessions={dashboard.sessions} busy={startingAi} onStart={handleStart} onRefresh={loadDashboard} onViewResults={()=>navigateView('results')}/>}

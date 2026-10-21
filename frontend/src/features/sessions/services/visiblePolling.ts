@@ -1,3 +1,5 @@
+export const ADMIN_REFRESH_INTERVAL_MS = 10000;
+
 type PollingEnvironment = {
   isVisible: () => boolean;
   subscribe: (listener: () => void) => () => void;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { ShieldCheck, ShieldAlert } from 'lucide-react';
 import './StudentMonitoring.css';
 import { studentApi, type AiStatus } from '../services/studentService';
+import { appendMonitorAudio, monitorFrameSize } from '../services/monitorMedia';
 
 const encode=(bytes:Uint8Array)=>{let value='';for(let i=0;i<bytes.length;i+=8192)value+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(value);};
 export function StudentMonitoring({attemptId}:{attemptId:number}){
@@ -32,7 +32,7 @@ export function StudentMonitoring({attemptId}:{attemptId:number}){
     source=audio.createMediaStreamSource(stream);node=new AudioWorkletNode(audio,'qut-monitor-audio');
     const silent=audio.createGain();silent.gain.value=0;
     source.connect(node);node.connect(silent);silent.connect(audio.destination);
-    node.port.onmessage=event=>{if(!disposed&&latest.current?.captureAllowed){pcm=new Uint8Array(event.data);pcmAt=Date.now();}};
+    node.port.onmessage=event=>{if(!disposed&&latest.current?.captureAllowed){pcm=appendMonitorAudio(pcm,new Uint8Array(event.data));pcmAt=Date.now();}};
     node.port.postMessage(Boolean(latest.current?.captureAllowed));
     resume.current=()=>{void audio?.resume().then(()=>setError('')).catch(()=>setError('Không bật được micro.'));};
     void audio.resume().catch(()=>{});
@@ -57,24 +57,27 @@ export function StudentMonitoring({attemptId}:{attemptId:number}){
     const value=latest.current,element=videoElement;
     if(value?.captureAllowed&&typeof value.lease==='number'&&!deviceFailed&&element&&element.readyState>=2&&audio?.state==='running'&&Date.now()-pcmAt<1500){
      const ctx=canvas.getContext('2d');if(!ctx)return;
-     ctx.drawImage(element,0,0,640,480);
-     const jpeg=canvas.toDataURL('image/jpeg',.7).split(',')[1];
+     const size=monitorFrameSize(element.videoWidth,element.videoHeight);
+     canvas.width=size.width;canvas.height=size.height;
+     ctx.drawImage(element,0,0,size.width,size.height);
+     let jpeg='';
+     for(const quality of [.9,.8,.7,.6]){
+      jpeg=canvas.toDataURL('image/jpeg',quality).split(',')[1];
+      if(jpeg.length<=333332)break;
+     }
+     if(jpeg.length>333332)throw new Error('Ảnh giám sát vượt giới hạn dung lượng.');
      const captured=pcm;pcm=new Uint8Array();pcmAt=0;
      if(captured.length){await studentApi.aiFrame(attemptId,{lease:value.lease,jpeg,audioPcm16:encode(captured)},AbortSignal.any([controller.signal,AbortSignal.timeout(6000)]));if(!disposed)setError('');}
     }
    }catch{if(!disposed)setError('Chưa gửi được dữ liệu giám sát. Hệ thống sẽ thử lại; bài làm vẫn được lưu.');}
-   finally{if(!disposed)frameTimer=setTimeout(send,500);}
+   finally{if(!disposed)frameTimer=setTimeout(send,Math.max(200,Math.min(1500,latest.current?.frameIntervalMs??250)));}
   };
   void poll();void send();
   return()=>{disposed=true;controller.abort();clearTimeout(timer);clearTimeout(frameTimer);resume.current=null;cleanupMedia();if(videoElement)videoElement.srcObject=null;};
  },[attemptId,retry]);
- const healthy=status?.ready&&!error;
  const warning=Boolean(error||status?.required&&['error','offline','unregistered'].includes(status.status));
- const label=warning?'AI cần kiểm tra':status?.status==='disabled'?'AI không yêu cầu':healthy?'AI đang giám sát':status?.status==='waiting'?'AI chờ giám sát':status?.status==='stopped'?'AI đã dừng':'AI đang kết nối';
- const Icon=warning?ShieldAlert:ShieldCheck;
- return <div className={`student-monitoring-compact ${warning?'needs-attention':''}`}>
-  <span className="student-monitoring-label" role="status"><Icon size={15}/>{label}</span>
-  <details className="student-monitoring-camera" hidden={!status?.required}><summary aria-label="Xem camera và trạng thái giám sát">Camera</summary><div><video ref={video} muted autoPlay playsInline aria-label="Camera của bạn"/><p>{status?.message}</p></div></details>
+ return <div className={`student-monitoring-compact ${warning?'needs-attention':''}`} hidden={!warning} style={!warning?{display:'none'}:undefined}>
+  <video ref={video} muted autoPlay playsInline hidden aria-hidden="true"/>
   {warning&&<div className="student-monitoring-warning" role="alert">
   <strong>Cần kiểm tra giám sát</strong>
   <p>{error||status?.message} Thời gian thi vẫn tiếp tục; báo giảng viên nếu lỗi kéo dài.</p>

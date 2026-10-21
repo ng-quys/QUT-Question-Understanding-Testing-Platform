@@ -19,7 +19,8 @@ class StudentSessionTimingTests {
     final AnswerRepository answers=mock(AnswerRepository.class);
     final StudentAnswerRepository saved=mock(StudentAnswerRepository.class);
     final ExamSnapshotReadService snapshots=mock(ExamSnapshotReadService.class);
-    final StudentService service=new StudentService(users,registrations,mock(ExamSessionRepository.class),attempts,questions,mock(CloRepository.class),saved,mock(AntiCheatService.class),snapshots);
+    final CloRepository clos=mock(CloRepository.class);
+    final StudentService service=new StudentService(users,registrations,mock(ExamSessionRepository.class),attempts,questions,clos,saved,mock(AntiCheatService.class),snapshots);
     final LocalDateTime clock=LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
     Exam exam; ExamSession session; ExamAttempt attempt; ExamSessionStudent registration;
 
@@ -56,6 +57,19 @@ class StudentSessionTimingTests {
         session.setEndTime(clock.minusSeconds(1));attempt.setStartedAt(clock.minusMinutes(1));
         assertThrows(ApiException.class,()->service.saveAnswer(1L,4L,new SaveAnswerRequest(5L,6L)));
         verify(saved,never()).save(any());
+    }
+
+    @Test void resultReadsCloMetadataInBulkAndPreservesScores() {
+        attempt.setStatus("completed");attempt.setScore(BigDecimal.TEN);
+        StudentAnswer answer=new StudentAnswer();answer.setQuestionId(5L);answer.setCorrect(true);
+        when(saved.findByAttemptIdWithDetails(4L)).thenReturn(List.of(answer));
+        when(snapshots.findCloIds(List.of(15L))).thenReturn(Map.of(15L,8L));
+        Clo clo=new Clo();clo.setId(8L);clo.setCode("CLO1");clo.setDescription("Test");
+        when(clos.findById(8L)).thenReturn(Optional.of(clo));
+        var result=service.getResult(1L,4L);
+        assertEquals(BigDecimal.TEN,result.score());assertEquals(1,result.correctAnswers());
+        assertEquals(1,result.totalQuestions());assertEquals(100.0,result.cloAchievement().get(0).achievementPercent());
+        verify(snapshots).findCloIds(List.of(15L));verify(snapshots,never()).find(anyLong());
     }
 
     @Test void samePaperUsesDifferentDurationsInDifferentSessions() {

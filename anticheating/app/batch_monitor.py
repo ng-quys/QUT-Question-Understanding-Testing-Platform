@@ -103,7 +103,7 @@ class BatchMonitor:
             item = self.sessions.get(attempt)
             result = {"ok": True, "mode": "batch", "attemptId": attempt, "ready": False,
                       "captureAllowed": False, "lease": self.generation,
-                      "pollAfterMs": 1500, "frameIntervalMs": 500}
+                      "pollAfterMs": 1500, "frameIntervalMs": 250}
             if item is None:
                 return dict(result, status="unregistered", message="Chưa kết nối giám sát")
             selected = attempt in self.selected
@@ -131,7 +131,7 @@ class BatchMonitor:
             item.seen = self.clock()
             if key not in self.selected or int(data["lease"]) != self.generation or self.model_status != "ready":
                 return {"accepted": False, "reason": "not_selected"}
-            if self.clock() - item.last_received < .4:
+            if self.clock() - item.last_received < .2:
                 return {"accepted": False, "reason": "rate_limited"}
             image = base64.b64decode(data["jpeg"], validate=True)
             audio = base64.b64decode(data.get("audioPcm16", ""), validate=True)

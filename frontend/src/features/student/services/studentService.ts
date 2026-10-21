@@ -156,6 +156,7 @@ export type BrowserViolation =
   | 'RIGHT_CLICK';
 
 export interface AiStatus {
+  frameIntervalMs?: number;
   captureAllowed?: boolean;
   lease?: number;
   required: boolean;

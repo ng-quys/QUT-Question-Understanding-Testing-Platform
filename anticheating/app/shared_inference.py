@@ -7,6 +7,8 @@ import io
 import os
 import sys
 from pathlib import Path
+from inference_policy import (FACE_MATCH_THRESHOLD, PERSON_CONF, OBJECT_CONF,
+                              live_crop_bounds, update_identity_votes, speech_observation)
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -53,7 +55,8 @@ class SharedInference:
             mp.tasks.vision.HandLandmarkerOptions(
                 base_options=mp.tasks.BaseOptions(model_asset_path=str(ROOT / "models/hands/hand_landmarker.task")),
                 running_mode=mp.tasks.vision.RunningMode.IMAGE, num_hands=2,
-                min_hand_detection_confidence=.35))
+                min_hand_detection_confidence=.35, min_hand_presence_confidence=.35,
+                min_tracking_confidence=.35))
         self.vad, self.risk = webrtcvad.Vad(2), RiskEngine()
 
     def decode(self, data, reference=False):
@@ -68,14 +71,13 @@ class SharedInference:
         return image
 
     def live_label(self, image, bbox):
-        x1, y1, x2, y2 = map(float, bbox)
-        h, w = image.shape[:2]
-        scale = min(2.7, (h - 1) / max(1, y2-y1), (w - 1) / max(1, x2-x1))
-        cx, cy = (x1+x2)/2, (y1+y2)/2
-        bw, bh = (x2-x1)*scale/2, (y2-y1)*scale/2
-        crop = image[max(0,int(cy-bh)):min(h,int(cy+bh)+1),max(0,int(cx-bw)):min(w,int(cx+bw)+1)]
+        bounds = live_crop_bounds(image.shape, bbox)
+        if bounds is None:
+            return None
+        x1, y1, x2, y2 = bounds
+        crop = image[y1:y2, x1:x2]
         if crop.size == 0:
-            raise ValueError("Invalid face crop")
+            return None
         spec = self.live.get_inputs()[0]
         crop = self.cv.resize(crop, tuple(spec.shape[2:][::-1])).astype(self.np.float32)
         logits = self.live.run(None, {spec.name: crop.transpose(2,0,1)[None]})[0]
@@ -86,7 +88,9 @@ class SharedInference:
     def analyze(self, item, jpeg, audio, now, generation):
         from src.temporal.temporal_tracker import create_anticheating_tracker
         from src.evidence.evidence_logger import EvidenceLogger
-        frame = self.decode(jpeg)
+        original_frame = self.decode(jpeg)
+        # Match the direct-camera model input; M4 uses unmirrored landmarks below.
+        frame = self.cv.flip(original_frame, 1)
         context = item.context
         if "embedding" not in context:
             reference = self.face.get(self.decode(item.reference, True))
@@ -98,13 +102,13 @@ class SharedInference:
         if context.get("generation") != generation or now-context.get("sample_at", 0) > 3:
             context["tracker"] = create_anticheating_tracker()
             context["votes"] = []
+            context["object_fallback_since"] = {}
+            context["object_last_confirmed"] = {}
         context.update(generation=generation, sample_at=now)
         events = set()
         faces = self.face.get(frame)
-        if not faces:
-            events.add("NO_FACE")
-        people = self.person.predict(frame, classes=[0], conf=.4, device=self.device, verbose=False)[0]
-        objects = self.objects.predict(frame, conf=.25, device=self.device, verbose=False)[0]
+        objects = self.objects.predict(frame, imgsz=640, conf=OBJECT_CONF, device=self.device, verbose=False)[0]
+        people = self.person.predict(frame, classes=[0], conf=PERSON_CONF, device=self.device, verbose=False)[0]
         object_boxes = [(objects.names[int(box.cls.item())], box.xyxy[0].tolist()) for box in objects.boxes]
         # Do not count a face/person rendered inside a detected phone screen.
         def inside_phone(box):
@@ -115,35 +119,47 @@ class SharedInference:
         if person_count > 1 or sum(not inside_phone(face.bbox) for face in faces) > 1:
             events.add("MULTIPLE_PEOPLE")
         candidates = [face for face in faces if not inside_phone(face.bbox)]
-        identity_event = None
-        if len(candidates) == 1:
-            face = candidates[0]
-            cls, confidence = self.live_label(frame, face.bbox)
+        if not candidates:
+            events.add("NO_FACE")
+        frame_spoof, frame_verified = False, False
+        real_similarities, best_face, best_similarity = [], None, -1.0
+        for face in candidates:
+            live = self.live_label(frame, face.bbox)
+            if live is None:
+                continue
+            cls, confidence = live
             similarity = float(self.np.dot(context["embedding"], face.normed_embedding))
-            if cls != 1 and confidence >= .8:
-                identity_event = "SPOOF_FACE"
-            elif cls == 1 and similarity < .4:
-                identity_event = "IDENTITY_MISMATCH"
-            elif cls == 1:
-                direction = self.head.predict_face(face)["direction"]
-                if direction in {"LEFT","RIGHT","UP","DOWN"}:
-                    events.add("HEAD_" + direction)
-        votes = context["votes"]
-        votes.append(identity_event)
-        del votes[:-5]
-        if identity_event and len(votes) >= 3 and votes.count(identity_event) >= 3:
-            events.add(identity_event)
+            if cls != 1:
+                frame_spoof = True
+            else:
+                real_similarities.append(similarity)
+                if similarity >= FACE_MATCH_THRESHOLD:
+                    frame_verified = True
+                    if similarity > best_similarity:
+                        best_face, best_similarity = face, similarity
+        spoof, mismatch, _ = update_identity_votes(context["votes"], frame_spoof,
+            bool(real_similarities) and not frame_verified, frame_verified)
+        if spoof:
+            events.add("SPOOF_FACE")
+        if mismatch:
+            events.add("IDENTITY_MISMATCH")
+        if best_face is not None:
+            direction = self.head.predict_verified_face(original_frame, best_face,
+                                                        self.face.models["landmark_3d_68"])["direction"]
+            if direction in {"LEFT", "RIGHT", "UP", "DOWN"}:
+                events.add("HEAD_" + direction)
         rgb = self.cv.cvtColor(frame, self.cv.COLOR_BGR2RGB)
         hands = self.hands.detect(self.mp.Image(image_format=self.mp.ImageFormat.SRGB, data=rgb))
         h,w = frame.shape[:2]
         points = [[(p.x*w,p.y*h) for p in hand] for hand in hands.hand_landmarks]
-        mapping = {"mobile_phone":"HOLDING_PHONE", "study_material":"HOLDING_STUDY_MATERIAL",
-                   "tablet":"HOLDING_TABLET"}
-        for name,(x1,y1,x2,y2) in object_boxes:
-            if name in mapping and any(sum(x1-30 <= x <= x2+30 and y1-30 <= y <= y2+30 for x,y in hand) >= 3 for hand in points):
-                events.add(mapping[name])
-        blocks = [audio[i:i+960] for i in range(0,len(audio)-959,960)]
-        if blocks and sum(self.vad.is_speech(block,16000) for block in blocks)/len(blocks) >= .6:
+        from object_interaction import interaction_events
+        object_observations = [(objects.names[int(box.cls.item())], box.xyxy[0].tolist(),
+                                float(box.conf.item())) for box in objects.boxes]
+        person_boxes = [box.xyxy[0].tolist() for box in people.boxes
+                        if not inside_phone(box.xyxy[0].tolist())]
+        events.update(interaction_events(object_observations, points, person_boxes, now,
+                                         context["object_fallback_since"], context["object_last_confirmed"]))
+        if speech_observation(self.vad, audio):
             events.add("SPEECH")
         tracker = context["tracker"]
         results = {name:tracker.update(name, name in events, timestamp=now) for name in tracker.events}

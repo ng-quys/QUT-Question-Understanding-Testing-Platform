@@ -41,6 +41,32 @@ public class ExamSnapshotReadService {
         return found.isPresent()?found:legacy(examQuestionId);
     }
 
+    /** Result reports only need CLO IDs, not question text, options or answer keys. */
+    public java.util.Map<Long, Long> findCloIds(List<Long> linkIds) {
+        var result = new java.util.HashMap<Long, Long>();
+        if (linkIds.isEmpty()) return result;
+        var remaining = new java.util.HashSet<>(linkIds);
+        if (hasSnapshotTable()) {
+            String placeholders = String.join(",", java.util.Collections.nCopies(linkIds.size(), "?"));
+            main.query("select exam_question_id,clo_id from public.exam_question_snapshots where exam_question_id in (" + placeholders + ")",
+                (org.springframework.jdbc.core.RowCallbackHandler) rs -> {
+                    long id = rs.getLong(1);
+                    remaining.remove(id); // A frozen null CLO must not fall back to a changed live question.
+                    Long clo = (Long) rs.getObject(2);
+                    if (clo != null) result.put(id, clo);
+                }, linkIds.toArray());
+        }
+        if (!remaining.isEmpty() && Boolean.TRUE.equals(main.queryForObject("select to_regclass('public.questions') is not null and to_regclass('public.answers') is not null", Boolean.class))) {
+            String placeholders = String.join(",", java.util.Collections.nCopies(remaining.size(), "?"));
+            main.query("select eq.id,q.clo_id from exam_questions eq join questions q on q.id=eq.question_id where eq.id in (" + placeholders + ")",
+                (org.springframework.jdbc.core.RowCallbackHandler) rs -> {
+                    Long clo = (Long) rs.getObject(2);
+                    if (clo != null) result.put(rs.getLong(1), clo);
+                }, remaining.toArray());
+        }
+        return result;
+    }
+
     public boolean hasSnapshotTable() {
         if(snapshotTable==null)snapshotTable=Boolean.TRUE.equals(main.queryForObject("select to_regclass('public.exam_question_snapshots') is not null",Boolean.class));
         return snapshotTable;

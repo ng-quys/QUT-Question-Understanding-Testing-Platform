@@ -1,7 +1,7 @@
 import {SimpleOverview} from '../components/SimpleOverview';
 import {TeacherProfilePage} from '../../profile-teacher/pages/TeacherProfilePage';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { TeacherMonitoringPage } from '../../sessions/pages/TeacherMonitoringPage';
 import '../../../layouts/lecturer/lecturer.css';
 import { Sidebar } from '../../../layouts/lecturer/Sidebar';
@@ -17,7 +17,7 @@ import { AIGenerateModal } from '../../ai-generator/components/AIGenerateModal';
 import { CreateExamModal } from '../../exams/components/CreateExamModal';
 import { ExamSessionsPage } from '../../sessions/pages/ExamSessionsPage';
 import { SettingsPage } from '../../settings/pages/SettingsPage';
-import { ROUTES } from '../../../app/routes';
+import { logout } from '../../auth/services/authService';
 import { getTeacherCourses } from '../../courses/services/courseService';
 import { getCourseClos, getCourseStructure } from '../../courses/services/courseContentService';
 import { createQuestion } from '../../question-bank/services/questionBankService';
@@ -35,7 +35,6 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
-  const navigate = useNavigate();
   const [searchParams,setSearchParams]=useSearchParams();
   const tabs:DashboardNavTab[]=['overview','courses','question-bank','new-question','ai-generator','quick-exam','exams','exam-sessions','monitoring','settings'];
   const requestedTab=searchParams.get('tab') as DashboardNavTab;
@@ -86,7 +85,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     if (onLogout) {
       onLogout();
     } else {
-      navigate(ROUTES.LOGIN);
+      void logout();
     }
   };
 

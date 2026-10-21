@@ -155,7 +155,7 @@ export function EmptyState({ icon = <BookOpen size={26} />, title, description, 
   </div>;
 }
 
-export function Overview({ dashboard, profile, loading, onRefresh, onViewResult, onJoin, onProfile }: { dashboard: StudentDashboard; profile: StudentProfile | null; loading: boolean; onRefresh: () => void; onViewResult: (id: number) => void; onJoin: () => void; onProfile: () => void }) {
+export function Overview({ dashboard, profile, loading, onRefresh, onViewResult, onJoin, onProfile }: { dashboard: StudentDashboard; profile: StudentProfile | null; loading: boolean; onRefresh: () => void; onViewResult: (id: number, result?: StudentResult) => void; onJoin: () => void; onProfile: () => void }) {
   return <div className="student-stack">
     <PageHeading eyebrow="TỔNG QUAN HỌC TẬP" title={`Xin chào, ${dashboard.fullName.split(' ').slice(-2).join(' ')}!`} description="Một nơi để theo dõi kỳ thi và hành trình học tập của bạn." action={<button onClick={onRefresh} disabled={loading} className="student-button secondary">
       <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />{" Làm mới"}</button>} />
@@ -277,10 +277,10 @@ export function Overview({ dashboard, profile, loading, onRefresh, onViewResult,
   </div>;
 }
 
-export function ResultList({ results, onViewResult }: { results: StudentResult[]; onViewResult: (id: number) => void }) {
+export function ResultList({ results, onViewResult }: { results: StudentResult[]; onViewResult: (id: number, result?: StudentResult) => void }) {
   if(!results.length) return <EmptyState icon={<Trophy size={26} />} title="Hành trình của bạn bắt đầu từ đây" description="Kết quả sẽ xuất hiện sau khi bạn hoàn thành bài thi." />;
   return <div className="student-result-list">
-    {results.map(result => <button key={result.attemptId} className="student-result-row" onClick={() => onViewResult(result.attemptId)}>
+    {results.map(result => <button key={result.attemptId} className="student-result-row" onClick={() => onViewResult(result.attemptId, result)}>
       <span className="student-result-icon">
         <BookOpen size={20} />
       </span>
@@ -311,14 +311,15 @@ export function ResultList({ results, onViewResult }: { results: StudentResult[]
   </div>;
 }
 
-export function Results({ onViewResult, loadResults }: { onViewResult: (id: number) => void; loadResults: () => Promise<StudentResult[]> }) {
+export function Results({ onViewResult, loadResults, refreshKey }: { onViewResult: (id: number, result?: StudentResult) => void; loadResults: () => Promise<StudentResult[]>; refreshKey?: number }) {
   const [results, setResults] = useState<StudentResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('newest');
   const [reload, setReload] = useState(0);
-  useEffect(() => { let active = true; setLoading(true); setError(''); loadResults().then(data => { if(active) setResults(data); }).catch(() => { if(active) setError('Không thể tải kết quả. Vui lòng thử lại.'); }).finally(() => { if(active) setLoading(false); }); return () => { active = false; }; }, [loadResults, reload]);
+  const hasResults=useRef(false);
+  useEffect(() => { let active = true; setLoading(!hasResults.current); setError(''); loadResults().then(data => { if(active) {setResults(data);hasResults.current=true;} }).catch(() => { if(active) setError('Không thể tải kết quả. Vui lòng thử lại.'); }).finally(() => { if(active) setLoading(false); }); return () => { active = false; }; }, [loadResults, reload, refreshKey]);
   const filtered = results.filter(r => `${r.examTitle} ${r.courseCode} ${r.courseName}`.toLocaleLowerCase('vi').includes(query.toLocaleLowerCase('vi'))).sort((a, b) => sort === 'score' ? (b.score / (b.totalPoints || 1)) - (a.score / (a.totalPoints || 1)) : new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
   return <div className="student-stack">
     <PageHeading eyebrow="KẾT QUẢ HỌC TẬP" title="Mỗi bài thi, một bước tiến" description="Xem điểm số và mức độ đạt chuẩn đầu ra của từng bài thi." />
@@ -336,11 +337,13 @@ export function Results({ onViewResult, loadResults }: { onViewResult: (id: numb
             Tỷ lệ điểm cao nhất
           </option>
         </select>
+        <button className="student-button secondary" disabled={loading} aria-label="Làm mới kết quả" onClick={()=>setReload(v=>v+1)}><RefreshCw size={16}/></button>
         <span className="student-count">
           {filtered.length}{" bài thi"}</span>
       </div>
+      {error&&results.length>0&&<p className="student-question-save failed" role="status">Chưa cập nhật được kết quả mới. Bạn vẫn có thể xem dữ liệu đã tải.</p>}
       {loading ? <div className="student-loading" role="status">
-        <Loader2 className="animate-spin" />{" Đang tải kết quả..."}</div> : error ? <EmptyState icon={<AlertTriangle size={26} />} title="Chưa tải được dữ liệu" description={error} action={<button className="student-button secondary" onClick={() => setReload(v => v + 1)}>
+        <Loader2 className="animate-spin" />{" Đang tải kết quả..."}</div> : error && !results.length ? <EmptyState icon={<AlertTriangle size={26} />} title="Chưa tải được dữ liệu" description={error} action={<button className="student-button secondary" onClick={() => setReload(v => v + 1)}>
         Thử lại
       </button>} /> : query && !filtered.length ? <EmptyState icon={<Search size={26} />} title="Không tìm thấy bài thi" description="Thử tìm theo tên môn học hoặc một từ khóa khác." action={<button className="student-text-button" onClick={() => setQuery('')}>
         Xóa tìm kiếm
@@ -519,9 +522,9 @@ export function ExamRunner({ attempt, selected, remaining, monitoring, savingQue
                 </button>;
               })}
             </div>
-            <div className={`student-question-save ${failed ? 'failed' : ''}`} aria-live="polite">
-              {(pendingQuestions.includes(q.questionId) || savingQuestion === q.questionId) ? <><Loader2 size={13} className="animate-spin" />Đang lưu đáp án...</> : failed ? <><AlertTriangle size={13} />Chưa đồng bộ lên máy chủ. Hệ thống sẽ tự thử lại.</> : selected[q.questionId] !== undefined ? <><CheckCircle2 size={13} />Đã lưu trên máy chủ</> : 'Chọn một đáp án phù hợp.'}
-            </div>
+            {failed && !pendingQuestions.includes(q.questionId) && savingQuestion !== q.questionId && <div className="student-question-save failed" role="status">
+              <AlertTriangle size={13} />Chưa đồng bộ lên máy chủ. Hệ thống sẽ tự thử lại.
+            </div>}
           </article>;
         })}
         <div className="student-question-pagination">

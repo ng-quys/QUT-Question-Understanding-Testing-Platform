@@ -8,8 +8,6 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import java.util.Locale;
 import java.util.Set;
 
@@ -86,7 +84,7 @@ public class AdminAccountService {
         Long classId=request.role()==RegistrationRole.STUDENT?(request.studentClassId()==null?user.getStudentClassId():request.studentClassId()):null;
         if(request.role()!=RegistrationRole.STUDENT&&request.studentClassId()!=null)throw new ApiException(HttpStatus.BAD_REQUEST,"Chỉ sinh viên được gán lớp hành chính");
         String department=academicDepartment(request.role(),classId,request.department(),user.getStudentClassId());
-        String previousName = user.getFullName(), previousRole = user.getRole(), previousStatus = user.getStatus();
+        String previousRole = user.getRole(), previousStatus = user.getStatus();
         if(!previousRole.equals(role)||!previousStatus.equals(status))auth.revokeUser(id);
         user.setFullName(request.fullName().trim()); user.setDepartment(department);user.setStudentClassId(classId);
         user.setRole(role); user.setStatus(status); users.saveAndFlush(user);
@@ -101,7 +99,7 @@ public class AdminAccountService {
     }
     @Transactional
     public AdminDto.UserRow repairIdentity(Long actor,Long id) {
-        UserEntity user=managed(actor,id);
+        managed(actor,id);
         throw new ApiException(HttpStatus.GONE,"Không còn dùng liên kết Keycloak. Hãy đặt lại mật khẩu nếu tài khoản cũ chưa đăng nhập được.");
 
     }

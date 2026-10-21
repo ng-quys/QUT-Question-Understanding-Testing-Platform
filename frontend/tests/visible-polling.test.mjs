@@ -2,22 +2,22 @@ import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'vite';
 
-let server, startVisiblePolling;
+let server, startVisiblePolling, ADMIN_REFRESH_INTERVAL_MS;
 before(async () => {
   server = await createServer({ server: { middlewareMode: true, watch: null }, appType: 'custom' });
-  ({ startVisiblePolling } = await server.ssrLoadModule('/src/features/sessions/services/visiblePolling.ts'));
+  ({ startVisiblePolling, ADMIN_REFRESH_INTERVAL_MS } = await server.ssrLoadModule('/src/features/sessions/services/visiblePolling.ts'));
 });
 after(async () => { await server?.close(); });
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
-function clock() {
+function clock(expectedDelay = 15000) {
   let visible = true;
   const listeners = new Set(), timers = new Map();
   const environment = {
     isVisible: () => visible,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     schedule(callback, delay) {
-      assert.equal(delay, 15000);
+      assert.equal(delay, expectedDelay);
       const key = Symbol(); timers.set(key, callback);
       return () => timers.delete(key);
     },
@@ -70,4 +70,16 @@ test('can defer initial detail refresh and does not request anything while initi
   const stopHidden = startVisiblePolling(async () => { calls++; }, { environment: fake.environment });
   fake.tick(); assert.equal(calls, 1);
   fake.visibility(true); await settle(); assert.equal(calls, 2); stopHidden();
+});
+
+test('admin refresh uses ten seconds and waits for a slow response before scheduling again', async () => {
+  assert.equal(ADMIN_REFRESH_INTERVAL_MS, 10000);
+  const fake = clock(ADMIN_REFRESH_INTERVAL_MS);
+  let finish; let calls = 0;
+  const stop = startVisiblePolling(() => { calls++; return new Promise(resolve => { finish = resolve; }); }, { interval: ADMIN_REFRESH_INTERVAL_MS, environment: fake.environment });
+  assert.equal(calls, 1); assert.equal(fake.timers.size, 0);
+  fake.tick(); assert.equal(calls, 1);
+  finish(); await settle(); assert.equal(fake.timers.size, 1);
+  fake.tick(); assert.equal(calls, 2); assert.equal(fake.timers.size, 0);
+  stop(); finish(); await settle(); assert.equal(fake.timers.size, 0);
 });

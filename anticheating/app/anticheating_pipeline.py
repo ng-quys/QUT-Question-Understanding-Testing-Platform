@@ -8,6 +8,9 @@ from pathlib import Path
 from collections import deque
 from runtime_state import publish, fail, install_error_handler
 from device_config import camera_index, audio_input_device, read_reference_image
+from inference_policy import (FACE_MATCH_THRESHOLD, LIVENESS_SCALE, PERSON_CONF, OBJECT_CONF,
+    M1_VOTE_WINDOW, SPOOF_VOTE_REQUIRED, MISMATCH_VOTE_REQUIRED, VERIFIED_VOTE_REQUIRED,
+    AUDIO_SAMPLE_RATE, AUDIO_WINDOW, AUDIO_SPEECH_RATIO)
 
 install_error_handler()
 publish("loading", "Đang tải thư viện và model")
@@ -79,11 +82,6 @@ DEVICE_ARG = "cpu" if DEVICE.lower() == "cpu" else 0
 # DETECTION CONFIG
 # ============================================================
 
-FACE_MATCH_THRESHOLD = 0.40
-LIVENESS_SCALE = 2.7
-
-PERSON_CONF = 0.40
-OBJECT_CONF = 0.25
 
 HAND_OBJECT_MARGIN = 30
 MIN_HAND_POINTS_NEAR_OBJECT = 3
@@ -112,14 +110,10 @@ M4_MIN_CONFIDENCE = float(os.environ.get("M4_MIN_CONFIDENCE", "0.70"))
 # ============================================================
 
 # Số frame gần nhất dùng để voting
-M1_VOTE_WINDOW = 10
 
 # Event nguy hiểm phải chắc hơn
-SPOOF_VOTE_REQUIRED = 8
-MISMATCH_VOTE_REQUIRED = 8
 
 # VERIFIED chỉ cần đa số rõ ràng
-VERIFIED_VOTE_REQUIRED = 6
 
 # Làm mượt similarity
 SIMILARITY_WINDOW = 10
@@ -129,7 +123,6 @@ SIMILARITY_WINDOW = 10
 # M6 AUDIO CONFIG
 # ============================================================
 
-AUDIO_SAMPLE_RATE = 16000
 AUDIO_FRAME_MS = 30
 
 AUDIO_SAMPLES_PER_FRAME = int(
@@ -140,8 +133,6 @@ AUDIO_SAMPLES_PER_FRAME = int(
 
 AUDIO_VAD_MODE = 2
 
-AUDIO_WINDOW = 10
-AUDIO_SPEECH_RATIO = 0.6
 
 
 # ============================================================
