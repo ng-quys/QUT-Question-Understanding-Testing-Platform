@@ -2,7 +2,7 @@ import { apiFetch } from '../../../services/api';
 import { adminApi, type AdminUser } from './adminService';
 import { evidenceApi } from '../../evidence/services/evidenceApi';
 
-export type AdminTab = 'studentClasses' | 'sessionList' | 'liveSessions' | 'organization' | 'overview' | 'users' | 'students' | 'teachers' | 'courses' | 'exams' | 'sessions' | 'attempts' | 'anti' | 'reports' | 'audit' | 'accounts' | 'monitor';
+export type AdminTab = 'aiCredits' | 'studentClasses' | 'sessionList' | 'liveSessions' | 'organization' | 'overview' | 'users' | 'students' | 'teachers' | 'courses' | 'exams' | 'sessions' | 'attempts' | 'anti' | 'reports' | 'audit' | 'accounts' | 'monitor';
 export type DataRow = Record<string, string | number | boolean | null>;
 export interface Page<T = DataRow> { items: T[]; total: number; page: number; size: number }
 export interface Filters { q: string; status: string; role: string; course: string; sessionCode: string; from: string; to: string }

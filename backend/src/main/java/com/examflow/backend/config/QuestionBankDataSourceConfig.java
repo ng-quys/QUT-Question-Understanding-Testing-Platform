@@ -24,6 +24,10 @@ public class QuestionBankDataSourceConfig {
         dataSource.setPoolName("QuestionBankPool");
         dataSource.setMaximumPoolSize(3);
         dataSource.setMinimumIdle(0);
+        dataSource.setIdleTimeout(60_000);
+        dataSource.setMaxLifetime(600_000);
+        dataSource.setConnectionTimeout(10_000);
+        dataSource.addDataSourceProperty("ApplicationName", "ExamFlow-QuestionBank");
         return dataSource;
     }
 }

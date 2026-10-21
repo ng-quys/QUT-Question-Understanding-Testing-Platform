@@ -1,0 +1,65 @@
+{
+  "backend_pid": 9104,
+  "worker_enabled": true,
+  "cluster_ready": true,
+  "backend_health_http": 200,
+  "ai_health_http": 200,
+  "registry_id": "ac285c5e-ca18-4650-8bcd-29ed3ea9a9a0",
+  "internal_key_http": 204,
+  "ai_pid": 9348,
+  "ollama_http": 200,
+  "ollama_models": [
+    "nomic-embed-text:latest",
+    "llama3.1:8b",
+    "qwen2.5:7b"
+  ],
+  "job8": {
+    "id": 8,
+    "credit_state": "succeeded",
+    "accepted_count": 1,
+    "charged_monthly": 1,
+    "charged_extra": 0,
+    "result_count": 1
+  },
+  "job8_ledger": [
+    {
+      "id": 21,
+      "event_type": "reserve",
+      "monthly_used_delta": 0,
+      "monthly_reserved_delta": 1,
+      "actor_id": null
+    },
+    {
+      "id": 22,
+      "event_type": "settle",
+      "monthly_used_delta": 1,
+      "monthly_reserved_delta": -1,
+      "actor_id": 52
+    }
+  ],
+  "active_jobs": [],
+  "quota": {
+    "used": 2,
+    "reserved": 0,
+    "remaining": 198
+  },
+  "legacy_poller_samples": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    []
+  ],
+  "legacy_poller_observed": false,
+  "question_bank": {
+    "questions": 149,
+    "missing_embeddings": 0
+  },
+  "services_healthy": true,
+  "job8_verified": true,
+  "production_test_ready": true,
+  "production_job_posts": 0,
+  "production_sql_mutations": 0,
+  "inspected_utc": "2026-10-21T18:57:43.470915+00:00"
+}

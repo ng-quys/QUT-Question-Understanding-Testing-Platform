@@ -3,6 +3,7 @@ import asyncio
 import hashlib
 import json
 import time
+from uuid import uuid4
 from dataclasses import dataclass, field
 
 
@@ -25,6 +26,7 @@ class GenerationJob:
 class GenerationRegistry:
     def __init__(self):
         self.jobs = {}
+        self.registry_id = str(uuid4())
 
     async def start(self, key, payload, generate):
         # No await occurs between lookup and registration: atomic on this event loop.

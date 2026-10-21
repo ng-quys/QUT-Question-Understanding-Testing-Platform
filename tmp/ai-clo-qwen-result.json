@@ -1,0 +1,35 @@
+{
+  "elapsed_seconds": 19.93,
+  "ollama_http_statuses": [
+    200
+  ],
+  "model_calls": 1,
+  "chunks": 1,
+  "instruction_normalized": true,
+  "questions": [
+    {
+      "content": "Bản ghi A trong DNS có ý nghĩa như thế nào?",
+      "options": [
+        "Ánh xạ tên miền đến địa chỉ IPv6",
+        "Ánh xạ tên miền đến địa chỉ IPv4",
+        "Xác định máy chủ thư điện tử của tên miền",
+        "Lưu tạm kết quả phân giải để giảm thời gian truy vấn"
+      ],
+      "correctIndex": 1,
+      "explanation": "Bản ghi A trong DNS ánh xạ tên miền đến địa chỉ IPv4, giúp máy khách tìm địa chỉ IP của máy chủ khi người dùng nhập tên miền vào trình duyệt.",
+      "bloom": "understand",
+      "cloId": 1,
+      "evidenceQuote": "Bản ghi A ánh xạ tên miền đến địa chỉ IPv4.",
+      "chapterId": null
+    }
+  ],
+  "validation": {
+    "exactly_one": true,
+    "json_clo_bloom_options_answer_explanation_evidence": true,
+    "rag_support_and_answer_evidence_similarity": true,
+    "duplicate_check": "not_passed_missing_table"
+  },
+  "accepted_by_full_pipeline": false,
+  "job7_upstream_http": 404,
+  "service_health_http": 200
+}

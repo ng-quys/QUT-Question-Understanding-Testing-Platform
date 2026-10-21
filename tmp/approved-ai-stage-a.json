@@ -1,0 +1,7 @@
+{
+  "pid": 32116,
+  "health_http": 200,
+  "log_path": "D:\\baitap\\KLTN\\v2\\QUT-Question-Understanding-Testing-Platform\\.env.examflow.runtime\\logs\\Backend-approved-20261021-235748.log",
+  "login_http": 200,
+  "session_connections_verified": true
+}

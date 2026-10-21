@@ -23,7 +23,7 @@ interface DocumentUploadStepProps {
   onUpdateDocuments: (docs: SourceDocument[]) => void;
   onUploadSuccess: (extractionResult: DocumentExtractionSummary) => void;
   onShowToast?: (msg: string) => void;
-  onSkipToMatrix?: () => void;
+
 }
 
 export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
@@ -31,38 +31,13 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
   onUpdateDocuments,
   onUploadSuccess,
   onShowToast,
-  onSkipToMatrix,
+
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processPhase, setProcessPhase] = useState<'uploading' | 'extracting'>('uploading');
   const [formatError, setFormatError] = useState<string | null>(null);
   const [quantityError, setQuantityError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
-
-  // Quick sample document helper
-  const handleUseSampleDocument = () => {
-    const sampleDoc: SourceDocument = {
-      id: `doc_sample_${Date.now()}`,
-      name: 'GiaoTrinh_TriTueNhanTao_TI01_2026.pdf',
-      size: 2450000,
-      sizeFormatted: '2.45 MB',
-      extension: 'pdf',
-      uploadedAt: 'Vừa xong',
-      status: 'success',
-      wordCount: 15400,
-      extractedText: 'Tài liệu giáo trình học phần Trí tuệ nhân tạo TI01...',
-      topicsDetected: ['Tổng quan AI', 'Không gian trạng thái', 'Giải thuật tìm kiếm BFS/DFS', 'Mạng nơ-ron học sâu'],
-    };
-    onUpdateDocuments([sampleDoc]);
-    onUploadSuccess({
-      documents: [sampleDoc],
-      totalWords: 15400,
-      totalDocuments: 1,
-      summary: 'Giáo trình cốt lõi học phần Trí tuệ nhân tạo (TI01)',
-      keyConcepts: ['Tổng quan AI', 'Không gian trạng thái', 'Giải thuật tìm kiếm BFS/DFS', 'Mạng nơ-ron học sâu'],
-    });
-    onShowToast?.('Đã nạp tài liệu mẫu "Trí tuệ nhân tạo TI01" và chuyển sang Ma trận câu hỏi!');
-  };
 
   // Handle incoming files from drop or picker
   const handleFilesSelected = (selectedFiles: File[]) => {
@@ -217,32 +192,6 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
         onRemoveDocument={handleRemoveDocument}
         disabled={isProcessing}
       />
-
-      {/* Quick Sample Document / Skip helper */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs">
-        <div className="flex items-center gap-2 text-slate-600">
-          <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
-          <span>Chưa có sẵn file? Bạn có thể nạp nhanh tài liệu mẫu học phần Trí tuệ nhân tạo (TI01).</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleUseSampleDocument}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-indigo-700 hover:bg-indigo-50 transition-colors cursor-pointer shrink-0"
-          >
-            Nạp giáo trình mẫu TI01
-          </button>
-          {onSkipToMatrix && (
-            <button
-              type="button"
-              onClick={onSkipToMatrix}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-800 underline cursor-pointer shrink-0"
-            >
-              Sang Bước 2 Ma trận ngay &rarr;
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* Footer Actions */}
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">

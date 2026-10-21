@@ -1,330 +1,106 @@
+import {useEffect,useRef,useState} from 'react';
+import type {Course,CourseChapter,CourseCLO,QuestionItem,SourceDocument,AIWorkflowStep} from '../../../types';
+import {apiFetch} from '../../../services/api';
 import {useAiQuota} from '../hooks/useAiQuota';
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Sparkles,
-  ArrowLeft,
-  Layers,
-} from 'lucide-react';
-import {
-  Course,
-  CourseChapter,
-  CourseCLO,
-  QuestionItem,
-  SourceDocument,
-  DocumentExtractionSummary,
-  AIWorkflowStep,
-} from '../../../types';
-import { GeneratorStepper } from '../components/GeneratorStepper';
-import { DocumentUploadStep } from '../components/DocumentUploadStep';
-import { QuestionReviewStep } from '../components/QuestionReviewStep';
-import { MatrixPage } from '../../matrix/pages/MatrixPage';
-import { MatrixGenerationProgress } from '../components/MatrixGenerationProgress';
-import { MatrixKnowledgeUnit, MatrixSummaryStats } from '../../matrix/types';
-import { apiFetch } from '../../../services/api';
+import {DocumentUploadStep} from '../components/DocumentUploadStep';
+import {GeneratorStepper} from '../components/GeneratorStepper';
+import {MatrixGenerationProgress} from '../components/MatrixGenerationProgress';
+import {QuestionReviewStep} from '../components/QuestionReviewStep';
 
-interface AIGeneratorPageProps {
-  courses: Course[];
-  chapters: CourseChapter[];
-  clos: CourseCLO[];
-  questions?: QuestionItem[];
-  onUpdateCourses?: (courses: Course[]) => void;
-  onUpdateChapters?: (chapters: CourseChapter[]) => void;
-  onSaveQuestions: (questions: QuestionItem[]) => void;
-  onNavigateToQuestionBank: () => void;
-  onShowToast: (message: string) => void;
-  onBackToDashboard?: () => void;
+interface Props {
+ courses:Course[];chapters:CourseChapter[];clos:CourseCLO[];questions?:QuestionItem[];
+ onUpdateCourses?:(courses:Course[])=>void;onUpdateChapters?:(chapters:CourseChapter[])=>void;
+ onSaveQuestions:(questions:QuestionItem[])=>void;onNavigateToQuestionBank:()=>void;
+ onShowToast:(message:string)=>void;onBackToDashboard?:()=>void;
 }
-
-export const AIGeneratorPage: React.FC<AIGeneratorPageProps> = ({
-  courses,
-  chapters,
-  clos,
-  questions = [],
-  onUpdateCourses,
-  onUpdateChapters,
-  onSaveQuestions,
-  onNavigateToQuestionBank,
-  onShowToast,
-  onBackToDashboard,
-}) => {
-  // UNIFIED 4-STEP AI QUESTION GENERATOR WORKFLOW:
-  // Bước 1: Tài liệu nguồn (Tải lên giáo trình / đề cương)
-  // Bước 2: Ma trận câu hỏi (Phân bổ chuẩn đầu ra CLO & mức độ nhận thức Bloom)
-  // Bước 3: AI sinh câu hỏi (Biên soạn theo phân bổ ma trận và tài liệu)
-  // Bước 4: Duyệt & Chỉnh sửa (Kiểm định chất lượng & Lưu vào Ngân hàng câu hỏi)
-  const [currentStep, setCurrentStep] = useState<AIWorkflowStep>(1);
-  const {quota,error:quotaError}=useAiQuota();
-  const [jobKey,setJobKey]=useState('');
-  const [resumeJobId,setResumeJobId]=useState<number|undefined>();
-  const [creditsUsed,setCreditsUsed]=useState<number|null>(null);
-  const [lastRequested,setLastRequested]=useState<number|null>(null);
-  const launching=useRef(false);
-  const [matrixVisited,setMatrixVisited]=useState(false);
-  useEffect(()=>{if(currentStep>=2)setMatrixVisited(true);},[currentStep]);
-  useEffect(()=>{if(currentStep!==3)launching.current=false;},[currentStep]);
-  const [provider, setProvider] = useState<'openai' | 'qwen'>('qwen');
-  const [saveError, setSaveError] = useState('');
-  const [documents, setDocuments] = useState<SourceDocument[]>([]);
-  const [, setExtractionSummary] = useState<DocumentExtractionSummary | null>(null);
-
-  // Active Matrix Data configured in Step 2
-  const [activeMatrixData, setActiveMatrixData] = useState<{
-    courseId: string;
-    totalQuestions: number;
-    units: MatrixKnowledgeUnit[];
-    summary: MatrixSummaryStats;
-    aiInstruction: string;
-    defaultScore?: number;
-  } | null>(null);
-
-  // Generated Questions State
-  const [generatedQuestions, setGeneratedQuestions] = useState<QuestionItem[]>([]);
-
-  // ----------------------------------------------------
-  // STEP 1 HANDLERS: UPLOAD & EXTRACTION -> BƯỚC 2 MA TRẬN
-  // ----------------------------------------------------
-  const handleUploadSuccess = (summary: DocumentExtractionSummary) => {
-    setExtractionSummary(summary);
-    setCurrentStep(2);
-    onShowToast(`Đã nạp tài liệu thành công! Hãy cấu hình ma trận câu hỏi ở Bước 2.`);
-  };
-
-  // ----------------------------------------------------
-  // STEP 2 HANDLERS: MATRIX CONFIGURATION -> BƯỚC 3 SINH AI
-  // ----------------------------------------------------
-  const handleStartMatrixGeneration = (data: {
-    courseId: string;
-    totalQuestions: number;
-    units: MatrixKnowledgeUnit[];
-    summary: MatrixSummaryStats;
-    aiInstruction: string;
-    defaultScore?: number;
-  }) => {
-    const count=data.units.reduce((sum,u)=>sum+u.nb+u.th+u.vd,0);
-    if(launching.current)return;
-    if(!quota){onShowToast(quotaError || 'Đang tải AI Credits.');return;}
-    if(count<1 || count>quota.maxPerRequest){onShowToast('Mỗi lần chỉ được sinh tối đa '+quota.maxPerRequest+' câu hỏi. Vui lòng giảm số lượng hoặc chia thành nhiều lượt.');return;}
-    if(quota.activeJob){onShowToast('Bạn đang có job AI hoạt động. Vui lòng tiếp tục job hiện tại.');return;}
-    if(count>quota.remaining){onShowToast('Không đủ AI Credits khả dụng.');return;}
-    launching.current=true;setJobKey(crypto.randomUUID());setResumeJobId(undefined);setCreditsUsed(null);
-    setActiveMatrixData({...data,totalQuestions:count});
-    setCurrentStep(3);
-    onShowToast(`Bắt đầu sinh ${data.totalQuestions} câu hỏi theo ma trận và tài liệu nguồn.`);
-  };
-
-  // ----------------------------------------------------
-  // STEP 3 HANDLERS: AI GENERATION COMPLETION -> BƯỚC 4 DUYỆT
-  // ----------------------------------------------------
-  const handleMatrixGenerationComplete = (questionsGenerated: QuestionItem[], charged:number, requested:number) => {
-    setGeneratedQuestions(questionsGenerated);
-    setCreditsUsed(charged);
-    setLastRequested(requested);
-    setCurrentStep(4);
-    onShowToast(`Đã sinh ${questionsGenerated.length} câu hợp lệ; đã trừ ${charged} credits. Hãy kiểm duyệt và chỉnh sửa.`);
-  };
-
-  const handleCancelMatrixGeneration = () => {
-    setCurrentStep(2);
-    onShowToast('Quay lại ma trận. Job đã gửi vẫn được quản lý trên Backend.');
-  };
-
-  // ----------------------------------------------------
-  // STEP 4 HANDLERS: QUESTION EDIT & SAVE TO BANK
-  // ----------------------------------------------------
-  const handleUpdateQuestion = (id: string, updates: Partial<QuestionItem>) => {
-    setGeneratedQuestions((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, ...updates } : q))
-    );
-  };
-
-  const handleDeleteQuestion = (id: string) => {
-    setGeneratedQuestions((prev) => prev.filter((q) => q.id !== id));
-    onShowToast('Đã xóa câu hỏi khỏi danh sách xem trước');
-  };
-
-  const handleSaveAll = async (status: 'pending' | 'approved') => {
-    setSaveError('');
-    try {
-      for (const q of generatedQuestions) {
-        await apiFetch('/teacher/questions', {method:'POST',body:JSON.stringify({
-          courseId:Number(q.courseId),chapterId:Number(q.chapterId)||null,
-          topicId:null,cloId:Number(q.cloId)||null,bloom:q.bloom,
-          difficulty:'medium',content:q.content,explanation:q.explanation,
-          status,defaultScore:q.default_score ?? 0.5,
-          answers:q.options.map((content,i)=>({content,correct:i===q.correctIndex}))
-        })});
-      }
-      onSaveQuestions(generatedQuestions.map(q=>({...q,status,updatedAt:'Vừa xong'})));
-      onNavigateToQuestionBank();
-    } catch(e) {setSaveError(e instanceof Error?e.message:'Lưu câu hỏi thất bại');}
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Top Header & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
-        <div>
-          <div className="flex items-center gap-2">
-            {onBackToDashboard && (
-              <button
-                type="button"
-                onClick={onBackToDashboard}
-                className="p-1.5 -ml-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
-                title="Quay lại Tổng quan"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            )}
-            <h1 className="text-xl font-bold text-slate-900 font-sans flex items-center gap-2">
-              <span>Trình AI sinh câu hỏi học phần</span>
-              <span
-                className="text-[10px] font-bold px-2 py-0.5 rounded text-white tracking-wider uppercase shadow-2xs"
-                style={{ backgroundColor: 'var(--primary)' }}
-              >
-                Chuẩn khảo thí
-              </span>
-            </h1>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Quy trình 4 bước: Tải tài liệu nguồn &rarr; Cấu hình ma trận câu hỏi học phần &rarr; AI biên soạn theo ma trận &rarr; Thẩm định & Lưu ngân hàng.
-          </p>
-        </div>
-
-        {/* Right Action: Question Bank shortcut */}
-        <button
-          type="button"
-          onClick={onNavigateToQuestionBank}
-          className="text-xs font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1.5 cursor-pointer underline self-start sm:self-auto"
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Xem Ngân hàng câu hỏi ({questions.length})</span>
-        </button>
-      </div>
-
-      {/* Unified 4-Step Stepper */}
-      <GeneratorStepper
-        currentStep={currentStep}
-        onStepClick={(step) => {
-          if (step < currentStep && currentStep !== 3) {
-            setCurrentStep(step);
-          }
-        }}
-        isProcessing={currentStep === 3}
-      />
-
-      <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600 flex flex-wrap items-center gap-3">
-        <span>{quota ? 'AI Credits còn lại: '+quota.remaining+' · Cấp thêm: '+quota.extraBalance : quotaError || 'Đang tải AI Credits...'}</span>
-        {creditsUsed!==null && <span>Đã sử dụng lượt vừa rồi: {creditsUsed} credits</span>}
-        {quota?.activeJob && currentStep!==3 && <button type="button" className="font-semibold underline" onClick={()=>{setResumeJobId(quota.activeJob!.id);setJobKey('resume-'+quota.activeJob!.id);setCurrentStep(3);}}>Tiếp tục job #{quota.activeJob.id} ({quota.activeJob.status})</button>}
-      </div>
-      {/* ======================================================== */}
-      {/* BƯỚC 1: TẢI TÀI LIỆU NGUỒN                               */}
-      {/* ======================================================== */}
-      {currentStep === 1 && (
-        <DocumentUploadStep
-          documents={documents}
-          onUpdateDocuments={setDocuments}
-          onUploadSuccess={handleUploadSuccess}
-          onShowToast={onShowToast}
-          onSkipToMatrix={() => {
-            setCurrentStep(2);
-            onShowToast('Đã chuyển sang Bước 2: Cấu hình ma trận câu hỏi học phần');
-          }}
-        />
-      )}
-
-      {/* ======================================================== */}
-      {/* BƯỚC 2: MA TRẬN CÂU HỎI HỌC PHẦN (Sau khi upload tài liệu) */}
-      {/* ======================================================== */}
-      {(matrixVisited || currentStep===2) && (
-        <div className={currentStep===2 ? 'space-y-4 animate-in fade-in duration-200' : 'hidden'}>
-          <label className="flex items-center gap-3 text-sm">Mô hình AI:
-            <select className="border rounded px-3 py-2" value={provider} onChange={e=>setProvider(e.target.value as 'qwen'|'openai')}>
-              <option value="qwen">Qwen (Ollama local)</option><option value="openai">OpenAI API</option>
-            </select>
-          </label>
-          <MatrixPage
-            courses={courses}
-            chapters={chapters}
-            clos={clos}
-            questions={questions}
-            onShowToast={onShowToast}
-            onUpdateCourses={onUpdateCourses}
-            onUpdateChapters={onUpdateChapters}
-            onStartGenerationWithMatrix={handleStartMatrixGeneration}
-            onBackToUpload={() => setCurrentStep(1)}
-            uploadedDocuments={documents}
-            aiQuota={quota}
-          />
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* BƯỚC 3: AI TIẾN HÀNH SINH CÂU HỎI THEO MA TRẬN            */}
-      {/* ======================================================== */}
-      {currentStep === 3 && (activeMatrixData || resumeJobId) && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="flex items-center gap-3 mb-3 text-sm"><label htmlFor="ai-provider">Mô hình AI:</label>
-            <select id="ai-provider" className="border rounded px-3 py-2" disabled={currentStep===3} value={provider} onChange={e=>setProvider(e.target.value as 'openai'|'qwen')}>
-              <option value="qwen">Qwen (Ollama local)</option><option value="openai">OpenAI API</option>
-            </select></div>
-          <MatrixGenerationProgress
-            courseId={activeMatrixData?.courseId ?? ''}
-            totalQuestions={activeMatrixData?.totalQuestions ?? quota?.activeJob?.requested ?? 0}
-            units={activeMatrixData?.units ?? []}
-            summary={activeMatrixData?.summary ?? {totalNB:0,totalTH:0,totalVD:0,matrixTotal:0,percentNB:0,percentTH:0,percentVD:0}}
-            aiInstruction={activeMatrixData?.aiInstruction ?? ''}
-            defaultScore={activeMatrixData?.defaultScore}
-            courses={courses}
-            chapters={chapters}
-            clos={clos}
-            onComplete={handleMatrixGenerationComplete}
-            onCancel={handleCancelMatrixGeneration}
-            idempotencyKey={jobKey}
-            resumeJobId={resumeJobId}
-            sourceProof={documents[0]?.aiSourceProof}
-            provider={provider}
-            sourceText={documents.map(d=>d.extractedText||'').join('\n\n')}
-          />
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* BƯỚC 4: KIỂM DUYỆT & LƯU VÀO NGÂN HÀNG CÂU HỎI            */}
-      {/* ======================================================== */}
-      {currentStep === 4 && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 text-xs text-emerald-800">
-            <span className="font-semibold">
-              ✓ AI đã sinh {generatedQuestions.length}/{lastRequested} câu hợp lệ · Đã sử dụng {creditsUsed ?? 0} credits.{lastRequested && generatedQuestions.length<lastRequested ? " Còn thiếu "+(lastRequested-generatedQuestions.length)+" câu; có thể cấu hình lượt tiếp theo tại Ma trận." : ""}
-            </span>
-            <button
-              type="button"
-              onClick={() => setCurrentStep(2)}
-              className="font-bold underline hover:text-emerald-950 cursor-pointer"
-            >
-              Chỉnh sửa ma trận
-            </button>
-          </div>
-
-          {saveError && <div role="alert" className="text-red-700 bg-red-50 p-3 rounded">{saveError}</div>}
-          <QuestionReviewStep
-            questions={generatedQuestions}
-            documents={documents}
-            courses={courses}
-            chapters={chapters}
-            clos={clos}
-            onUpdateQuestion={handleUpdateQuestion}
-            onDeleteQuestion={handleDeleteQuestion}
-            onSaveAll={handleSaveAll}
-            onGenerateMore={() => setCurrentStep(2)}
-            onNewDocuments={() => {
-              setDocuments([]);
-              setCurrentStep(1);
-            }}
-          />
-        </div>
-      )}
-    </div>
-  );
-};
+export function AIGeneratorPage({courses,chapters,clos,onSaveQuestions,onNavigateToQuestionBank,onShowToast,onBackToDashboard}:Props){
+ const {quota,error:quotaError}=useAiQuota();
+ const [step,setStep]=useState<AIWorkflowStep>(1);
+ const [generating,setGenerating]=useState(false);
+ const [documents,setDocuments]=useState<SourceDocument[]>([]);
+ const [courseId,setCourseId]=useState('');
+ const [courseClos,setCourseClos]=useState<CourseCLO[]>([]);
+ const [selected,setSelected]=useState<string[]>([]);
+ const [count,setCount]=useState(10);
+ const [loadingClos,setLoadingClos]=useState(false);
+ const [error,setError]=useState('');
+ const [generated,setGenerated]=useState<QuestionItem[]>([]);
+ const [charged,setCharged]=useState(0);
+ const [requested,setRequested]=useState(0);
+ const [jobKey,setJobKey]=useState('');
+ const [resumeId,setResumeId]=useState<number>();
+ const [storageKey,setStorageKey]=useState('');
+ const [saving,setSaving]=useState(false);
+ const resumed=useRef(false), starting=useRef(false), saved=useRef(new Set<string>());
+ const [selectionCodes,setSelectionCodes]=useState<Array<{id:number;code:string}>>([]);
+ useEffect(()=>{let active=true;void apiFetch<{id:number}>('/auth/me').then(actor=>{
+   if(!active)return;const key=`examflow-ai-review-${actor.id}`;setStorageKey(key);
+ }).catch(e=>{if(active)setError(String(e.message));});return()=>{active=false;};},[]);
+ useEffect(()=>{if(storageKey&&quota&&!resumed.current){
+   resumed.current=true;const id=quota.activeJob?.id||Number(sessionStorage.getItem(storageKey));
+   if(id){setResumeId(id);setJobKey('resume-'+id);setGenerating(true);setStep(4);}
+ }},[quota,storageKey]);
+ useEffect(()=>{
+   let active=true;setCourseClos([]);setSelected([]);setLoadingClos(!!courseId);
+   if(courseId)void apiFetch<CourseCLO[]>(`/teacher/courses/${courseId}/clos`).then(rows=>{
+     if(active)setCourseClos(rows.filter(c=>c.status==='active').map(c=>({...c,id:String(c.id),courseId:String(c.courseId)})));
+   }).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoadingClos(false);});
+   return()=>{active=false;};
+ },[courseId]);
+ const sourceText=documents.map(d=>d.extractedText||'').join('\n\n');
+ const proof=documents[0]?.aiSourceProof;
+ const canGenerate=!!storageKey&&!!courseId&&!loadingClos&&selected.length>0&&Number.isInteger(count)&&count>=1&&count<=45
+   &&!!quota&&count<=quota.remaining&&!quota.activeJob&&sourceText.trim().length>=50&&!!proof;
+ const start=()=>{
+   if(!canGenerate||starting.current)return;starting.current=true;setError('');saved.current.clear();setGenerated([]);
+   setSelectionCodes(courseClos.filter(c=>selected.includes(c.id)).map(c=>({id:Number(c.id),code:c.code})));
+   setRequested(count);setResumeId(undefined);setJobKey(crypto.randomUUID());setGenerating(true);setStep(4);
+ };
+ const reviewClos=[...clos,...courseClos].filter((c,i,all)=>all.findIndex(x=>String(x.id)===String(c.id))===i);
+ const save=async(status:'pending'|'approved')=>{
+   if(saving)return;setSaving(true);setError('');
+   try{
+     for(const q of generated){if(saved.current.has(q.id))continue;
+       await apiFetch('/teacher/questions',{method:'POST',body:JSON.stringify({courseId:Number(q.courseId),chapterId:Number(q.chapterId)||null,
+         topicId:null,cloId:Number(q.cloId)||null,bloom:q.bloom,difficulty:'medium',content:q.content,explanation:q.explanation,
+         status,defaultScore:q.default_score??0.5,answers:q.options.map((content,i)=>({content,correct:i===q.correctIndex}))})});
+       saved.current.add(q.id);
+     }
+     onSaveQuestions(generated.map(q=>({...q,status,updatedAt:'Vừa xong'})));sessionStorage.removeItem(storageKey);onNavigateToQuestionBank();
+   }catch(e){setError(e instanceof Error?e.message:'Không lưu được câu hỏi');}finally{setSaving(false);}
+ };
+ return <div className="space-y-4">
+   <div className="flex items-center justify-between gap-3"><div><h1 className="text-xl font-bold text-slate-900">AI sinh câu hỏi học phần</h1><p className="text-sm text-slate-500">Tài liệu bài giảng → CLO → Số câu → Sinh và xem xét</p></div>
+     <button onClick={onBackToDashboard} className="text-sm underline">Quay lại</button></div>
+   <GeneratorStepper currentStep={step} isProcessing={generating} onStepClick={s=>{if(!generating)setStep(s);}}/>
+   <p className="text-sm text-slate-600">{quota?`Còn ${quota.remaining} credits · Tối đa 45 câu/lượt`:quotaError||'Đang tải giới hạn sử dụng…'}</p>
+   {quota?.activeJob&&!generating&&<button className="text-sm underline" onClick={()=>{setResumeId(quota.activeJob!.id);setJobKey('resume-'+quota.activeJob!.id);setGenerating(true);setStep(4);}}>Tiếp tục job #{quota.activeJob.id}</button>}
+   {error&&<p role="alert" className="text-red-700">{error}</p>}
+   {step===1&&<DocumentUploadStep documents={documents} onUpdateDocuments={setDocuments} onShowToast={onShowToast} onUploadSuccess={result=>{setDocuments(result.documents);setStep(2);}}/>}
+   {step===2&&<div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
+     <h2 className="font-semibold text-slate-900">Chọn chuẩn đầu ra CLO</h2>
+     <label className="block text-sm">Học phần<select value={courseId} onChange={e=>{setError('');setCourseId(e.target.value);}} className="block w-full border border-slate-200 rounded-lg p-2 mt-2"><option value="">Chọn học phần</option>{courses.map(c=><option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}</select></label>
+     {loadingClos?<p>Đang tải CLO…</p>:courseId&&!courseClos.length?<p>Học phần chưa có CLO đang hoạt động. Hãy bổ sung CLO trước khi sinh câu hỏi.</p>:courseClos.map(c=><label key={c.id} className="flex gap-3 items-start text-sm border-b border-slate-100 pb-3"><input type="checkbox" checked={selected.includes(c.id)} onChange={e=>setSelected(prev=>e.target.checked?[...prev,c.id]:prev.filter(id=>id!==c.id))}/><span><strong>{c.code}</strong> — {c.description}</span></label>)}
+     <div className="flex gap-4"><button onClick={()=>setStep(1)} className="text-sm underline">Quay lại tài liệu</button><button disabled={!courseId||loadingClos||!selected.length} onClick={()=>setStep(3)} className="rounded-lg px-5 py-2 text-white bg-[#172b4d] disabled:opacity-40">Tiếp tục</button></div>
+   </div>}
+   {step===3&&<div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
+     <h2 className="font-semibold text-slate-900">Số lượng câu hỏi</h2>
+     <label className="block text-sm">Số câu (1–45)<input type="number" min={1} max={45} step={1} value={Number.isFinite(count)?count:''} onChange={e=>setCount(e.target.valueAsNumber)} className="block border border-slate-200 rounded-lg p-2 mt-2 w-32"/></label>
+     <p className="text-sm">Credits dự kiến giữ chỗ: {Number.isFinite(count)?count:'—'}. Chỉ quyết toán theo số câu hợp lệ.</p>
+     <p className="text-sm text-slate-500">AI ưu tiên CLO phù hợp tài liệu, tự đề xuất Bloom và có thể trả kết quả từng phần. Giảng viên cần kiểm tra và hiệu chỉnh.</p>
+     {quota&&count>quota.remaining&&<p role="alert" className="text-sm text-red-700">Không đủ credits khả dụng cho số câu đã chọn.</p>}
+     {(!Number.isInteger(count)||count<1||count>45)&&<p role="alert" className="text-sm text-red-700">Chọn số nguyên từ 1 đến 45 câu.</p>}
+     <div className="flex gap-4"><button onClick={()=>setStep(2)} className="text-sm underline">Quay lại CLO</button><button disabled={!canGenerate} onClick={start} className="rounded-lg px-5 py-2 text-white bg-[#172b4d] disabled:opacity-40">Sinh câu hỏi</button></div>
+   </div>}
+   {step===4&&generating&&<MatrixGenerationProgress courseId={courseId} totalQuestions={count} cloIds={selected.map(Number)} courses={courses}
+     idempotencyKey={jobKey} sourceProof={proof} resumeJobId={resumeId} sourceText={sourceText} storageKey={storageKey}
+     onComplete={(qs,used,total,selectedClos)=>{setGenerated(qs);if(qs[0])setCourseId(qs[0].courseId);setCharged(used);setRequested(total);setSelectionCodes(selectedClos??selectionCodes);starting.current=false;setGenerating(false);setStep(4);}}
+     onCancel={()=>{starting.current=false;setGenerating(false);setStep(3);}}/>}
+   {step===4&&!generating&&<><p className="rounded-xl bg-slate-50 p-4 text-sm">Đã sinh {generated.length}/{requested} câu hợp lệ · Đã dùng {charged} credits. CLO chưa có câu: {selectionCodes.filter(c=>!generated.some(q=>Number(q.cloId)===c.id)).map(c=>c.code).join(', ')||'Không có'}. {generated.length<requested?'Không đủ câu hợp lệ theo căn cứ tài liệu/kiểm tra trùng hoặc tác vụ đã dừng. Phần giữ chỗ chưa dùng đã được hoàn. ':''}CLO/Bloom là đề xuất của AI, cần giảng viên thẩm định.</p>
+     <QuestionReviewStep questions={generated} documents={documents} courses={courses} chapters={chapters} clos={reviewClos} saving={saving}
+       onUpdateQuestion={(id,updates)=>setGenerated(prev=>prev.map(q=>q.id===id?{...q,...updates}:q))}
+       onDeleteQuestion={id=>setGenerated(prev=>prev.filter(q=>q.id!==id))} onSaveAll={status=>void save(status)}
+       onGenerateMore={()=>{starting.current=false;setStep(3);}} onNewDocuments={()=>{setDocuments([]);setStep(1);}}/>
+   </>}
+ </div>;
+}

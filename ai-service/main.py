@@ -8,6 +8,7 @@ import math
 import hmac
 from uuid import UUID
 from credits_runtime import GenerationRegistry
+from clo_generation import generate_clo_questions
 import os
 import re
 from io import BytesIO
@@ -23,7 +24,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_ollama import OllamaEmbeddings
 from langchain_core.documents import Document as LCDocument
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pypdf import PdfReader
 
 load_dotenv()
@@ -32,7 +33,7 @@ logger = logging.getLogger('examflow.duplicate')
 OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://127.0.0.1:11434').rstrip('/')
 MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5:7b')
 EMBED_MODEL = os.getenv('OLLAMA_EMBED_MODEL', 'nomic-embed-text')
-MAX_QUESTIONS = int(os.getenv('AI_CREDITS_MAX_QUESTIONS', '45'))
+MAX_QUESTIONS = min(45, int(os.getenv('AI_CREDITS_MAX_QUESTIONS', '45')))
 INTERNAL_KEY = os.getenv('AI_INTERNAL_KEY', '')
 if len(INTERNAL_KEY) < 32:
     logger.warning('AI Credits unavailable: configure matching AI_INTERNAL_KEY (at least 32 characters) in BE and AI Service before starting jobs')
@@ -60,7 +61,32 @@ class GenerationRequest(BaseModel):
     courseId: int
     sourceText: str
     instruction: str = ''
-    units: list[Unit]
+    units: list[Unit] | None = None  # Retained for previously stored jobs only.
+    questionCount: int | None = Field(default=None, ge=1, le=MAX_QUESTIONS)
+    cloIds: list[int] | None = None
+    selectedClos: list['SelectedClo'] | None = None
+
+    @field_validator('instruction', mode='before')
+    @classmethod
+    def normalize_optional_instruction(cls, value):
+        # Jackson sends explicit null for this optional legacy field in CLO requests.
+        return '' if value is None else value
+
+class SelectedClo(BaseModel):
+    id: int
+    code: str
+    description: str = Field(min_length=1)
+
+GenerationRequest.model_rebuild()
+
+def requested_count(request):
+    if request.questionCount is not None:
+        if request.units or not request.cloIds or not request.selectedClos or len(set(request.cloIds)) != len(request.cloIds):
+            raise HTTPException(400, 'Chọn CLO hợp lệ, không gửi ma trận')
+        if sorted(c.id for c in request.selectedClos) != sorted(request.cloIds):
+            raise HTTPException(400, 'CLO không khớp danh sách đã chọn')
+        return request.questionCount
+    return sum(u.nb+u.th+u.vd for u in (request.units or []))
 
 
 def extract(filename: str, content: bytes) -> str:
@@ -79,7 +105,7 @@ def extract(filename: str, content: bytes) -> str:
 
 @app.get('/health')
 def health():
-    return {'status': 'ok', 'ollama_url': OLLAMA_URL, 'model': MODEL}
+    return {'status': 'ok', 'ollama_url': OLLAMA_URL, 'model': MODEL, 'registryId': registry.registry_id}
 
 @app.post('/extract')
 async def extract_documents(files: list[UploadFile] = File(...)):
@@ -200,7 +226,8 @@ async def duplicate_check(request: DuplicateCheckRequest):
 
 
 async def _generate(request: GenerationRequest, progress=lambda items: None, cancelled=lambda: False):
-    total = sum(u.nb + u.th + u.vd for u in request.units)
+    automatic = getattr(request, 'questionCount', None) is not None
+    total = requested_count(request) if automatic else sum(u.nb + u.th + u.vd for u in (request.units or []))
     if total < 1 or total > MAX_QUESTIONS:
         raise HTTPException(400, f'Số câu phải từ 1 đến {MAX_QUESTIONS}')
     if len(request.sourceText.strip()) < 50:
@@ -216,6 +243,9 @@ async def _generate(request: GenerationRequest, progress=lambda items: None, can
     # Fail closed: never silently bypass duplicate detection during generation.
     if not QUESTIONBANK_DSN:
         raise HTTPException(503, 'Chưa cấu hình Question Bank để kiểm tra trùng')
+    if automatic:
+        return await generate_clo_questions(request, store, embeddings, ollama_generate, _duplicate_report,
+                                            DUPLICATE_MAX_ATTEMPTS, progress, cancelled)
     result = []
     seen = set()
     batch_vectors = []
@@ -301,14 +331,20 @@ def require_internal(x_ai_internal_key: str = Header(default='')):
         raise HTTPException(403, 'Generation is available only through authenticated ExamFlow backend')
 
 
+def require_registry(x_ai_registry_id: str | None = Header(default=None)):
+    # Older clients remain compatible; DB coordination requires all Backends to upgrade.
+    if x_ai_registry_id is not None and x_ai_registry_id != registry.registry_id:
+        raise HTTPException(409, 'AI execution registry mismatch')
+
+
 @app.post('/generate', dependencies=[Depends(require_internal)])
 async def generate(request: GenerationRequest):
     return await _generate(request)
 
 
-@app.post('/credits/jobs/{token}', status_code=202, dependencies=[Depends(require_internal)])
+@app.post('/credits/jobs/{token}', status_code=202, dependencies=[Depends(require_internal), Depends(require_registry)])
 async def start_credit_job(token: UUID, request: GenerationRequest):
-    total = sum(u.nb + u.th + u.vd for u in request.units)
+    total = requested_count(request)
     if not 1 <= total <= MAX_QUESTIONS:
         raise HTTPException(400, f'Số câu phải từ 1 đến {MAX_QUESTIONS}')
     try:
@@ -320,7 +356,7 @@ async def start_credit_job(token: UUID, request: GenerationRequest):
         raise HTTPException(503, str(exc)) from exc
 
 
-@app.get('/credits/jobs/{token}', dependencies=[Depends(require_internal)])
+@app.get('/credits/jobs/{token}', dependencies=[Depends(require_internal), Depends(require_registry)])
 async def credit_job_status(token: UUID):
     try:
         return registry.status(str(token))
@@ -328,7 +364,7 @@ async def credit_job_status(token: UUID):
         raise HTTPException(404, 'Unknown execution token; backend reconciliation required') from exc
 
 
-@app.post('/credits/jobs/{token}/cancel', dependencies=[Depends(require_internal)])
+@app.post('/credits/jobs/{token}/cancel', dependencies=[Depends(require_internal), Depends(require_registry)])
 async def cancel_credit_job(token: UUID):
     try:
         return registry.cancel(str(token))

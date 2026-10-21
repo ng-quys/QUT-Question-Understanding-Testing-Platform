@@ -1,0 +1,55 @@
+{
+  "id": 8,
+  "requested_by": 35,
+  "course_id": 11,
+  "credit_state": "unknown",
+  "execution_token": "cf06a610-c92c-4774-8c1a-c5ce08d16389",
+  "accepted_count": 0,
+  "charged_monthly": 0,
+  "charged_extra": 0,
+  "reserved_monthly": 1,
+  "reserved_extra": 0,
+  "credit_created_at": "2026-10-21 17:21:04.821447+00:00",
+  "dispatched_at": "2026-10-21 17:21:08.037370+00:00",
+  "heartbeat_at": "2026-10-21 17:21:08.037370+00:00",
+  "lease_expires_at": "2026-10-21 17:23:08.037370+00:00",
+  "credit_completed_at": null,
+  "saved_result_count": 0,
+  "ledger": [
+    {
+      "event_type": "reserve",
+      "monthly_used_delta": 0,
+      "monthly_reserved_delta": 1,
+      "extra_balance_delta": 0,
+      "extra_reserved_delta": 0
+    }
+  ],
+  "active_jobs": [],
+  "quota": {
+    "used": 1,
+    "reserved": 1,
+    "monthly_limit": 200,
+    "extra_balance": 0,
+    "extra_reserved": 0,
+    "remaining": 198
+  },
+  "upstream_http": 200,
+  "upstream_state": "succeeded",
+  "upstream_count": 1,
+  "upstream_heartbeat_utc": "2026-10-21T17:22:09.578993+00:00",
+  "internal_keys_match": true,
+  "same_result_as_previous_inspection": true,
+  "result_sha256": "5c3b1e2e39e70adce1fa078b42fc0803cab75dfb78a517cc4d71c9b429a088b5",
+  "validation": [
+    {
+      "clo_id": 30,
+      "bloom": "understand",
+      "selected_clo": true,
+      "ai_normalizer_valid": true,
+      "exact_evidence_in_source": true
+    }
+  ],
+  "question_bank_normalized_content_matches": [],
+  "question_bank_count": 149,
+  "inspected_utc": "2026-10-21T18:02:08.138822+00:00"
+}

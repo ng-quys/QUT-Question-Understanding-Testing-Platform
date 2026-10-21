@@ -1,4 +1,5 @@
 import { AdminExamReviewDialog } from './AdminExamReviewDialog';
+import { AiCreditsAdmin } from './AiCreditsAdmin';
 import { ExamOrganization } from '../../sessions/components/ExamOrganization';
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
@@ -386,7 +387,7 @@ export function AdminWorkspace({
 
   // Load data — sequence-guarded so a slow earlier response never overwrites newer filters.
   useEffect(() => {
-    if(['organization','studentClasses','sessionList','sessions','liveSessions'].includes(tab)){setLoading(false);return;}
+    if(['aiCredits','organization','studentClasses','sessionList','sessions','liveSessions'].includes(tab)){setLoading(false);return;}
     const seq = ++loadSeq.current;
     let active = true;
     setLoading(true);
@@ -489,7 +490,10 @@ export function AdminWorkspace({
     });
   }
 
-  function refresh() { setRevision(p => p + 1); }
+  function refresh() {
+    if (tab === 'aiCredits') window.dispatchEvent(new Event('examflow-admin-ai-credits-refresh'));
+    else setRevision(p => p + 1);
+  }
 
   function apply(event: React.FormEvent) {
     event.preventDefault();
@@ -797,7 +801,7 @@ export function AdminWorkspace({
                 Làm mới
               </button>
 
-              {!['overview','organization','studentClasses','sessionList','sessions','liveSessions'].includes(tab) && (
+              {!['aiCredits','overview','organization','studentClasses','sessionList','sessions','liveSessions'].includes(tab) && (
                 <button
                   className="admin-button secondary"
                   disabled={exporting || loading || !!loadError}
@@ -839,7 +843,7 @@ export function AdminWorkspace({
             ) : (
               <Empty title="Chưa tải được tổng quan" description={error || 'Thử tải lại danh sách.'} action={<button className="admin-button secondary" onClick={refresh}>Thử lại</button>} />
             )
-          ) : (
+          ) : tab === 'aiCredits' ? <AiCreditsAdmin /> : (
             <>
               {/* In-page sub-tabs for Accounts and Monitor */}
               {subTabs && subTabs.length > 1 && (

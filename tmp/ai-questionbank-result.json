@@ -1,0 +1,22 @@
+{
+  "http": 200,
+  "elapsed_seconds": 103.13,
+  "body": [
+    {
+      "content": "Phân giải tên miền DNS có chức năng gì trong quá trình truy cập website?",
+      "options": [
+        "Tìm địa chỉ MAC của máy chủ web.",
+        "Tìm địa chỉ IP của máy chủ web.",
+        "Gửi tin nhắn đến máy chủ web.",
+        "Tiến hành xác thực người dùng."
+      ],
+      "correctIndex": 1,
+      "explanation": "Phân giải tên miền DNS giúp tìm địa chỉ IP của máy chủ web. (Tài liệu: DNS là hệ thống phân giải tên miền thành địa chỉ IP.)",
+      "bloom": "understand",
+      "cloId": 1,
+      "evidenceQuote": "DNS là hệ thống phân giải tên miền thành địa chỉ IP.",
+      "chapterId": null
+    }
+  ],
+  "valid": true
+}

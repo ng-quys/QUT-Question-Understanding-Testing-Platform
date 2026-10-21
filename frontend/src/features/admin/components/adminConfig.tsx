@@ -1,4 +1,4 @@
-import { Activity, BarChart3, BookOpen, CalendarClock, FileClock, GraduationCap, LayoutDashboard, ShieldAlert, Users } from 'lucide-react';
+import { Activity, BarChart3, BookOpen, CalendarClock, Coins, FileClock, GraduationCap, LayoutDashboard, ShieldAlert, Users } from 'lucide-react';
 import type { AdminTab, DataRow } from '../services/adminWorkspaceApi';
 import { Badge, decimal, formatDate, labels, number, value, type Column } from './AdminUI';
 
@@ -29,6 +29,7 @@ export const sidebarStructure: Array<SidebarItem | { groupId: string; label: str
     ],
   },
   { id: 'accounts', label: 'Tài khoản', icon: Users, description: 'Quản lý tài khoản sinh viên, giảng viên và phân quyền.' },
+  { id: 'aiCredits', label: 'AI Credits', icon: Coins, description: 'Quản lý hạn mức, cấp thêm credits và lịch sử sử dụng AI của giảng viên.' },
   {
     groupId: 'examination',
     label: 'Khảo thí',
@@ -59,6 +60,7 @@ export const adminTabs = [
   { id: 'reports', label: 'Báo cáo', icon: BarChart3, description: 'Phân tích kết quả theo học phần, ca thi và thời gian.' },
   { id: 'audit', label: 'Nhật ký quản trị', icon: FileClock, description: 'Tra cứu ai thay đổi gì, lúc nào.' },
   // Legacy tabs kept for any deep-link compatibility
+  { id: 'aiCredits', label: 'AI Credits', icon: Coins, description: 'Quản lý hạn mức, cấp thêm credits và lịch sử sử dụng AI của giảng viên.' },
   { id: 'users', label: 'Tất cả tài khoản', icon: Users, description: '' },
   { id: 'students', label: 'Sinh viên', icon: GraduationCap, description: '' },
   { id: 'teachers', label: 'Giảng viên', icon: BookOpen, description: '' },
