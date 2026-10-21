@@ -31,7 +31,7 @@ test('candidate connection failure offers retry and is distinct from no eligible
  assert.match(html,/role="alert"/);assert.match(html,/Thử tải lại danh sách/);
  assert.doesNotMatch(html,/Cả 0 sinh viên|đã được xếp môn này|Không còn sinh viên/);
 });
-test('exam opens without a blocking model-loading screen',()=>{const html=renderToStaticMarkup(createElement(StudentMonitoring,{attemptId:1}));assert.match(html,/Bài thi đang diễn ra/);assert.doesNotMatch(html,/Đang tải model|90 giây|student-start-overlay/);});
+test('exam opens with a compact AI status without a blocking model-loading screen',()=>{const html=renderToStaticMarkup(createElement(StudentMonitoring,{attemptId:1}));assert.match(html,/AI đang kết nối/);assert.match(html,/student-monitoring-label/);assert.doesNotMatch(html,/Đang tải model|90 giây|student-start-overlay|student-ai-bar/);});
 const sample={sessionId:1,examId:10,examCode:'WEB-01',examTitle:'Đề Web',sessionName:'Ca Web 1',courseCode:'WEB',courseName:'Lập trình Web',roomCode:'P101',roomName:'Phòng 101',startTime:'2030-10-16T09:00:00+07:00',endTime:'2030-10-16T10:00:00+07:00',sessionStatus:'ongoing',durationMinutes:60,questionCount:20,canStart:true,attemptId:null,attemptStatus:null};
 const renderStudent=(sessions,busy=false)=>renderToStaticMarkup(createElement(AssignedExams,{sessions,busy,onStart:async()=>{},onRefresh:async()=>{}}));
 test('empty assigned list explains time and roster without a join-code input',()=>{const html=renderStudent([]);assert.match(html,/Chưa có kỳ thi được mở cho bạn/);assert.doesNotMatch(html,/<input|QR|quét mã/);});
@@ -49,7 +49,7 @@ test('Vietnam schedules parse identically on machines outside Vietnam',()=>{cons
 test('explicit UTC and offset timestamps are preserved',()=>{assert.equal(examDate('2030-10-16T02:00:00Z').toISOString(),'2030-10-16T02:00:00.000Z');assert.equal(examDate('2030-10-16T09:00:00.123+07:00').toISOString(),'2030-10-16T02:00:00.123Z');});
 
 
-test('teacher retains original session form and evidence history without room organization',()=>{const html=renderToStaticMarkup(createElement(ExamSessionsPage,{courses:[],onShowToast:()=>{}}));assert.match(html,/Ca thi trực tuyến/);assert.match(html,/Tạo ca thi/);assert.match(html,/Lịch sử thi/);assert.doesNotMatch(html,/Ca thi được admin phân công|Lập ca &amp; công bố|Giám sát ca thi|Hồ sơ sinh viên|Lớp hành chính/);});
+test('teacher opens assigned sittings without admin organization controls',()=>{const html=renderToStaticMarkup(createElement(ExamSessionsPage,{courses:[],onShowToast:()=>{}}));assert.match(html,/Ca thi được phân công/);assert.match(html,/Admin sẽ kiểm tra và công bố ca thi/);assert.doesNotMatch(html,/Lập ca &amp; công bố|Hồ sơ sinh viên|Lớp hành chính/);});
 
 test('score chart explains missing grades and uses only graded submissions as denominator',()=>{
  const report={completed:84,graded:83,ungraded:1,averagePercent:54.78,atLeastHalf:57,latestSubmission:null,courses:[],distribution:[14,5,21,23,20].map((count,bucket)=>({bucket,count}))};
@@ -65,6 +65,7 @@ test('ungraded submissions have no fake zero average or histogram',()=>{
 test('live dashboard shows per-session progress and warning emphasis with named actions',()=>{
  const html=renderToStaticMarkup(createElement(LiveSessionBoard,{rows:[{id:1,name:'Ca kiểm thử',totalStudents:30,submitted:7,warnedAttempts:12,startTime:'2030-10-16T09:00:00',endTime:'2030-10-16T10:00:00'}],serverTime:'2030-10-16T09:30:00',loading:false,busy:false,onDetail:()=>{},onAi:()=>{},onCancel:()=>{},onEnd:()=>{}}));
  assert.match(html,/warning-high/);assert.match(html,/aria-valuenow="23"/);for(const text of ['Theo dõi sinh viên','Tiến độ nộp bài','Thao tác khác','Còn '])assert.ok(html.includes(text));
+ assert.doesNotMatch(html,/live-summary|Ca đang hiển thị|Sinh viên được phân|Lượt có cảnh báo/);
 });
 test('session roster paginates ten rows and distinguishes submitted, absent and warned students',()=>{
  const roster=Array.from({length:12},(_,n)=>({id:n+1,username:String(9000000001+n),name:`Synthetic-person-${n+1}`,attemptId:n===0?104:null,attemptStatus:n===0?'completed':null,warningCount:n===0?15:0,riskLevel:n===0?'HIGH':'LOW'}));

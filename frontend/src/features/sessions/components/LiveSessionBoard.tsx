@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, BookOpen, CheckCircle2, Clock3, DoorOpen, FileText, ShieldAlert, Users } from 'lucide-react';
+import { Activity, ArrowRight, Clock3, DoorOpen, FileText, ShieldAlert, Users } from 'lucide-react';
 import { examDate } from '../../../utils/examTime';
 
 export interface LiveSessionRow {
@@ -7,9 +7,7 @@ export interface LiveSessionRow {
 }
 const time=(value?:string)=>value?examDate(value).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'}):'—';
 export function LiveSessionBoard({rows,serverTime,loading,busy,onDetail,onOpenExam,onAi,onCancel,onEnd,readOnly=false,liveOnly=true}:{rows:LiveSessionRow[];serverTime:string;loading:boolean;busy:boolean;onDetail:(id:number)=>void;onOpenExam?:(id:number)=>void;onAi?:(row:LiveSessionRow,enabled:boolean)=>void;onCancel?:(row:LiveSessionRow)=>void;onEnd?:(row:LiveSessionRow)=>void;readOnly?:boolean;liveOnly?:boolean}) {
- const total=rows.reduce((n,r)=>n+(r.totalStudents||0),0),doing=rows.reduce((n,r)=>n+(r.inProgress||0),0),done=rows.reduce((n,r)=>n+(r.submitted||0),0),warned=rows.reduce((n,r)=>n+(r.warnedAttempts||0),0);
  return <div className="live-board" aria-busy={loading}>
-  <div className="live-summary">{[{label:'Ca đang hiển thị',value:rows.length,icon:Activity},{label:'Sinh viên được phân',value:total,icon:Users},{label:'Đang làm bài',value:doing,icon:BookOpen},{label:'Đã nộp bài',value:done,icon:CheckCircle2},{label:'Lượt có cảnh báo',value:warned,icon:ShieldAlert}].map(({label,value,icon:Icon})=><div key={label} className={label==='Lượt có cảnh báo'&&value?'attention':''}><span><Icon size={17}/>{label}</span><strong>{value}</strong></div>)}</div>
   <div className="live-update"><span><i/>Tự cập nhật mỗi 8 giây{loading?' · Đang cập nhật…':''}</span><span>Đồng bộ {time(serverTime)} · Tổng hợp các ca trên trang này</span></div>
   {!rows.length?<div className="live-empty"><Activity size={30}/><h3>{liveOnly?'Chưa có ca thi đang diễn ra':'Chưa có ca thi đã công bố'}</h3><p>{liveOnly?'Ca đã công bố sẽ xuất hiện tại đây khi đến giờ bắt đầu.':'Chỉ ca đã công bố và thuộc phạm vi được giao mới xuất hiện tại đây.'} Bạn có thể thay đổi từ khóa tìm kiếm.</p></div>:<div className="live-session-list">{rows.map(r=>{
    const count=r.totalStudents||0,submitted=r.submitted||0,warnings=r.warnedAttempts||0,progress=count?Math.min(100,Math.round(submitted/count*100)):0;

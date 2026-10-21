@@ -425,7 +425,7 @@ export function ProfileView({ profile, photoUrl, onUpload }: { profile: StudentP
   </div>;
 }
 
-export function ExamRunner({ attempt, selected, remaining, savingQuestion, pendingQuestions = [], failedQuestions, onChoose, onSubmit, submitting, expired=false, violationCount, fullscreenActive, onFullscreen }: { attempt: StudentAttempt; selected: Record<number, number>; remaining: string; savingQuestion: number | null; pendingQuestions?: number[]; failedQuestions: number[]; onChoose: (q: number, a: number) => void; onSubmit: () => void; submitting: boolean; expired?:boolean; violationCount: number; fullscreenActive: boolean; onFullscreen: () => void }) {
+export function ExamRunner({ attempt, selected, remaining, monitoring, savingQuestion, pendingQuestions = [], failedQuestions, onChoose, onSubmit, submitting, expired=false, violationCount, fullscreenActive, onFullscreen }: { attempt: StudentAttempt; selected: Record<number, number>; remaining: string; monitoring?:ReactNode; savingQuestion: number | null; pendingQuestions?: number[]; failedQuestions: number[]; onChoose: (q: number, a: number) => void; onSubmit: () => void; submitting: boolean; expired?:boolean; violationCount: number; fullscreenActive: boolean; onFullscreen: () => void }) {
   const [flagged, setFlagged] = useState<number[]>([]);
   const [current, setCurrent] = useState(0);
   const [filter, setFilter] = useState('all');
@@ -452,6 +452,7 @@ export function ExamRunner({ attempt, selected, remaining, savingQuestion, pendi
       <div className="student-exam-toolbar-actions">
         <button className="student-mobile-map-toggle" aria-expanded={mapOpen} aria-controls="student-exam-navigation" onClick={() => setMapOpen(open => !open)}>
           {mapOpen ? <X size={16} /> : <LayoutDashboard size={16} />}{" Câu hỏi"}</button>
+        {monitoring}
         <div className={`student-timer ${urgent ? 'urgent' : ''}`} role="timer" aria-label={`Thời gian còn lại ${remaining}`}>
           <Clock3 size={21} />
           <div>

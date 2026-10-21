@@ -68,7 +68,6 @@ function Service-Ready([string]$Name, [string]$Url) {
     $response = Read-Http $Url
     if ($null -eq $response) { return $false }
     switch ($Name) {
-        'keycloak' { return ($response.PSObject.Properties.Name -contains 'issuer' -and $response.issuer -like '*/realms/online-exam-system') }
         'backend' { return ($response.PSObject.Properties.Name -contains 'application' -and $response.application -eq 'ExamFlow AI Backend' -and $response.status -eq 'UP') }
         'ai' { return ($response.PSObject.Properties.Name -contains 'serviceVersion' -and $response.serviceVersion -like 'qut-local-*') }
         'frontend' { return ($response -is [string] -and $response -match 'src/main\.tsx|/assets/index-' -and $response -match 'ExamFlow') }
@@ -182,13 +181,13 @@ try {
     if ($Stop) {
         Stop-Owned @(Read-Tracked)
         if (Test-Path -LiteralPath $pidFile) { Write-Tracked @() }
-        Info 'Stopped launcher-owned processes. Keycloak/Docker and pre-existing services are unchanged.'
+        Info 'Stopped launcher-owned processes. Pre-existing services are unchanged.'
         exit 0
     }
     Write-Host '=== QUT / ExamFlow - local launcher ===' -ForegroundColor White
     $configPath = Join-Path $projectRoot 'backend/src/main/resources/application.properties'
     $settings = Read-Properties $configPath
-    foreach ($key in @('spring.datasource.url', 'spring.datasource.username', 'spring.datasource.password', 'keycloak.admin-client-secret')) {
+    foreach ($key in @('spring.datasource.url', 'spring.datasource.username', 'spring.datasource.password')) {
         if (-not $settings.ContainsKey($key) -or [string]::IsNullOrWhiteSpace((Resolve-Setting $settings[$key])) -or $settings[$key] -match 'YOUR_|change-me') {
             throw ('Missing configuration: ' + $key + '. Set it locally in application.properties or its referenced environment variable; never send credentials in chat.')
         }
@@ -196,10 +195,6 @@ try {
     $backendPort = if ($env:SERVER_PORT) { [int]$env:SERVER_PORT } elseif ($settings.ContainsKey('server.port')) { [int](Resolve-Setting $settings['server.port']) } else { 8080 }
     $backendUrl = 'http://127.0.0.1:' + $backendPort
     $frontendUrl = 'http://localhost:5173'
-    $keycloakUrl = 'http://localhost:8081/realms/online-exam-system/.well-known/openid-configuration'
-    if ((Resolve-Setting $settings['spring.security.oauth2.resourceserver.jwt.issuer-uri']).TrimEnd('/') -ne 'http://localhost:8081/realms/online-exam-system') {
-        throw 'Frontend currently uses localhost:8081 / online-exam-system. Align the backend issuer and frontend Keycloak configuration first.'
-    }
     $npm = Find-Tool 'npm.cmd'
     $java = Find-Tool 'java.exe'
     $maven = Find-Tool 'mvn.cmd'
@@ -220,7 +215,7 @@ try {
     }
     Info 'Tool and configuration checks passed. No secret values are displayed.'
     if ($CheckOnly) {
-        foreach ($service in @(@('keycloak',$keycloakUrl), @('backend',($backendUrl + '/api/health')), @('frontend',$frontendUrl))) { Info ($service[0] + ': ' + (Service-Ready $service[0] $service[1])) }
+        foreach ($service in @(@('backend',($backendUrl + '/api/health')), @('frontend',$frontendUrl))) { Info ($service[0] + ': ' + (Service-Ready $service[0] $service[1])) }
         if (-not $WebOnly) { Info ('AI HTTP service: ' + $aiReady) }
         Info 'CheckOnly finished. No services or installers were started.'
         exit 0
@@ -254,19 +249,6 @@ try {
         Push-Location (Join-Path $projectRoot 'anticheating')
         try { & $aiPython -m src.head_direction_model; if ($LASTEXITCODE -ne 0) { throw 'M4 model cannot be loaded. Check Python dependencies and the supplied model.' } } finally { Pop-Location }
     }
-    Info 'Checking Keycloak...'
-    if (-not (Service-Ready 'keycloak' $keycloakUrl)) {
-        if (Port-InUse 8081) { throw 'Port 8081 is occupied, but the expected Keycloak realm is unavailable. No process was stopped.' }
-        $docker = Find-Tool 'docker.exe'
-        if (-not $docker) { throw 'Start Keycloak on port 8081 or install/start Docker Desktop.' }
-        Info 'Checking Docker Engine (maximum 15 seconds)...'
-        if (-not (Test-DockerReady $docker)) { throw 'Docker Engine is not responding. Open Docker Desktop and wait for Engine running. If it remains stuck, restart Docker Desktop, then run CHAY_QUT.bat again. No container or volume was changed.' }
-        if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.env'))) { throw 'Missing root .env with KEYCLOAK_DB_PASSWORD, KEYCLOAK_ADMIN and KEYCLOAK_ADMIN_PASSWORD.' }
-        Info 'Starting Keycloak using the existing Docker Compose volume...'
-        & $docker compose -f (Join-Path $projectRoot 'docker-compose.yml') up -d keycloak
-        if ($LASTEXITCODE -ne 0) { throw 'Docker Compose could not start Keycloak.' }
-        Wait-Service 'keycloak' $keycloakUrl 180
-    } else { Info 'Reusing existing Keycloak.' }
     if (-not $WebOnly -and -not $aiReady) {
         if (Port-InUse 8000) { throw 'Port 8000 is occupied by another service. No process was stopped.' }
         $aiEnv = @('$env:ANTICHEAT_INTERNAL_SECRET = $null', '$env:APP_ANTICHEAT_SECRET = $null', '$env:ANTICHEAT_PROFILE_DIR = $null', '$env:ANTICHEAT_SERVICE_HOST = $null', '$env:ANTICHEAT_SERVICE_PORT = $null', '$env:ANTICHEAT_BACKEND_CALLBACK_URL = $null')

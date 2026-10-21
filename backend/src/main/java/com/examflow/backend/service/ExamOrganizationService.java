@@ -155,7 +155,7 @@ public class ExamOrganizationService {
     public void profile(UserEntity actor,long id,ProfileInput input){
         admin(actor);UserEntity u=em.find(UserEntity.class,id,LockModeType.PESSIMISTIC_WRITE);if(u==null||!"student".equals(u.getRole()))throw bad("Không tìm thấy sinh viên");
         if(input.classId()!=null&&count("SELECT COUNT(*) FROM student_classes WHERE id=:id AND status='active'",Map.of("id",input.classId()))==0)throw bad("Lớp không hoạt động");
-        if(!u.getFullName().equals(input.fullName().trim()))throw bad("Sửa họ tên tại Quản lý tài khoản để đồng bộ Keycloak. Màn hình này chỉ cập nhật lớp và khoa.");
+        if(!u.getFullName().equals(input.fullName().trim()))throw bad("Sửa họ tên tại Quản lý tài khoản để đồng bộ tài khoản. Màn hình này chỉ cập nhật lớp và khoa.");
         u.setDepartment(clean(input.department()));u.setStudentClassId(input.classId());em.flush();query("UPDATE users SET updated_at=NOW() WHERE id=:id",Map.of("id",id)).executeUpdate();log(actor,"ASSIGN_STUDENT_CLASS","USER",id,"");
     }
     public Map<String,Object> saveSession(UserEntity actor,Long id,SessionInput input){

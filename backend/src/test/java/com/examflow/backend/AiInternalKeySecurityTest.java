@@ -27,8 +27,9 @@ class AiInternalKeySecurityTest {
     MockMvc mvc;
     @Configuration @EnableWebSecurity @EnableWebMvc
     static class TestConfig {
+        @Bean com.examflow.backend.auth.DatabaseAuthService databaseAuth(){return mock(com.examflow.backend.auth.DatabaseAuthService.class);}
         @Bean JwtDecoder decoder(){return mock(JwtDecoder.class);}
-        @Bean KeycloakJwtAuthenticationConverter converter(){return new KeycloakJwtAuthenticationConverter();}
+        @Bean DatabasePrincipalConverter converter(){return new DatabasePrincipalConverter();}
         @Bean ProtectedController protectedController(){return new ProtectedController();}
     }
     @RestController static class ProtectedController {

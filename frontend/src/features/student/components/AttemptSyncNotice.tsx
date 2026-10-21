@@ -3,6 +3,7 @@ import type { RecoveryState } from '../services/attemptRecovery';
 
 export function AttemptSyncNotice({state,online,expired,onRetry}:{state:RecoveryState;online:boolean;expired:boolean;onRetry:()=>void}){
   const pending=state.pending.length;
+  if(online&&!expired&&!state.storageError&&!state.localSaving&&!state.syncing&&pending===0)return null;
   const warning=state.storageError||!online||pending>0||expired;
   const Icon=state.storageError?HardDrive:!online?WifiOff:state.syncing||state.localSaving?Loader2:pending?HardDrive:CheckCircle2;
   const title=expired?'Đã hết giờ làm bài':state.storageError?'Không bảo đảm lưu tạm trên máy':!online?'Đang mất kết nối mạng':state.localSaving?'Đang lưu đáp án trên máy':state.syncing?'Đang đồng bộ bài làm':pending?'Đang chờ đồng bộ':'Bài làm đã đồng bộ';

@@ -271,11 +271,11 @@ class AdminCatalogPostgresTests {
         org.saveClass(actor,null,new ExamOrganizationService.ClassInput("DHKT01","DHKT01","Kinh tế","inactive"));
         Long classId=((Number)em.createNativeQuery("SELECT id FROM student_classes WHERE code='DHTH01'").getSingleResult()).longValue();
         Long inactive=((Number)em.createNativeQuery("SELECT id FROM student_classes WHERE code='DHKT01'").getSingleResult()).longValue();
-        var identities=mock(KeycloakAdminService.class);var accounts=new AdminAccountService(new JpaRepositoryFactory(em).getRepository(UserRepository.class),identities,mock(AdminService.class));ReflectionTestUtils.setField(accounts,"em",em);
+        var accounts=new AdminAccountService(new JpaRepositoryFactory(em).getRepository(UserRepository.class),new com.examflow.backend.auth.DatabasePasswordEncoder(),mock(AdminService.class),mock(com.examflow.backend.auth.DatabaseAuthService.class));ReflectionTestUtils.setField(accounts,"em",em);
         assertThrows(ApiException.class,()->accounts.edit(actor.getId(),student.getId(),new AdminAccountService.Edit("Sinh viên","Kinh tế",com.examflow.backend.dto.RegistrationRole.STUDENT,"active",classId)));
         assertThrows(ApiException.class,()->accounts.edit(actor.getId(),student.getId(),new AdminAccountService.Edit("Sinh viên","Kinh tế",com.examflow.backend.dto.RegistrationRole.STUDENT,"active",inactive)));
         assertThrows(ApiException.class,()->accounts.edit(actor.getId(),student.getId(),new AdminAccountService.Edit("Sinh viên","CNTT",com.examflow.backend.dto.RegistrationRole.STUDENT,"active",999999L)));
-        verifyNoInteractions(identities);
+
         var result=accounts.edit(actor.getId(),student.getId(),new AdminAccountService.Edit("Sinh viên","CNTT",com.examflow.backend.dto.RegistrationRole.STUDENT,"active",classId));
         assertEquals(classId,result.studentClassId());assertEquals("DHTH01",result.classCode());assertEquals("CNTT",result.department());
         accounts.status(actor.getId(),student.getId(),"locked");assertEquals(classId,student.getStudentClassId());

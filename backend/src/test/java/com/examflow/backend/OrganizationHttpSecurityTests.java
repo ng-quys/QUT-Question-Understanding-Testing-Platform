@@ -17,18 +17,16 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 @WebMvcTest({ExamOrganizationController.class,AuthController.class,StudentJoinController.class})
-@Import({SecurityConfig.class,KeycloakJwtAuthenticationConverter.class})
+@Import({SecurityConfig.class,DatabasePrincipalConverter.class})
 class OrganizationHttpSecurityTests {
  @Autowired MockMvc mvc;
  @MockitoBean ExamOrganizationService organization;
  @MockitoBean CurrentUserService users;
- @MockitoBean RegistrationService registrations;
- @MockitoBean SocialUserSyncService sync;
  @MockitoBean JwtDecoder decoder;
- @MockitoBean com.examflow.backend.auth.TokenService tokens;
+ @MockitoBean com.examflow.backend.auth.DatabaseAuthService databaseAuth;
  @Test void publicRegistrationIsDeniedEvenWithValidToken() throws Exception {
   mvc.perform(post("/api/auth/register").contentType("application/json").content("{}")).andExpect(status().isUnauthorized());
-  mvc.perform(post("/api/auth/register").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_STUDENT"))).contentType("application/json").content("{}")).andExpect(status().isForbidden());verifyNoInteractions(registrations);
+  mvc.perform(post("/api/auth/register").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_STUDENT"))).contentType("application/json").content("{}")).andExpect(status().isForbidden());verifyNoInteractions(databaseAuth);
  }
  @Test void codeSearchAndJoinCannotCreateMembership() throws Exception {
   for(String action:new String[]{"join","search"})mvc.perform(post("/api/student/exams/"+action).with(jwt().authorities(new SimpleGrantedAuthority("ROLE_STUDENT"))).contentType("application/json").content("{\"code\":\"SECRET\"}")).andExpect(status().isGone());verifyNoInteractions(organization);
@@ -40,7 +38,7 @@ class OrganizationHttpSecurityTests {
  }
  @Test void provisionedIdentityIsReadWithoutSelfProvisioning() throws Exception {
   UserEntity u=new UserEntity();u.setId(20L);u.setUsername("SV020");u.setFullName("Synthetic");u.setEmail("sv020@example.invalid");u.setRole("student");when(users.getCurrentUser(any())).thenReturn(u);
-  mvc.perform(get("/api/auth/me").with(jwt())).andExpect(status().isOk()).andExpect(jsonPath("$.username").value("SV020"));verifyNoInteractions(sync,registrations);
+  mvc.perform(get("/api/auth/me").with(jwt())).andExpect(status().isOk()).andExpect(jsonPath("$.username").value("SV020"));verifyNoInteractions(databaseAuth);
  }
  @Test void teacherOrganizationRedesignIsNoLongerExposed() throws Exception {
   mvc.perform(get("/api/teacher/organization/bootstrap").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_TEACHER")))).andExpect(status().isForbidden());verifyNoInteractions(organization);

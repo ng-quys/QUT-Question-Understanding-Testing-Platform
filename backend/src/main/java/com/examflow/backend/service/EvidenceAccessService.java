@@ -31,7 +31,7 @@ public class EvidenceAccessService {
         if (!role(jwt,"TEACHER")) throw new ApiException(HttpStatus.FORBIDDEN,"Chỉ giảng viên hoặc admin được xem bằng chứng");
         if (jwt.getSubject() == null || jwt.getSubject().isBlank()) throw new ApiException(HttpStatus.FORBIDDEN,"Danh tính giảng viên không hợp lệ");
         // Never link an evidence viewer using an unverified email fallback.
-        UserEntity user = users.findByKeycloakUserId(jwt.getSubject()).orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,"Tài khoản chưa liên kết với giảng viên"));
+        UserEntity user = new CurrentUserService(users).getCurrentUser(jwt);
         if (!"active".equals(user.getStatus()) || !Set.of("teacher","faculty").contains(user.getRole()))
             throw new ApiException(HttpStatus.FORBIDDEN,"Tài khoản không có quyền xem bằng chứng");
         return user;

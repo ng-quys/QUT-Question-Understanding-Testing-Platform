@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { ShieldCheck, ShieldAlert } from 'lucide-react';
+import './StudentMonitoring.css';
 import { studentApi, type AiStatus } from '../services/studentService';
 
 const encode=(bytes:Uint8Array)=>{let value='';for(let i=0;i<bytes.length;i+=8192)value+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(value);};
-const normal=new Set(['starting','connecting','waiting','monitoring','unregistered']);
 export function StudentMonitoring({attemptId}:{attemptId:number}){
  const [status,setStatus]=useState<AiStatus|null>(null),[error,setError]=useState(''),[retry,setRetry]=useState(0);
  const video=useRef<HTMLVideoElement>(null);
@@ -68,13 +69,17 @@ export function StudentMonitoring({attemptId}:{attemptId:number}){
   return()=>{disposed=true;controller.abort();clearTimeout(timer);clearTimeout(frameTimer);resume.current=null;cleanupMedia();if(videoElement)videoElement.srcObject=null;};
  },[attemptId,retry]);
  const healthy=status?.ready&&!error;
- return <div className={`student-ai-bar ${error||status&&!normal.has(status.status)&&status.status!=='disabled'?'offline':''}`} role="status">
-  <div><strong>{error?'Cần kết nối camera/micro':healthy?'Giám sát đang hoạt động':status?.status==='disabled'?'Ca thi không yêu cầu AI':status?.status==='waiting'?'Đang chờ lượt giám sát':'Bài thi đang diễn ra'}</strong>
-   {error&&<p>{error}</p>}
-   {!error&&status?.required&&!normal.has(status.status)&&<p>{status.message} Thời gian thi vẫn tiếp tục; báo giảng viên nếu lỗi kéo dài.</p>}
-   <details hidden={!status?.required}><summary>Camera và giám sát</summary><video ref={video} muted autoPlay playsInline aria-label="Camera của bạn" style={{width:160,maxWidth:'100%',borderRadius:8}}/><p>{status?.message}</p></details>
-  </div>
+ const warning=Boolean(error||status?.required&&['error','offline','unregistered'].includes(status.status));
+ const label=warning?'AI cần kiểm tra':status?.status==='disabled'?'AI không yêu cầu':healthy?'AI đang giám sát':status?.status==='waiting'?'AI chờ giám sát':status?.status==='stopped'?'AI đã dừng':'AI đang kết nối';
+ const Icon=warning?ShieldAlert:ShieldCheck;
+ return <div className={`student-monitoring-compact ${warning?'needs-attention':''}`}>
+  <span className="student-monitoring-label" role="status"><Icon size={15}/>{label}</span>
+  <details className="student-monitoring-camera" hidden={!status?.required}><summary aria-label="Xem camera và trạng thái giám sát">Camera</summary><div><video ref={video} muted autoPlay playsInline aria-label="Camera của bạn"/><p>{status?.message}</p></div></details>
+  {warning&&<div className="student-monitoring-warning" role="alert">
+  <strong>Cần kiểm tra giám sát</strong>
+  <p>{error||status?.message} Thời gian thi vẫn tiếp tục; báo giảng viên nếu lỗi kéo dài.</p>
   {error&&<button type="button" onClick={()=>{if(resume.current&&error.includes('Bật camera'))resume.current();else setRetry(v=>v+1);}}>Bật camera/micro</button>}
   {!error&&status&&['error','offline','unregistered'].includes(status.status)&&<button type="button" onClick={()=>{void studentApi.reconnectAi(attemptId).then(()=>setRetry(v=>v+1)).catch(()=>setError('Không kết nối được giám sát; hãy báo giảng viên.'));}}>Kết nối lại</button>}
+  </div>}
  </div>;
 }

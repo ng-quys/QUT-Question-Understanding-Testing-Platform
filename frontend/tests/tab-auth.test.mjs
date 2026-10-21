@@ -16,11 +16,11 @@ const exchanges = [];
 before(async()=>{
   originalPost=axios.post;originalFetch=globalThis.fetch;
   axios.post=async(url,params)=>{
-    const grant=params.get('grant_type');exchanges.push({grant,refresh:params.get('refresh_token')});
+    const grant=url.endsWith('/refresh')?'refresh_token':'password';exchanges.push({grant,refresh:params.refreshToken});
     if(url.endsWith('/logout'))return {data:{}};
-    const name=grant==='refresh_token'?params.get('refresh_token').replace('-refresh',''):params.get('username');
+    const name=grant==='refresh_token'?params.refreshToken.replace('-refresh',''):params.username;
     if(name==='bad')throw new Error('Synthetic login rejected');
-    return {data:{access_token:jwt(name),refresh_token:`${name}-refresh`,id_token:`${name}-id`}};
+    return {data:{access_token:jwt(name),refresh_token:`${name}-refresh`,expires_in:900}};
   };
   globalThis.window={location:{replace:()=>{}}};
   server=await createServer({server:{middlewareMode:true,watch:null,hmr:false},appType:'custom'});
@@ -64,7 +64,7 @@ test('forbidden API action explains account permissions instead of bare HTTP 403
 test('network failure while refreshing an expired token keeps the student session and recovers on retry',async()=>{
   choose(studentTab);await auth.loginWithCredentials('student','synthetic-password');
   auth.saveAuthSession({token:auth.getToken(),username:'student',role:'student'},false);
-  sessionStorage.setItem('access_token',`test.${Buffer.from(JSON.stringify({exp:1})).toString('base64url')}.test`);
+  sessionStorage.setItem('access_expires_at','1');
   const before=sessionStorage.getItem('refresh_token'), post=axios.post;let called=false;
   axios.post=async()=>{throw new Error('Synthetic network failure');};globalThis.fetch=async()=>{called=true;throw new Error('Should not request with an expired token');};
   try{
@@ -76,7 +76,7 @@ test('network failure while refreshing an expired token keeps the student sessio
 });
 test('concurrent refresh requests share one exchange and a late response cannot resurrect logout',async()=>{
   choose(studentTab);const post=axios.post;let release,calls=0;
-  axios.post=async()=>{calls++;return new Promise(resolve=>{release=()=>resolve({data:{access_token:jwt('student'),refresh_token:'rotated'}});});};
+  axios.post=async()=>{calls++;return new Promise(resolve=>{release=()=>resolve({data:{access_token:jwt('student'),refresh_token:'rotated',expires_in:900}});});};
   try{
     const first=auth.refreshCredentialToken(),second=auth.refreshCredentialToken();assert.equal(first,second);assert.equal(calls,1);
     auth.clearTabAuth();release();await assert.rejects(first,/Phiên đăng nhập đã thay đổi/);

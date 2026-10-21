@@ -3,6 +3,7 @@ import { CalendarDays, Check, Pencil, Save, Plus, ChevronRight, DoorOpen, FileTe
 import { apiFetch } from '../../../services/api';
 import { examDate } from '../../../utils/examTime';
 import { SittingCandidateStatus } from './SittingCandidateStatus';
+import { startVisiblePolling } from '../services/visiblePolling';
 
 type Item={id:number;code?:string;name?:string;status?:string;capacity?:number;courseId?:number;authorId?:number};
 type Student={id:number;username:string;name:string;className?:string;department?:string;releasedAt?:string};
@@ -21,6 +22,7 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
  const [options,setOptions]=useState<Options>({courses:[],periods:[],departments:[]}),[revision,setRevision]=useState(0);
  const [creating,setCreating]=useState(view==='create'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [loading,setLoading]=useState(true),[rows,setRows]=useState<Sitting[]>([]),[total,setTotal]=useState(0),[page,setPage]=useState(0),[search,setSearch]=useState(''),[query,setQuery]=useState(''),[status,setStatus]=useState('');
+ const [listSyncError,setListSyncError]=useState(''),[listUpdatedAt,setListUpdatedAt]=useState<Date|null>(null);
  const [form,setForm]=useState({periodId:'',courseId:'',department:'',name:'',startTime:'',endTime:'',studentsPerGroup:'30'});
  const [counts,setCounts]=useState<Counts|null>(null),[preview,setPreview]=useState<Preview|null>(null),[proposed,setProposed]=useState<Input|null>(null);
  const [countsLoading,setCountsLoading]=useState(false),[countsError,setCountsError]=useState(''),[countsRevision,setCountsRevision]=useState(0);
@@ -33,7 +35,19 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
  useEffect(()=>{if(step>1){wizard.current?.scrollIntoView({block:'start',behavior:'smooth'});wizard.current?.focus({preventScroll:true});}},[step]);
  const dialog=useRef<HTMLDialogElement>(null);
  useEffect(()=>{const c=new AbortController();request<Options>(`${base}/options`,{signal:c.signal}).then(setOptions).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[revision,request]);
- useEffect(()=>{if(view==='create')return;const c=new AbortController();setLoading(true);request<{total:number;items:Sitting[]}>(`${base}?${new URLSearchParams({page:String(page),search,status})}`,{signal:c.signal}).then(v=>{setRows(v.items);setTotal(v.total);}).catch(e=>{if(!c.signal.aborted)setError(e.message);}).finally(()=>{if(!c.signal.aborted)setLoading(false);});return()=>c.abort();},[page,search,status,revision,request,view]);
+ useEffect(()=>{
+  if(view==='create')return;
+  setLoading(true);setListSyncError('');setListUpdatedAt(null);
+  return startVisiblePolling(async signal=>{
+   try{
+    const value=await request<{total:number;items:Sitting[]}>(`${base}?${new URLSearchParams({page:String(page),search,status})}`,{signal:AbortSignal.any([signal,AbortSignal.timeout(20000)])});
+    if(signal.aborted)return;
+    setRows(value.items);setTotal(value.total);setListUpdatedAt(new Date());setListSyncError('');
+   }catch{
+    if(!signal.aborted)setListSyncError('Chưa cập nhật được danh sách. Hệ thống sẽ tự thử lại; dữ liệu đang hiển thị có thể chưa mới nhất.');
+   }finally{if(!signal.aborted)setLoading(false);}
+  });
+ },[page,search,status,revision,request,view]);
  useEffect(()=>{
   const c=new AbortController();setCounts(null);setCountsError('');
   if(!form.courseId||!form.periodId||!form.department){setCountsLoading(false);return()=>c.abort();}
@@ -48,7 +62,13 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
  useEffect(()=>{if(!initialSittingId)return;const c=new AbortController();request<Sitting>(`${base}/${initialSittingId}`,{signal:c.signal}).then(setDetail).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[initialSittingId,request]);
  useEffect(()=>{const element=dialog.current;if(detail){if(!element?.open)element?.showModal();}else element?.close();},[detail]);
  const detailId=detail?.id;
- useEffect(()=>{if(!detailId||busy||assignment||confirmPublish||cancelId||scheduleEdit)return;const c=new AbortController();const timer=setInterval(()=>{request<Sitting>(`${base}/${detailId}`,{signal:c.signal}).then(setDetail).catch(()=>{});},15000);return()=>{clearInterval(timer);c.abort();};},[detailId,busy,assignment,confirmPublish,cancelId,scheduleEdit,request]);
+ useEffect(()=>{
+  if(!detailId||busy||assignment||confirmPublish||cancelId||scheduleEdit)return;
+  return startVisiblePolling(async signal=>{
+   const value=await request<Sitting>(`${base}/${detailId}`,{signal:AbortSignal.any([signal,AbortSignal.timeout(20000)])});
+   if(!signal.aborted)setDetail(value);
+  },{immediate:false});
+ },[detailId,busy,assignment,confirmPublish,cancelId,scheduleEdit,request]);
  const update=(key:keyof typeof form,value:string)=>{setPreview(null);setProposed(null);setStep(1);setNotice('');if(['courseId','periodId','department'].includes(key))setCounts(null);setForm(f=>({...f,[key]:value}));};
  async function run(action:()=>Promise<unknown>,message:string){if(busy)return false;setBusy(true);setError('');setNotice('');try{await action();setNotice(message);setRevision(v=>v+1);return true;}catch(e){setError(e instanceof Error?e.message:'Thao tác chưa thành công');return false;}finally{setBusy(false);}}
  async function open(row:Sitting){if(row.kind==='legacy'){onOpenSession?.(row.id);return;}await run(async()=>{setDetail(await request<Sitting>(`${base}/${row.id}`));setAssignment(null);setCancelId(null);setConfirmPublish(false);},'');}
@@ -90,7 +110,8 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
   </>}
   {view!=='create'&&<>
    <form className="sitting-filters" onSubmit={e=>{e.preventDefault();setPage(0);setSearch(query.trim());}}><label>Tìm ca thi<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Mã ca, tên ca, môn hoặc khoa"/></label><label>Trạng thái<select value={status} onChange={e=>{setStatus(e.target.value);setPage(0);}}><option value="">Tất cả trạng thái</option>{Object.entries(stages).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><button disabled={busy}>Tìm kiếm</button></form>
-   <div className="sitting-list-caption"><strong>{total} ca thi</strong><span>Bao gồm ca đang chuẩn bị và ca đã công bố.</span></div>
+   <div className="sitting-list-caption"><strong>{total} ca thi</strong><span>Bao gồm ca đang chuẩn bị và ca đã công bố.<br/>Tự cập nhật mỗi 15 giây{listUpdatedAt&&` · Cập nhật lúc ${listUpdatedAt.toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}`}</span></div>
+   {listSyncError&&<p className="org-error" role="status">{listSyncError} <button type="button" disabled={busy} onClick={()=>setRevision(v=>v+1)}>Thử lại</button></p>}
    {loading?<p role="status">Đang tải danh sách ca thi…</p>:<div className="org-table"><table><thead><tr><th>Ca thi / Môn</th><th>Thời gian</th><th>Danh sách dự thi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{rows.map(s=><tr key={`${s.kind||'sitting'}-${s.id}`}><td><strong>{s.name}</strong><small><code>{s.code||`CT-${s.id}`}</code> · {s.courseCode} · {s.courseName}</small><small>{s.department} · {s.periodName}</small></td><td>{date(s.startTime)}<small>Đến {date(s.endTime)}</small></td><td>{s.groupCount} nhóm · {s.studentCount} sinh viên<small>{s.groupsWithExam||0}/{s.groupCount} nhóm có đề</small></td><td><span className={`sitting-status ${s.status||'assignment'}`}>{stages[s.status||'assignment']||s.status}</span><small>{s.publishedGroups||0}/{s.groupCount} nhóm đã công bố</small></td><td><button onClick={()=>void open(s)} disabled={busy}>Chi tiết ca thi</button></td></tr>)}</tbody></table>{!rows.length&&<div className="sitting-empty"><CalendarDays size={28}/><h3>Chưa có ca thi phù hợp</h3><p>Thay đổi bộ lọc hoặc chọn Tạo ca thi ở sidebar.</p></div>}</div>}
    <div className="org-toolbar"><span>Trang {page+1}/{Math.max(1,Math.ceil(total/20))}</span><div><button disabled={busy||page===0} onClick={()=>setPage(p=>p-1)}>Trước</button><button disabled={busy||(page+1)*20>=total} onClick={()=>setPage(p=>p+1)}>Tiếp</button></div></div>
   </>}

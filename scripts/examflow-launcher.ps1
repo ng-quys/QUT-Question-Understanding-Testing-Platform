@@ -114,7 +114,7 @@ function Get-ExamFlowPlan {
         if(-not $env:OLLAMA_MODEL){$v=Get-ExamFlowSetting $aiEnv 'OLLAMA_MODEL';if($v){$model=$v.Trim('"',"'")}}
         if(-not $env:OLLAMA_EMBED_MODEL){$v=Get-ExamFlowSetting $aiEnv 'OLLAMA_EMBED_MODEL';if($v){$embed=$v.Trim('"',"'")}}
     }
-    return @{Ports=$ports;Model=$model;Embed=$embed;Issuer=(Get-ExamFlowSetting $properties 'spring.security.oauth2.resourceserver.jwt.issuer-uri')}
+    return @{Ports=$ports;Model=$model;Embed=$embed}
 }
 function Test-ExamFlowReady {
     param([string]$Name,[hashtable]$Plan,[string]$Root)
@@ -217,8 +217,6 @@ function Start-ExamFlow {
         $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $Root 'ai-service/start-ai-credits.ps1'),[ref]$tokens,[ref]$errors)
         if($errors.Count){throw 'AI Credits launcher syntax error.'}
         foreach($f in $ast.EndBlock.Statements | Where-Object {$_ -is [Management.Automation.Language.FunctionDefinitionAst]}){Invoke-Expression $f.Extent.Text}
-        $keycloak=Invoke-ExamFlowHttp ($plan.Issuer.TrimEnd('/')+'/.well-known/openid-configuration')
-        if($keycloak.Status -ne 200){throw 'Existing Keycloak is not ready. Start it separately; this launcher never changes Keycloak or its database.'}
         $p=$plan.Ports
         Set-LaunchEnv 'EXAMFLOW_LAUNCH_PORTS' (ConvertTo-Json -InputObject $p -Compress)
         Set-LaunchEnv 'EXAMFLOW_LAUNCH_MAVEN' $maven

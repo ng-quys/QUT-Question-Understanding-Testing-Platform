@@ -35,11 +35,11 @@ export const sidebarStructure: Array<SidebarItem | { groupId: string; label: str
     icon: BookOpen,
     description: 'Học phần, đề thi và ca thi.',
     children: [
-      { id: 'courses', label: 'Học phần', icon: BookOpen, description: 'Theo dõi học phần và ngân hàng câu hỏi.' },
+      { id: 'courses', label: 'Học phần', icon: BookOpen, description: 'Quản lý học phần, đề thi và ca thi.' },
     ],
   },
   { id: 'liveSessions', label: 'Giám sát ca thi', icon: Activity, description: 'Theo dõi tất cả ca đã công bố đang diễn ra và tình hình sinh viên dự thi.' },
-  { id: 'monitor', label: 'Cảnh báo & lượt thi', icon: ShieldAlert, description: 'Xem lượt thi, cảnh báo bất thường và đánh giá hậu kiểm.' },
+  { id: 'monitor', label: 'Cảnh báo ca thi', icon: ShieldAlert, description: 'Xem ca thi có cảnh báo, sinh viên liên quan và đánh giá hậu kiểm.' },
   { id: 'reports', label: 'Báo cáo', icon: BarChart3, description: 'Phân tích kết quả theo học phần, ca thi và thời gian.' },
   { id: 'audit', label: 'Nhật ký quản trị', icon: FileClock, description: 'Tra cứu ai thay đổi gì, lúc nào.' },
 ] as const;
@@ -51,11 +51,11 @@ export const adminTabs = [
   {id:'studentClasses',label:'Lớp hành chính',icon:GraduationCap,description:'Quản lý lớp hành chính và khoa của sinh viên.'},
   {id:'sessionList',label:'Danh sách ca thi',icon:FileClock,description:'Tra cứu ca thi, danh sách dự thi, đề thi và trạng thái công bố.'},
   { id: 'accounts', label: 'Tài khoản', icon: Users, description: 'Quản lý tài khoản sinh viên, giảng viên và phân quyền.' },
-  { id: 'courses', label: 'Học phần', icon: BookOpen, description: 'Theo dõi học phần và ngân hàng câu hỏi.' },
+  { id: 'courses', label: 'Học phần', icon: BookOpen, description: 'Quản lý học phần, đề thi và ca thi.' },
   { id: 'exams', label: 'Đề thi', icon: FileClock, description: 'Theo dõi đề thi và cấu hình giám sát AI.' },
   { id: 'sessions', label: 'Tạo ca thi', icon: CalendarClock, description: 'Chọn môn và khoa, chia nhóm dự thi và bổ sung phân công.' },
   { id: 'liveSessions', label: 'Giám sát ca thi', icon: Activity, description: 'Theo dõi tất cả ca đã công bố đang diễn ra và tình hình sinh viên dự thi.' },
-  { id: 'monitor', label: 'Cảnh báo & lượt thi', icon: ShieldAlert, description: 'Xem lượt thi, cảnh báo bất thường và đánh giá hậu kiểm.' },
+  { id: 'monitor', label: 'Cảnh báo ca thi', icon: ShieldAlert, description: 'Xem ca thi có cảnh báo, sinh viên liên quan và đánh giá hậu kiểm.' },
   { id: 'reports', label: 'Báo cáo', icon: BarChart3, description: 'Phân tích kết quả theo học phần, ca thi và thời gian.' },
   { id: 'audit', label: 'Nhật ký quản trị', icon: FileClock, description: 'Tra cứu ai thay đổi gì, lúc nào.' },
   // Legacy tabs kept for any deep-link compatibility
@@ -77,7 +77,6 @@ export const accountSubTabs: SubTab[] = [
 ];
 
 export const monitorSubTabs: SubTab[] = [
-  { id: 'all', label: 'Tất cả lượt thi' },
   { id: 'warned', label: 'Ca thi có cảnh báo' },
 ];
 
@@ -106,7 +105,7 @@ const auditTargets: Record<string, string> = { USER: 'Tài khoản', ATTEMPT: 'L
 
 export function dataColumns(tab: AdminTab): Column[] {
   if (isAccount(tab)) return [{ key: 'fullName', title: 'Tài khoản', render: row => <div className="admin-person"><span className="admin-avatar">{initials(value(row, 'fullName'))}</span>{cell(value(row, 'fullName'), `${['teacher','faculty'].includes(value(row,'role'))?'Mã GV: ':value(row,'role')==='student'?'Mã SV: ':''}${!/^[0-9]{10}$/.test(value(row,'username'))&&['teacher','faculty','student'].includes(value(row,'role'))?'Chưa cấp mã':value(row,'username')}`)}</div> }, { key: 'email', title: 'Email' }, { key: 'role', title: 'Vai trò', render: row => <span className="admin-tag">{labels[value(row, 'role')] || value(row, 'role')}</span> }, { key: 'department', title: 'Khoa / Lớp', render: row => cell(value(row,'department'),value(row,'role')==='student'?(row.classCode?`Lớp ${value(row,'classCode')}`:'Chưa phân lớp'):'') }, stateColumn];
-  if (tab === 'courses') return [{ key: 'code', title: 'Học phần', render: row => cell(value(row, 'name'), value(row, 'code')) }, { key: 'department', title: 'Khoa / đơn vị' }, { key: 'questionCount', title: 'Câu hỏi', numeric: true, render: row => row.questionCountUnavailable ? <span className="admin-tag amber" title="Chưa kết nối được ngân hàng câu hỏi. Kiểm tra cấu hình kết nối và mật khẩu database.">Chưa kết nối</span> : number(row, 'questionCount') }, { key: 'examCount', title: 'Đề thi', numeric: true }, { key: 'sessionCount', title: 'Ca thi', numeric: true }, stateColumn];
+  if (tab === 'courses') return [{ key: 'code', title: 'Học phần', render: row => cell(value(row, 'name'), value(row, 'code')) }, { key: 'department', title: 'Khoa / đơn vị' }, { key: 'examCount', title: 'Đề thi', numeric: true }, { key: 'sessionCount', title: 'Ca thi', numeric: true }, stateColumn];
   if (tab === 'exams') return [{ key: 'title', title: 'Đề thi', render: row => cell(value(row, 'title'), `${value(row, 'code')} · ${value(row, 'courseCode')}`) }, { key: 'totalQuestions', title: 'Số câu', numeric: true }, { key: 'sessionCount', title: 'Ca thi', numeric: true }, stateColumn];
   if (tab === 'sessions') return [{ key: 'name', title: 'Ca thi / đề thi', render: row => cell(row.name?String(row.name):value(row,'examTitle'), `${value(row,'examCode')} · ${value(row,'examTitle')}`) }, { key: 'className', title: 'Lớp' }, { key: 'roomCode', title: 'Mã ca thi', render: row => <code className="admin-code">{value(row, 'roomCode')}</code> }, { key: 'startTime', title: 'Thời gian', render: row => cell(formatDate(value(row, 'startTime')), `Đến ${formatDate(value(row, 'endTime'))}`) }, { key: 'registeredCount', title: 'Đăng ký', numeric: true }, { key: 'attemptCount', title: 'Lượt thi', numeric: true }, stateColumn];
   if (tab === 'audit') return [{ key: 'createdAt', title: 'Thời gian', render: row => formatDate(value(row, 'createdAt')) }, { key: 'actorUsername', title: 'Người thực hiện' }, { key: 'action', title: 'Hành động', render: row => <span className="admin-tag" title={value(row, 'action')}>{auditActions[value(row, 'action')] || value(row, 'action')}</span> }, { key: 'targetId', title: 'Đối tượng', render: row => `${auditTargets[value(row, 'targetType')] || value(row, 'targetType')} #${value(row, 'targetId')}` }, { key: 'detail', title: 'Chi tiết', render: row => <span className="admin-audit-detail">{value(row, 'detail')}</span> }];

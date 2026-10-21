@@ -28,6 +28,8 @@ public class CurrentUserService {
             );
         }
 
+        Number localId=jwt.getClaim("local_user_id");
+        if(localId!=null)return requireActive(userRepository.findById(localId.longValue()).orElseThrow(()->new ApiException(HttpStatus.UNAUTHORIZED,"Không tìm thấy tài khoản")));
         String keycloakUserId = jwt.getSubject();
 
         UserEntity byKeycloakId = userRepository

@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest({AdminCatalogController.class,AdminWorkspaceController.class})
-@Import({SecurityConfig.class,KeycloakJwtAuthenticationConverter.class})
+@Import({SecurityConfig.class,DatabasePrincipalConverter.class})
 class AdminCatalogHttpSecurityTests {
     @Autowired MockMvc mvc;
     @MockitoBean AdminCatalogService catalog;
@@ -30,7 +30,7 @@ class AdminCatalogHttpSecurityTests {
     @MockitoBean AdminWorkspaceService workspace;
     @MockitoBean AdminEvidenceService evidence;
     @MockitoBean JwtDecoder decoder;
-    @MockitoBean com.examflow.backend.auth.TokenService tokens;
+    @MockitoBean com.examflow.backend.auth.DatabaseAuthService databaseAuth;
     final String body="{\"code\":\"WEB\",\"name\":\"Web\",\"credits\":3,\"teacherId\":6,\"status\":\"active\"}";
     @BeforeEach void setup(){UserEntity admin=new UserEntity();admin.setId(1L);when(identity.requireAdmin(any())).thenReturn(admin);when(catalog.course(any(),any(),any())).thenReturn(Map.of("id",10));}
     @Test void studentAndTeacherCannotReadCreateEditOrDelete() throws Exception {

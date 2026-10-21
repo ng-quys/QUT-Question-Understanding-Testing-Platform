@@ -50,7 +50,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            KeycloakJwtAuthenticationConverter converter
+            com.examflow.backend.auth.DatabaseAuthService databaseAuth
     ) throws Exception {
 
         http
@@ -79,7 +79,7 @@ public class SecurityConfig {
                         // PUBLIC APIs
                         .requestMatchers(
                                 "/api/health",
-                                "/api/auth/login",
+                                "/api/auth/login", "/api/auth/refresh", "/api/auth/logout",
                                 "/api/test/public",
                                 "/error"
                         )
@@ -107,12 +107,8 @@ public class SecurityConfig {
                         .authenticated()
                 )
 
-                // Keycloak JWT authentication
-                .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwt ->
-                                jwt.jwtAuthenticationConverter(converter)
-                        )
-                );
+                .exceptionHandling(errors->errors.authenticationEntryPoint((request,response,error)->response.setStatus(401)))
+                .addFilterBefore(new com.examflow.backend.auth.DatabaseAuthenticationFilter(databaseAuth),org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -124,8 +120,8 @@ public class SecurityConfig {
      * for locally stored passwords.
      */
     @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        return new com.examflow.backend.auth.DatabasePasswordEncoder();
     }
 
     /**

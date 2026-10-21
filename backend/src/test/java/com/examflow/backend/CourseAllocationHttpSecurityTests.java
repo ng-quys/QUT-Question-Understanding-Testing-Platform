@@ -19,13 +19,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CourseAllocationController.class)
-@Import({SecurityConfig.class,KeycloakJwtAuthenticationConverter.class})
+@Import({SecurityConfig.class,DatabasePrincipalConverter.class})
 class CourseAllocationHttpSecurityTests {
     @Autowired MockMvc mvc;
     @MockitoBean CourseAllocationService allocation;
     @MockitoBean CurrentUserService users;
     @MockitoBean JwtDecoder decoder;
-    @MockitoBean com.examflow.backend.auth.TokenService tokens;
+    @MockitoBean com.examflow.backend.auth.DatabaseAuthService databaseAuth;
     @Test void studentAndTeacherCannotReadOrChangeCourseAssignments() throws Exception {
         mvc.perform(get("/api/admin/organization/allocation/options")).andExpect(status().isUnauthorized());
         for(String role:new String[]{"STUDENT","TEACHER"}){

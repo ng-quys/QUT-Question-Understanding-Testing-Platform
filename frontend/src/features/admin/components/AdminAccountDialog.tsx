@@ -30,7 +30,7 @@ export function AdminAccountDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [confirmRepair,setConfirmRepair]=useState(false);
+
   const [reservedCode,setReservedCode]=useState<{username:string;token:string;role:AccountInput['role']}|null>(null);
   const [codeError,setCodeError]=useState('');
   const codeReady=!!reservedCode&&reservedCode.role===input.role;
@@ -235,7 +235,6 @@ export function AdminAccountDialog({
                   : 'Tài khoản mới có thể dùng để đăng nhập sau khi tạo thành công. Mật khẩu không được hiển thị trong danh sách hoặc nhật ký quản trị.'}
               </p>
             </div>
-          {user&&<div className="admin-identity-tools"><button type="button" className="admin-button secondary" disabled={busy} onClick={()=>setConfirmRepair(v=>!v)}>Đối chiếu liên kết Keycloak</button>{confirmRepair&&<div className="admin-confirm-inline" role="alertdialog" aria-label="Xác nhận đối chiếu tài khoản"><p>Chỉ liên kết tài khoản Keycloak đang hoạt động khớp đúng tên đăng nhập, email và vai trò. Giữ nguyên ID hồ sơ, bài làm và ảnh; không tự đổi tên đăng nhập.</p><button type="button" className="admin-button secondary" disabled={busy} onClick={()=>setConfirmRepair(false)}>Giữ nguyên</button><button type="button" className="admin-button primary" disabled={busy} onClick={async()=>{setBusy(true);setError('');try{await api.repairIdentity(user.id);onSaved('Đã đối chiếu liên kết Keycloak. Người dùng cần đăng nhập lại.');}catch(e){setError(e instanceof Error?e.message:'Không đối chiếu được tài khoản');}finally{setBusy(false);}}}>Xác nhận đối chiếu</button></div>}</div>}
           </div>
           <footer>
             <button type="button" className="admin-button secondary" disabled={busy} onClick={onClose}>
@@ -280,13 +279,13 @@ export function AdminAccountDialog({
                     {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
                 </div>
-                <small>Mật khẩu mới có hiệu lực ngay lập tức trên Keycloak.</small>
+                <small>Mật khẩu mới có hiệu lực ngay trên hệ thống.</small>
               </label>
             </div>
             <div className="admin-helper">
               <ShieldCheck size={19} />
               <p>
-                Đặt lại mật khẩu sẽ cập nhật thông tin đăng nhập trực tiếp trên Keycloak. Hãy thông báo mật khẩu mới cho người dùng một cách an toàn.
+                Đặt lại mật khẩu sẽ cập nhật database chung và đăng xuất các phiên cũ. Hãy thông báo mật khẩu mới cho người dùng một cách an toàn.
               </p>
             </div>
           </div>

@@ -1,78 +1,25 @@
 package com.examflow.backend.controller;
-
-import java.util.Map;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.examflow.backend.dto.RegisterRequest;
-import com.examflow.backend.dto.SocialUserSyncRequest;
-import com.examflow.backend.dto.SocialUserSyncResponse;
-import com.examflow.backend.service.RegistrationService;
-import com.examflow.backend.service.SocialUserSyncService;
-
+import com.examflow.backend.auth.DatabaseAuthService;
+import com.examflow.backend.service.CurrentUserService;
+import com.examflow.backend.exception.ApiException;
 import jakarta.validation.Valid;
-
-@RestController
-@RequestMapping("/api/auth")
+import jakarta.validation.constraints.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
+import java.util.Map;
+@RestController @RequestMapping("/api/auth")
 public class AuthController {
-
-    private final RegistrationService registrationService;
-    private final com.examflow.backend.service.CurrentUserService currentUsers;
-    private final SocialUserSyncService socialUserSyncService;
-
-    public AuthController(
-            RegistrationService registrationService,
-            SocialUserSyncService socialUserSyncService,
-            com.examflow.backend.service.CurrentUserService currentUsers
-    ) {
-        this.registrationService = registrationService;
-        this.currentUsers=currentUsers;
-        this.socialUserSyncService = socialUserSyncService;
-    }
-
-    @org.springframework.web.bind.annotation.GetMapping("/me")
-    public Map<String,Object> me(@org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.oauth2.jwt.Jwt jwt) {
-        var u=currentUsers.getCurrentUser(jwt);
-        return Map.of("id",u.getId(),"username",u.getUsername(),"fullName",u.getFullName(),"email",u.getEmail(),"role",u.getRole());
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(
-            @Valid @RequestBody RegisterRequest request
-    ) {
-        throw new com.examflow.backend.exception.ApiException(HttpStatus.FORBIDDEN,"Tài khoản do quản trị viên cấp. Không hỗ trợ tự đăng ký.");
-    }
-
-    /**
-     * Called after Google/Microsoft authentication succeeds in Keycloak.
-     *
-     * The user identity is taken directly from the authenticated
-     * Keycloak JWT stored in Spring Security.
-     *
-     * The request body only contains the application role selected
-     * on the login UI.
-     */
-    @PostMapping("/sync-user")
-    public ResponseEntity<SocialUserSyncResponse> syncSocialUser(
-            Authentication authentication,
-            @Valid @RequestBody SocialUserSyncRequest request
-    ) {
-
-        if (!(authentication instanceof JwtAuthenticationToken jwtAuthentication)) {
-            throw new IllegalStateException(
-                    "Authenticated user does not contain a Keycloak JWT"
-            );
-        }
-
-        var jwt=jwtAuthentication.getToken();
-        var user=currentUsers.getCurrentUser(jwt);
-        return ResponseEntity.ok(new SocialUserSyncResponse(user.getId(),user.getKeycloakUserId(),user.getUsername(),user.getEmail(),user.getFullName(),user.getRole(),user.getStatus(),false));
-    }
+ private final DatabaseAuthService auth; private final CurrentUserService currentUsers;
+ public AuthController(DatabaseAuthService auth,CurrentUserService currentUsers){this.auth=auth;this.currentUsers=currentUsers;}
+ public record Login(@NotBlank @Size(max=80) String username,@NotBlank @Size(max=128) String password){}
+ public record Refresh(@NotBlank @Size(min=20,max=256) String refreshToken){}
+ public record ChangePassword(@NotBlank @Size(max=128) String currentPassword,@NotBlank @Size(min=8,max=128) String newPassword){}
+ @PostMapping("/password") @ResponseStatus(HttpStatus.NO_CONTENT) public void changePassword(@AuthenticationPrincipal Jwt principal,@Valid @RequestBody ChangePassword body){auth.changePassword(currentUsers.getCurrentUser(principal).getId(),body.currentPassword(),body.newPassword());}
+ @PostMapping("/login") public DatabaseAuthService.Tokens login(@Valid @RequestBody Login body){return auth.login(body.username(),body.password());}
+ @PostMapping("/refresh") public DatabaseAuthService.Tokens refresh(@Valid @RequestBody Refresh body){return auth.refresh(body.refreshToken());}
+ @PostMapping("/logout") @ResponseStatus(HttpStatus.NO_CONTENT) public void logout(@Valid @RequestBody Refresh body){auth.logout(body.refreshToken());}
+ @GetMapping("/me") public Map<String,Object> me(@AuthenticationPrincipal Jwt principal){var u=currentUsers.getCurrentUser(principal);return Map.of("id",u.getId(),"username",u.getUsername(),"fullName",u.getFullName(),"email",u.getEmail(),"role",u.getRole());}
+ @PostMapping("/register") public void register(){throw new ApiException(HttpStatus.FORBIDDEN,"Tài khoản do quản trị viên cấp. Không hỗ trợ tự đăng ký.");}
 }

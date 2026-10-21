@@ -1,0 +1,13 @@
+.student-monitoring-compact{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;max-width:280px;font-size:11px;color:#247253}
+.student-monitoring-label{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #cfe8dd;border-radius:999px;background:#f0faf5;white-space:nowrap;font-weight:600}
+.student-monitoring-compact.needs-attention{color:#945b13}
+.student-monitoring-compact.needs-attention .student-monitoring-label{background:#fff8e9;border-color:#f0d69d}
+.student-monitoring-camera summary{cursor:pointer;color:#536884;font-size:11px;text-decoration:underline;text-underline-offset:3px}
+.student-monitoring-camera>div{position:absolute;top:calc(100% + 8px);right:0;z-index:40;width:240px;max-width:80vw;padding:12px;background:white;border:1px solid #dce5ef;border-radius:12px;box-shadow:0 8px 28px #19345224;color:#536884}
+.student-monitoring-camera video{display:block;width:100%;border-radius:8px;background:#17283b}
+.student-monitoring-camera p{margin:8px 0 0;font-size:12px;line-height:1.5}
+.student-monitoring-warning{flex-basis:100%;padding:10px 12px;border:1px solid #f0d69d;border-radius:10px;background:#fff8e9;font-size:12px;line-height:1.5}
+.student-monitoring-warning p{margin:5px 0 8px}
+.student-monitoring-warning button{padding:5px 9px;border:1px solid #c99543;border-radius:7px;background:white;color:#82500f;font:inherit;cursor:pointer}
+.student-exam-toolbar-actions:has(.student-monitoring-compact){flex-wrap:wrap;justify-content:flex-end;gap:12px}
+@media(max-width:700px){.student-monitoring-compact{max-width:100%;gap:5px}.student-monitoring-label{padding:5px 8px;font-size:10px}.student-monitoring-camera>div{left:0;right:auto}}

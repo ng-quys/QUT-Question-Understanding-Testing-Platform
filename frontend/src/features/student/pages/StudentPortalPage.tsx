@@ -616,8 +616,7 @@ export const StudentPortalPage: React.FC = () => {
         {view === 'results' && <Results onViewResult={handleViewResult} loadResults={studentApi.results} />}
         {view === 'exam' && attempt && <>
           <AttemptSyncNotice state={recoveryState} online={online} expired={now>=examDate(attempt.endTime).getTime()} onRetry={()=>void recoveryRef.current?.flush()}/>
-          <StudentMonitoring key={attempt.attemptId} attemptId={attempt.attemptId}/>
-          <ExamRunner key={attempt.attemptId} attempt={attempt} selected={selected} remaining={remaining ?? '--:--:--'} savingQuestion={savingQuestion} pendingQuestions={pendingQuestions} failedQuestions={failedQuestions} onChoose={handleChoose} onSubmit={() => void handleSubmit()} submitting={submitting} expired={now>=examDate(attempt.endTime).getTime()} violationCount={violationCount} fullscreenActive={fullscreenActive} onFullscreen={() => void enterExamFullscreen()} />
+          <ExamRunner key={attempt.attemptId} monitoring={<StudentMonitoring key={attempt.attemptId} attemptId={attempt.attemptId}/>} attempt={attempt} selected={selected} remaining={remaining ?? '--:--:--'} savingQuestion={savingQuestion} pendingQuestions={pendingQuestions} failedQuestions={failedQuestions} onChoose={handleChoose} onSubmit={() => void handleSubmit()} submitting={submitting} expired={now>=examDate(attempt.endTime).getTime()} violationCount={violationCount} fullscreenActive={fullscreenActive} onFullscreen={() => void enterExamFullscreen()} />
         </>}
         {(view === 'join'||view === 'sessions') && <AssignedExams sessions={dashboard.sessions} busy={startingAi} onStart={handleStart} onRefresh={loadDashboard} onViewResults={()=>navigateView('results')}/>}
         {view === 'profile' && <ProfileView profile={profile} photoUrl={profilePhotoUrl} onUpload={handleUploadFace} />}

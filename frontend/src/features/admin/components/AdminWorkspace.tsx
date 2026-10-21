@@ -276,7 +276,7 @@ export function AdminWorkspace({
   const [tab, setTab] = useState<AdminTab>('overview');
   // Sub-tab state for composite screens
   const [accountSubTab, setAccountSubTab] = useState('all');
-  const [monitorSubTab, setMonitorSubTab] = useState('all');
+  const [monitorSubTab, setMonitorSubTab] = useState('warned');
   const [warnedSession,setWarnedSession]=useState<DataRow|null>(null);
   const warnedSessionList=tab==='monitor'&&monitorSubTab==='warned'&&!warnedSession;
 
@@ -477,8 +477,7 @@ export function AdminWorkspace({
     if (next === 'accounts') setAccountSubTab(sub === 'student' || sub === 'teacher' ? sub : 'all');
     else setAccountSubTab('all');
     setWarnedSession(null);
-    if (next === 'monitor') setMonitorSubTab(sub === 'warned' ? sub : 'all');
-    else setMonitorSubTab('all');
+    setMonitorSubTab('warned');
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
@@ -616,7 +615,7 @@ export function AdminWorkspace({
       title: 'Thao tác',
       render: row =>
         value(row, 'role') === 'admin' ? (
-          <span className="admin-muted">Quản lý qua Keycloak</span>
+          <span className="admin-muted">Tài khoản quản trị</span>
         ) : (
           <div className="admin-row-actions">
             <button
@@ -634,7 +633,7 @@ export function AdminWorkspace({
               onClick={() =>
                 ask(
                   value(row, 'status') === 'active' ? 'Khóa tài khoản?' : 'Mở khóa tài khoản?',
-                  `Áp dụng cho ${value(row, 'fullName')} (${value(row, 'username')}). Thay đổi được đồng bộ với Keycloak và ghi nhật ký.`,
+                  `Áp dụng cho ${value(row, 'fullName')} (${value(row, 'username')}). Thay đổi có hiệu lực trên database chung và được ghi nhật ký.`,
                   () => api.updateUserStatus(number(row, 'id'), value(row, 'status') === 'active' ? 'locked' : 'active')
                 )
               }
@@ -721,7 +720,7 @@ export function AdminWorkspace({
     if (tab === 'accounts') {
       setAccountSubTab(id);
     } else if (tab === 'monitor') {
-      setMonitorSubTab(id);
+      setMonitorSubTab('warned');
     }
     // Always reset page and filters when switching sub-tab
     setWarnedSession(null);
@@ -843,7 +842,7 @@ export function AdminWorkspace({
           ) : (
             <>
               {/* In-page sub-tabs for Accounts and Monitor */}
-              {subTabs && (
+              {subTabs && subTabs.length > 1 && (
                 <InPageTabs tabs={subTabs} active={activeSubTab} onChange={changeSubTab} label={tab === 'accounts' ? 'Phân loại tài khoản' : 'Chế độ xem giám sát'} />
               )}
 

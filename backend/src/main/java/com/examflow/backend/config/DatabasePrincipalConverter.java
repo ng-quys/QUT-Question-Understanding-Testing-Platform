@@ -13,7 +13,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Component;
 
 @Component
-public class KeycloakJwtAuthenticationConverter
+public class DatabasePrincipalConverter
         implements Converter<Jwt, AbstractAuthenticationToken> {
 
     @Override

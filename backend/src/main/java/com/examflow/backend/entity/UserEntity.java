@@ -38,6 +38,8 @@ private String passwordHash;
     private String department;
     @Column(name="student_class_id") private Long studentClassId;
     private String status;
+    @Column(name="auth_failed_attempts") private int authFailedAttempts;
+    @Column(name="auth_locked_until") private java.time.Instant authLockedUntil;
     @org.hibernate.annotations.UpdateTimestamp
     @Column(name="updated_at")
     private java.time.LocalDateTime updatedAt;

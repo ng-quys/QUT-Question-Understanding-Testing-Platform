@@ -21,13 +21,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(StudentProfileController.class)
-@Import({SecurityConfig.class,KeycloakJwtAuthenticationConverter.class,CurrentUserService.class})
+@Import({SecurityConfig.class,DatabasePrincipalConverter.class,CurrentUserService.class})
 class StudentPhotoHttpSecurityTests {
     @Autowired MockMvc mvc;
     @MockitoBean StudentProfileService photos;
     @MockitoBean UserRepository users;
     @MockitoBean JwtDecoder decoder;
-    @MockitoBean com.examflow.backend.auth.TokenService tokens;
+    @MockitoBean com.examflow.backend.auth.DatabaseAuthService databaseAuth;
     UserEntity student;
     @BeforeEach void setup() {
         student=new UserEntity(); student.setId(26L);student.setRole("student");student.setStatus("active");student.setKeycloakUserId("student-sub");student.setEmail("student@example.com");
