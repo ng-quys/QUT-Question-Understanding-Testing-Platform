@@ -8,7 +8,7 @@ import {
   RotateCcw,
   Sparkles,
 } from 'lucide-react';
-import { SourceDocument, DocumentExtractionSummary } from '../../../types';
+import { SourceDocument, DocumentExtractionSummary } from '@shared/types';
 import {
   validateDocumentFiles,
   createSourceDocument,

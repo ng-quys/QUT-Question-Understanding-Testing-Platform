@@ -13,7 +13,7 @@ import {
   Database,
   Layers,
 } from 'lucide-react';
-import type{ CourseChapter, CourseTopic } from '../../../types';
+import type{ CourseChapter, CourseTopic } from '@shared/types';
 import { createChapter, createTopic, deleteChapter, deleteTopic, updateChapter, updateTopic } from '../services/courseContentService';
 
 interface CourseContentStructureTabProps {

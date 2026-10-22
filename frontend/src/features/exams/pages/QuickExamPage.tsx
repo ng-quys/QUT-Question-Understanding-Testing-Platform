@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, BookOpen, CheckCircle2, Download, Loader2, Save, WandSparkles } from 'lucide-react';
-import type { Course, CourseCLO } from '../../../types';
+import type { Course, CourseCLO } from '@shared/types';
 import { checkAutomaticExam, getAutomaticBank, getAutomaticCourses, previewAutomaticExam, saveAutomaticExam,
   type AutomaticBank, type AutomaticCheck, type AutomaticExamRequest, type AutomaticPreview,
   type MatrixDimension, type MatrixGroup } from '../services/examService';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Database, FileSpreadsheet, CalendarClock, BarChart3 } from 'lucide-react';
 import { SetupStep } from '../components/SetupStep';
-import type{ DashboardNavTab } from '../../../types';
+import type{ DashboardNavTab } from '@shared/types';
 
 interface OnboardingDashboardProps {
   onNavigateTab: (tab: DashboardNavTab) => void;

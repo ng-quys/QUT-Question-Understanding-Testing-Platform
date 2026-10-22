@@ -15,7 +15,7 @@ import {
   Eye,
   X,
 } from 'lucide-react';
-import { Course, CourseChapter, CourseCLO, QuestionItem, Bloom3Level } from '../../../types';
+import { Course, CourseChapter, CourseCLO, QuestionItem, Bloom3Level } from '@shared/types';
 import { BLOOM_3_CONFIG } from '../../dashboard/data/mockAcademicData';
 
 export interface ExamMatrixBuilderPageProps {

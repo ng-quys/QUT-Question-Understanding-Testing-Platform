@@ -13,6 +13,7 @@
     "Backend": 8080,
     "AIGenerator": 8002,
     "AntiCheating": 8000,
-    "Frontend": 5173
+    "Frontend": 5173,
+    "AdminFrontend": 5174
   }
 }

@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useState} from 'react';
-import {getAiQuota,type AiQuota} from '../services/aiCreditsService';
+import {getAiQuota,type AiQuota} from '@shared/features/ai-generator/services/aiCreditsService';
 export function useAiQuota() {
   const [quota,setQuota]=useState<AiQuota|null>(null);
   const [error,setError]=useState('');

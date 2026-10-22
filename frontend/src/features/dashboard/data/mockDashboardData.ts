@@ -1,4 +1,4 @@
-import type{ ExamRecord, DashboardStat, ScoreDistributionItem, PerformancePoint } from '../../../types';
+import type{ ExamRecord, DashboardStat, ScoreDistributionItem, PerformancePoint } from '@shared/types';
 
 export const LECTURER_PROFILE = {
   name: 'Nguyễn Văn A',

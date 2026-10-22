@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { DateTime24Field } from '../src/shared/components/DateTime24Field';
-import '../src/features/admin/styles/admin.css';
+import { DateTime24Field } from '../../frontend-admin/src/shared/components/DateTime24Field';
+import '../../frontend-admin/src/features/admin/styles/admin.css';
 
 function Fixture() {
   const [start, setStart] = useState('2026-10-22T13:00');

@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
-import type {Course,QuestionItem} from '../../../types';
-import {createAiJob,getAiJob,cancelAiJob,aiTerminal,quotaChanged,type AiJob} from '../services/aiCreditsService';
+import type {Course,QuestionItem} from '@shared/types';
+import {createAiJob,getAiJob,cancelAiJob,aiTerminal,quotaChanged,type AiJob} from '@shared/features/ai-generator/services/aiCreditsService';
 interface Props {
  courseId:string;totalQuestions:number;cloIds:number[];courses:Course[];idempotencyKey:string;
  sourceProof?:string;resumeJobId?:number;sourceText:string;storageKey:string;

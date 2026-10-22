@@ -1,4 +1,4 @@
-import { apiFetch } from '../../../services/api';
+import { apiFetch } from '@shared/services/api';
 
 export interface ExamSummaryDto { id:number; code:string; title:string; courseId:number; courseCode:string; courseName:string; totalQuestions:number; status:string; examDate:string|null; shuffleQuestions:boolean; shuffleAnswers:boolean; antiCheatMode:boolean; }
 export interface QuickExamRequest { courseId:number; title:string; code:string; totalQuestions:number; mediumPercent:number; goodPercent:number; excellentPercent:number; maxOverlapPercent:number; cloIds:number[]; shuffleQuestions:boolean; shuffleAnswers:boolean; antiCheatMode:boolean; }

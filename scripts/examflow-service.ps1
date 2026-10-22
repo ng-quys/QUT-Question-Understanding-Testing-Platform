@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$Root,[Parameter(Mandatory=$true)][ValidateSet('Ollama','Backend','AIGenerator','AntiCheating','Frontend')][string]$Service)
+﻿param([Parameter(Mandatory=$true)][string]$Root,[Parameter(Mandatory=$true)][ValidateSet('Ollama','Backend','AIGenerator','AntiCheating','Frontend','AdminFrontend')][string]$Service)
 $ErrorActionPreference='Stop'
 # Every service wrapper owns one non-inheritable Job Object handle. Its children
 # inherit job membership, never the handle. Killing the wrapper closes that last
@@ -56,9 +56,11 @@ try {
             Set-Location -LiteralPath (Join-Path $Root 'anticheating')
             & (Join-Path $Root 'anticheating/.venv/Scripts/python.exe') (Join-Path $Root 'anticheating/app/run_service.py')
         }
-        'Frontend' {
-            Set-Location -LiteralPath (Join-Path $Root 'frontend')
-            & $env:EXAMFLOW_LAUNCH_NPM run dev -- --host 127.0.0.1 --port $ports.Frontend --strictPort
+        {$_ -in @('Frontend','AdminFrontend')} {
+            $folder=if($Service -eq 'AdminFrontend'){'frontend-admin'}else{'frontend'}
+            $port=if($Service -eq 'AdminFrontend'){$ports.AdminFrontend}else{$ports.Frontend}
+            Set-Location -LiteralPath (Join-Path $Root $folder)
+            & $env:EXAMFLOW_LAUNCH_NPM run dev -- --host 127.0.0.1 --port $port --strictPort
         }
     }
     if($LASTEXITCODE -ne 0){throw 'Service exited with an error.'}

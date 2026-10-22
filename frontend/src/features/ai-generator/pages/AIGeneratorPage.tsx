@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
-import type {Course,CourseChapter,CourseCLO,QuestionItem,SourceDocument,AIWorkflowStep} from '../../../types';
-import {apiFetch} from '../../../services/api';
+import type {Course,CourseChapter,CourseCLO,QuestionItem,SourceDocument,AIWorkflowStep} from '@shared/types';
+import {apiFetch} from '@shared/services/api';
 import {useAiQuota} from '../hooks/useAiQuota';
 import {DocumentUploadStep} from '../components/DocumentUploadStep';
 import {GeneratorStepper} from '../components/GeneratorStepper';

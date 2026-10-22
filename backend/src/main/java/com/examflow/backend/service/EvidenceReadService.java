@@ -18,15 +18,15 @@ public class EvidenceReadService {
     private final AdminEvidenceService local;
     public EvidenceReadService(EvidenceAccessService access,EvidenceSchema schema,SupabaseEvidenceStorage storage,AdminEvidenceService local) { this.access=access; this.schema=schema; this.storage=storage; this.local=local; }
     public record Event(Long id,String event,boolean active,Object occurredAt,String module,double duration,int riskScore,String riskLevel,String provider,String evidenceStatus,boolean hasEvidence,String evidenceError) {}
-    public record EventPage(List<Event> items,long total,int page,int size) {}
+    public record EventPage(List<Event> items,long total,int page,int size,String attemptStatus) {}
     private static String SELECT = "SELECT id,event,active,occurred_at,module,duration_seconds,risk_score,risk_level,evidence_provider,evidence_status,evidence_path,evidence_error FROM anti_cheat_events WHERE attempt_id=:id";
     @Transactional
     public EventPage events(Jwt jwt,Long id,int page,int size) {
-        access.require(jwt,id); schema.ensure();
+        var attempt=access.require(jwt,id); schema.ensure();
         if (page<0 || size<1 || size>100 || (long)page*size>Integer.MAX_VALUE) throw new ApiException(HttpStatus.BAD_REQUEST,"Phân trang không hợp lệ");
         long total=((Number)em.createNativeQuery("SELECT COUNT(*) FROM anti_cheat_events WHERE attempt_id=:id").setParameter("id",id).getSingleResult()).longValue();
         List<?> rows=em.createNativeQuery(SELECT + " ORDER BY occurred_at,id").setParameter("id",id).setFirstResult(page*size).setMaxResults(size).getResultList();
-        return new EventPage(rows.stream().map(row -> event((Object[])row)).toList(),total,page,size);
+        return new EventPage(rows.stream().map(row -> event((Object[])row)).toList(),total,page,size,attempt.getStatus());
     }
     private Event event(Object[] row) {
         boolean legacy = "local".equals(row[8]) && row[10]!=null && !row[10].toString().isBlank();

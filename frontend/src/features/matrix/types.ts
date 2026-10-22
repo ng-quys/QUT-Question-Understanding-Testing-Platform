@@ -1,4 +1,4 @@
-import { Course, CourseChapter, CourseCLO, QuestionItem, Bloom3Level } from '../../types';
+import { Course, CourseChapter, CourseCLO, QuestionItem, Bloom3Level } from '@shared/types';
 
 export interface MatrixKnowledgeUnit {
   id: string;

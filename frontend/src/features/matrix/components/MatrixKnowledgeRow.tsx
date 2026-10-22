@@ -1,5 +1,5 @@
 import React from 'react';
-import { CourseCLO, CourseChapter } from '../../../types';
+import { CourseCLO, CourseChapter } from '@shared/types';
 import { MatrixKnowledgeUnit, RowValidation } from '../types';
 import { BloomCounter } from './BloomCounter';
 import { CLOSelector } from './CLOSelector';

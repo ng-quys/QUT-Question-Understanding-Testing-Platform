@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CalendarClock, CheckCircle2, Eye, FileCheck2, Loader2, RefreshCw, Search, X } from 'lucide-react';
-import { examDate } from '../../../utils/examTime';
+import { examDate } from '@shared/utils/examTime';
 import { assignedSittingApi, type AssignedGroup, type AssignedExamChoice, type AssignedExamPreview } from '../services/assignedSittingService';
 
 const date=(text:string)=>examDate(text).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});

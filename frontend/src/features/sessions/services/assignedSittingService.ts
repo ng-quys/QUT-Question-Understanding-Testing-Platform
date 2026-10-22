@@ -1,4 +1,4 @@
-import { apiFetch } from '../../../services/api';
+import { apiFetch } from '@shared/services/api';
 export interface AssignedGroup {
   id:number;sittingId:number;number:number;name:string;courseId:number;courseCode:string;courseName:string;
   roomCode:string|null;roomName:string|null;startTime:string;endTime:string;studentCount:number;

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { DepartmentExamPanel } from '../src/features/sessions/components/DepartmentExamPanel';
-import { Modal } from '../src/features/admin/components/AdminUI';
-import '../src/index.css';
-import '../src/features/admin/styles/admin.css';
-import '../src/features/sessions/components/organization.css';
+import { DepartmentExamPanel } from '../../frontend-admin/src/features/sessions/components/DepartmentExamPanel';
+import { Modal } from '../../frontend-admin/src/features/admin/components/AdminUI';
+import '../../frontend-shared/src/styles/base.css';
+import '../../frontend-admin/src/features/admin/styles/admin.css';
+import '../../frontend-shared/src/features/sessions/components/organization.css';
 
 const group={id:1,number:1,roomId:1,roomCode:'P03',roomName:'A102',teacherId:1,teacherName:'Giảng viên kiểm thử',examId:1,examTitle:'Đề mẫu kiểm thử',status:'scheduled',publishedAt:'2026-10-22T00:00:00+07:00',studentCount:9,students:[],missing:[],ready:true};
 const base={id:12,code:'CT-12',name:'CA THI KIỂM THỬ',courseId:1,department:'Công nghệ thông tin',courseCode:'MH01',courseName:'Môn kiểm thử',periodName:'Học kỳ 1',startTime:'2026-10-22T00:50:00+07:00',endTime:'2026-10-22T05:00:00+07:00',groups:[group],groupCount:1,studentCount:9,publishedGroups:1,groupsWithExam:1,status:'published',canEditSchedule:false,scheduleLockReason:'Ca đã có bài làm, không được thay đổi lịch thi.'};

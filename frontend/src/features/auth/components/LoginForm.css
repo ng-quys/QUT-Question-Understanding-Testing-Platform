@@ -1,0 +1,24 @@
+.qut-login-form{display:flex;flex-direction:column;gap:22px;color:#243b59}
+.qut-login-field{display:flex;flex-direction:column;gap:9px;min-width:0}
+.qut-login-field>label{font-size:13px;line-height:1.5;font-weight:600;color:#344c6c}
+.qut-login-input-wrap{display:flex;align-items:center;gap:12px;min-width:0;min-height:52px;padding:0 15px;background:#fbfcfe;border:1px solid #d7e0ed;border-radius:11px;transition:border-color .16s,box-shadow .16s,background-color .16s}
+.qut-login-input-wrap:hover{border-color:#b6c7df;background:#fff}
+.qut-login-input-wrap:focus-within{border-color:#356bc5;background:#fff;box-shadow:0 0 0 3px #245bc411}
+.qut-login-field-icon{flex-shrink:0;color:#8a9bb3;transition:color .16s}
+.qut-login-input-wrap:focus-within .qut-login-field-icon{color:#356bc5}
+.qut-login-form .qut-login-input{flex:1;min-width:0;width:100%;height:50px;padding:0;border:0;border-radius:0;background:transparent;color:#233c5d;font-size:14px;line-height:1.5;outline:none;box-shadow:none}
+.qut-login-input::placeholder{color:#9aa8bc;font-weight:400;opacity:1}
+.qut-login-input:disabled{cursor:wait;opacity:.65}
+.qut-login-password-toggle{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;margin-right:-7px;padding:0;border:0;border-radius:8px;background:transparent;color:#8092ac;cursor:pointer;transition:color .16s,background-color .16s}
+.qut-login-password-toggle:hover{color:#245bc4;background:#edf3fc}
+.qut-login-password-toggle:focus-visible{outline:2px solid #356bc5;outline-offset:2px}
+.qut-login-password-toggle:disabled{cursor:wait;opacity:.5}
+.qut-login-submit{display:flex;align-items:center;justify-content:center;gap:10px;min-height:50px;margin-top:2px;padding:13px 20px;border:1px solid #245bc4;border-radius:11px;background:#245bc4;color:#fff;font-size:14px;font-weight:600;box-shadow:0 3px 8px #245bc418;cursor:pointer;transition:background-color .16s,box-shadow .16s}
+.qut-login-submit:hover:not(:disabled){background:#1d4fae;border-color:#1d4fae;box-shadow:0 4px 12px #245bc428}
+.qut-login-submit:focus-visible{outline:2px solid #356bc5;outline-offset:3px}
+.qut-login-submit:disabled{opacity:.6;cursor:wait}
+.qut-login-form .qut-login-help{margin:0;text-align:center;font-size:12px;line-height:1.8;color:#8190a6}
+.qut-login-error{display:flex;align-items:flex-start;gap:9px;padding:12px 14px;border:1px solid #f2d5d9;border-radius:10px;background:#fff6f6;color:#b44754;font-size:12px;line-height:1.7}
+.qut-login-error>svg{flex-shrink:0;margin-top:2px}.qut-login-error>p{margin:0}
+@media(max-width:600px){.qut-login-form{gap:20px}.qut-login-form .qut-login-input{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.qut-login-input-wrap,.qut-login-field-icon,.qut-login-password-toggle,.qut-login-submit{transition:none}}

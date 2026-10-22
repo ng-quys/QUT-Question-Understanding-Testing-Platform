@@ -17,7 +17,7 @@ import { AIGenerateModal } from '../../ai-generator/components/AIGenerateModal';
 import { CreateExamModal } from '../../exams/components/CreateExamModal';
 import { ExamSessionsPage } from '../../sessions/pages/ExamSessionsPage';
 import { SettingsPage } from '../../settings/pages/SettingsPage';
-import { logout } from '../../auth/services/authService';
+import { logout } from '@shared/features/auth/services/authService';
 import { getTeacherCourses } from '../../courses/services/courseService';
 import { getCourseClos, getCourseStructure } from '../../courses/services/courseContentService';
 import { createQuestion } from '../../question-bank/services/questionBankService';
@@ -27,7 +27,7 @@ import type{
   CourseChapter,
   CourseCLO,
   QuestionItem,
-} from '../../../types';
+} from '@shared/types';
 
 
 interface DashboardPageProps {

@@ -1,10 +1,11 @@
+import { fileURLToPath } from 'node:url';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'vite';
 let server, action;
 before(async () => {
   server = await createServer({ server: { middlewareMode: true, watch: null, hmr: false }, appType: 'custom' });
-  ({ workspaceHistoryAction: action } = await server.ssrLoadModule('/src/app/workspaceHistory.ts'));
+  ({ workspaceHistoryAction: action } = await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-shared/src/app/workspaceHistory.ts", import.meta.url))));
 });
 after(async () => { await server?.close(); });
 for (const identity of ['admin:test', 'student:test']) {

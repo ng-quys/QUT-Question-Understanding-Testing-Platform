@@ -1,5 +1,5 @@
-import { apiFetch } from '../../../services/api';
-import type { Bloom3Level, CourseChapter, CourseCLO, CourseTopic } from '../../../types';
+import { apiFetch } from '@shared/services/api';
+import type { Bloom3Level, CourseChapter, CourseCLO, CourseTopic } from '@shared/types';
 
 type ChapterResponse = { id: number; courseId: number; order: number; code: string; name: string; topics: TopicResponse[] };
 type TopicResponse = { id: number; chapterId: number; code: string; name: string; questionCount: number };

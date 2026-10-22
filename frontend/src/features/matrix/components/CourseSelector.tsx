@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BookOpen, ChevronDown, Check } from 'lucide-react';
-import { Course } from '../../../types';
+import { Course } from '@shared/types';
 
 interface CourseSelectorProps {
   courses: Course[];

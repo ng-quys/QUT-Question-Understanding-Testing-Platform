@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { errorMessageVi } from '@shared/services/errorMessages';
 import './StudentMonitoring.css';
 import { studentApi, type AiStatus } from '../services/studentService';
 import { appendMonitorAudio, monitorFrameSize } from '../services/monitorMedia';
@@ -37,7 +38,7 @@ export function StudentMonitoring({attemptId}:{attemptId:number}){
     resume.current=()=>{void audio?.resume().then(()=>setError('')).catch(()=>setError('Không bật được micro.'));};
     void audio.resume().catch(()=>{});
     if(audio.state==='suspended')setError('Nhấn “Bật camera/micro” để cho phép thu âm giám sát.');
-   }catch(e){deviceFailed=true;cleanupMedia();setError(e instanceof Error?e.message:'Không truy cập được camera/micro.');}
+   }catch(e){deviceFailed=true;cleanupMedia();setError(errorMessageVi(e,{fallback:'Không truy cập được camera/micro.'}));}
    finally{deviceStarting=false;}
   }
   const poll=async()=>{
@@ -80,7 +81,7 @@ export function StudentMonitoring({attemptId}:{attemptId:number}){
   <video ref={video} muted autoPlay playsInline hidden aria-hidden="true"/>
   {warning&&<div className="student-monitoring-warning" role="alert">
   <strong>Cần kiểm tra giám sát</strong>
-  <p>{error||status?.message} Thời gian thi vẫn tiếp tục; báo giảng viên nếu lỗi kéo dài.</p>
+  <p>{errorMessageVi(error||status?.message,{fallback:'Chưa kết nối được giám sát. Vui lòng thử kết nối lại.'})} Thời gian thi vẫn tiếp tục; báo giảng viên nếu lỗi kéo dài.</p>
   {error&&<button type="button" onClick={()=>{if(resume.current&&error.includes('Bật camera'))resume.current();else setRetry(v=>v+1);}}>Bật camera/micro</button>}
   {!error&&status&&['error','offline','unregistered'].includes(status.status)&&<button type="button" onClick={()=>{void studentApi.reconnectAi(attemptId).then(()=>setRetry(v=>v+1)).catch(()=>setError('Không kết nối được giám sát; hãy báo giảng viên.'));}}>Kết nối lại</button>}
   </div>}

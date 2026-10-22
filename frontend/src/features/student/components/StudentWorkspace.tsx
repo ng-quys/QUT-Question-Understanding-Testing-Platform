@@ -1,4 +1,4 @@
-import { examDate } from '../../../utils/examTime';
+import { examDate } from '@shared/utils/examTime';
 import { AlertTriangle, ArrowDown, ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, ChevronRight, Clock3, Flag, GraduationCap, LayoutDashboard, Loader2, LogOut, Maximize2, PanelLeftClose, PanelLeftOpen, QrCode, RefreshCw, Search, ShieldCheck, Trophy, Upload, User, X } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { StudentAttempt, StudentDashboard, StudentProfile, StudentResult } from '../services/studentService';

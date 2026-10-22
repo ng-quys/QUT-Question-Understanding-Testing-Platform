@@ -1,4 +1,4 @@
-import { Course, CourseChapter, CourseCLO, QuestionItem } from '../../../types';
+import { Course, CourseChapter, CourseCLO, QuestionItem } from '@shared/types';
 import {
   MatrixKnowledgeUnit,
   MatrixSummaryStats,

@@ -1,7 +1,7 @@
 // Synthetic browser fixture only. Never calls application API, Keycloak or Supabase.
 import { createRoot } from 'react-dom/client';
-import { CourseAllocation } from '../src/features/sessions/components/CourseAllocation';
-import '../src/features/sessions/components/organization.css';
+import { CourseAllocation } from '../../frontend-admin/src/features/sessions/components/CourseAllocation';
+import '../../frontend-shared/src/features/sessions/components/organization.css';
 
 const roster=Array.from({length:100},(_,i)=>({id:i+1,username:String(9000000001+i),name:`Sinh viên kiểm thử ${String(i+1).padStart(3,'0')}`,classId:1,className:'DHTH01',department:'Công nghệ thông tin',status:'active'}));
 const enrolled=new Set<number>();let allocated=false;

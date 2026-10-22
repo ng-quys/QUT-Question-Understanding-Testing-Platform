@@ -1,4 +1,4 @@
-import { SupportedFileExtension, SourceDocument } from '../../types';
+import { SupportedFileExtension, SourceDocument } from '@shared/types';
 
 export const MAX_FILES = 5;
 export const ALLOWED_EXTENSIONS: SupportedFileExtension[] = ['pdf', 'docx', 'txt'];

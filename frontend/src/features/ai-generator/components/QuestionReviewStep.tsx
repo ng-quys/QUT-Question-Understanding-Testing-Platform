@@ -1,4 +1,4 @@
-import type {QuestionItem,Course,CourseChapter,CourseCLO,SourceDocument,Bloom3Level} from '../../../types';
+import type {QuestionItem,Course,CourseChapter,CourseCLO,SourceDocument,Bloom3Level} from '@shared/types';
 interface Props {
  questions:QuestionItem[];documents:SourceDocument[];courses:Course[];chapters:CourseChapter[];clos:CourseCLO[];saving?:boolean;
  onUpdateQuestion:(id:string,updates:Partial<QuestionItem>)=>void;onDeleteQuestion:(id:string)=>void;

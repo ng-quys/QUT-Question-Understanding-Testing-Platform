@@ -1,4 +1,4 @@
-import { apiFetch } from '../../../services/api';
+import { apiFetch } from '@shared/services/api';
 
 export interface StudentSession {
   sessionId: number;

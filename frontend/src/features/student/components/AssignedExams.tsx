@@ -1,11 +1,11 @@
 import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, DoorOpen, FileText, RefreshCw } from 'lucide-react';
-import { examDate } from '../../../utils/examTime';
+import { examDate } from '@shared/utils/examTime';
 import type { StudentSession } from '../services/studentService';
 const day=(s:string)=>examDate(s).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric'});
 const time=(s:string)=>examDate(s).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'});
 export function AssignedExams({sessions,busy,onStart,onRefresh,onViewResults}:{sessions:StudentSession[];busy:boolean;onStart:(session:StudentSession)=>Promise<void>;onRefresh:()=>Promise<void>;onViewResults?:()=>void}){
  const available=sessions.filter(s=>s.canStart).length;
- return <section className="assigned-exams"><div className="student-page-heading"><div><span className="assigned-eyebrow">LỊCH THI ĐƯỢC PHÂN CÔNG</span><h1>Kỳ thi của tôi</h1><p>Ca thi tự xuất hiện khi được công bố và đến giờ. Danh sách cập nhật mỗi 8 giây.</p></div><button className="student-button secondary" onClick={()=>void onRefresh()}><RefreshCw size={16}/>Làm mới</button></div>
+ return <section className="assigned-exams"><div className="student-page-heading"><div><span className="assigned-eyebrow">LỊCH THI ĐƯỢC PHÂN CÔNG</span><h1>Kỳ thi của tôi</h1></div><button className="student-button secondary" onClick={()=>void onRefresh()}><RefreshCw size={16}/>Làm mới</button></div>
  {!sessions.length?<div className="student-empty assigned-empty"><CalendarDays size={32}/><h2>Chưa có kỳ thi được mở cho bạn</h2><p>Kỳ thi xuất hiện khi bạn có tên trong danh sách và đến giờ thi. Liên hệ giảng viên nếu cần kiểm tra phân công.</p></div>:<><div className="assigned-overview"><span><strong>{sessions.length}</strong> ca thi trong danh sách</span><span><i/>{available} ca có thể vào thi</span></div><div className="assigned-grid">{sessions.map(s=>{
  const submitted=['completed','submitted'].includes(s.attemptStatus||''),cancelled=s.sessionStatus==='cancelled';
  const state=cancelled?'cancelled':submitted?'submitted':s.canStart?'open':'closed';

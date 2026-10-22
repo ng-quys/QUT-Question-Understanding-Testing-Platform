@@ -1,7 +1,7 @@
 // Isolated synthetic UI fixture. No Keycloak, Supabase or application API writes.
-import '../src/features/admin/styles/admin.css';
+import '../../frontend-admin/src/features/admin/styles/admin.css';
 import { createRoot } from 'react-dom/client';
-import { ExamOrganization } from '../src/features/sessions/components/ExamOrganization';
+import { ExamOrganization } from '../../frontend-admin/src/features/sessions/components/ExamOrganization';
 const students=Array.from({length:42},(_,i)=>({id:i+1,username:`SV${String(i+1).padStart(3,'0')}`,name:`Sinh viên mẫu ${i+1}`,classId:i%2+1,className:i%2?'CNTT24B':'CNTT24A',department:i%2?'Kinh tế':'CNTT',status:'active'}));
 const rooms=[{id:1,code:'P101',name:'Phòng thi 101',status:'active'}];
 const classes=[{id:1,code:'CNTT24A',name:'CNTT K24A',department:'CNTT',status:'active'},{id:2,code:'CNTT24B',name:'CNTT K24B',department:'Kinh tế',status:'active'}];

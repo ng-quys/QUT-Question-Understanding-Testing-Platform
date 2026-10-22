@@ -7,7 +7,7 @@ import {
   FileCheck2,
   Check,
 } from 'lucide-react';
-import { WizardStepId } from '../../../types';
+import { WizardStepId } from '@shared/types';
 
 interface StepperProps {
   currentStep: WizardStepId;

@@ -1,8 +1,8 @@
 // Isolated manual browser tests. Product pages use the real authenticated API.
 import { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { EvidenceTimeline } from '../src/features/evidence/components/EvidenceTimeline';
-import type { evidenceApi, EvidenceEvent } from '../src/features/evidence/services/evidenceApi';
+import { EvidenceTimeline } from '../../frontend-shared/src/features/evidence/components/EvidenceTimeline';
+import type { evidenceApi, EvidenceEvent } from '../../frontend-shared/src/features/evidence/services/evidenceApi';
 
 const events: EvidenceEvent[] = ['uploaded', 'pending', 'failed', 'none', 'local'].map((status, index) => ({ id: index + 1, event: 'NO_FACE', active: true, occurredAt: '2026-10-16T10:00:00', module: 'M10', duration: 2.5, riskScore: 20, riskLevel: 'LOW', provider: status === 'local' ? 'local' : 'supabase', evidenceStatus: status, hasEvidence: status !== 'none' }));
 function Fixture() {

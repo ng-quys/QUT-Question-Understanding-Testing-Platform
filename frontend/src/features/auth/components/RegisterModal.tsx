@@ -28,7 +28,7 @@ import {
 
 
 
-import type { UserRole } from '../../../types';
+import type { UserRole } from '@shared/types';
 
 import { register } from '../services/authApi';
 

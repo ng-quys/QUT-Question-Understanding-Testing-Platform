@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'vite';
@@ -5,7 +6,7 @@ import { createServer } from 'vite';
 let server, startVisiblePolling, ADMIN_REFRESH_INTERVAL_MS;
 before(async () => {
   server = await createServer({ server: { middlewareMode: true, watch: null }, appType: 'custom' });
-  ({ startVisiblePolling, ADMIN_REFRESH_INTERVAL_MS } = await server.ssrLoadModule('/src/features/sessions/services/visiblePolling.ts'));
+  ({ startVisiblePolling, ADMIN_REFRESH_INTERVAL_MS } = await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-admin/src/features/sessions/services/visiblePolling.ts", import.meta.url))));
 });
 after(async () => { await server?.close(); });
 const settle = () => new Promise(resolve => setImmediate(resolve));
@@ -82,4 +83,22 @@ test('admin refresh uses ten seconds and waits for a slow response before schedu
   finish(); await settle(); assert.equal(fake.timers.size, 1);
   fake.tick(); assert.equal(calls, 2); assert.equal(fake.timers.size, 0);
   stop(); finish(); await settle(); assert.equal(fake.timers.size, 0);
+});
+
+
+test('a terminal attempt response can stop polling without scheduling another refresh', async () => {
+  const fake = clock(10000); let calls = 0;
+  let resolve;
+  let stop = () => {};
+  stop = startVisiblePolling(async () => {
+    calls++;
+    await new Promise(done => { resolve = done; });
+    stop();
+  }, { interval: 10000, environment: fake.environment });
+  assert.equal(calls, 1);
+  resolve(); await settle();
+  assert.equal(fake.timers.size, 0);
+  fake.tick(); fake.visibility(false); fake.visibility(true); await settle();
+  assert.equal(calls, 1);
+  assert.equal(fake.listeners.size, 0);
 });

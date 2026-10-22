@@ -19,6 +19,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig {
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174}")
+    private String frontendOrigins = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174";
 
     @Bean
     @Order(1)
@@ -131,14 +133,9 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // React development servers
-        configuration.setAllowedOriginPatterns(
-                List.of(
-                        "http://localhost:5173",
-                        "http://127.0.0.1:5173",
-                        "http://localhost:5174"
-                )
-        );
+        // Explicit portal/admin origins; production overrides via APP_CORS_ALLOWED_ORIGINS.
+        configuration.setAllowedOrigins(java.util.Arrays.stream(frontendOrigins.split(","))
+                .map(String::trim).filter(value -> !value.isEmpty()).distinct().toList());
 
         configuration.setAllowedMethods(
                 List.of(

@@ -1,4 +1,4 @@
-import type{ DashboardStat, ExamRecord } from '../../../types';
+import type{ DashboardStat, ExamRecord } from '@shared/types';
 
 export interface ExamActivityItem {
   id: string;

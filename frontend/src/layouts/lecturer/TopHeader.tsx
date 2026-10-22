@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, LogOut, Menu, UserRound } from 'lucide-react';
 import { useTeacherProfile } from '../../features/profile-teacher/hooks/useTeacherProfile';
-import type { DashboardNavTab } from '../../types';
+import type { DashboardNavTab } from '@shared/types';
 interface Props {activeTab:DashboardNavTab;onMobileMenuToggle:()=>void;onLogout:()=>void;onOpenAIGenerator:()=>void;onOpenProfile:()=>void}
 const titles:Record<DashboardNavTab,string>={overview:'Tổng quan',courses:'Học phần phụ trách','question-bank':'Ngân hàng câu hỏi','new-question':'Thêm câu hỏi','ai-generator':'AI Generator','quick-exam':'Tạo đề tự động',exams:'Quản lý đề thi','exam-sessions':'Ca thi được phân công',monitoring:'Giám sát ca thi',settings:'Cài đặt tài khoản'};
 export function TopHeader({activeTab,onMobileMenuToggle,onLogout,onOpenProfile}:Props){

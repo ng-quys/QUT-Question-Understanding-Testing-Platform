@@ -1,6 +1,6 @@
 import React from 'react';
 import { Check } from 'lucide-react';
-import { AIWorkflowStep } from '../../../types';
+import { AIWorkflowStep } from '@shared/types';
 
 interface GeneratorStepperProps {
   currentStep: AIWorkflowStep;

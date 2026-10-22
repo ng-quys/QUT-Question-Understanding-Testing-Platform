@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Activity, ArrowRight, BookOpen, CalendarClock, Database, FileText, RefreshCw, WandSparkles } from 'lucide-react';
 import { getTeacherOverview, type TeacherOverview } from '../services/overviewService';
 import { TeacherEmpty, TeacherHeading, TeacherLoading, TeacherNotice } from '../../../layouts/lecturer/TeacherUI';
-import { examDate } from '../../../utils/examTime';
-import type { DashboardNavTab } from '../../../types';
+import { examDate } from '@shared/utils/examTime';
+import type { DashboardNavTab } from '@shared/types';
 export function SimpleOverview({onNavigateTab}:{onNavigateTab:(tab:DashboardNavTab)=>void}){
  const [data,setData]=useState<TeacherOverview|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[revision,setRevision]=useState(0);
  useEffect(()=>{const abort=new AbortController();let active=true;setLoading(true);getTeacherOverview(abort.signal).then(result=>{if(active){setData(result);setError('');}}).catch(cause=>{if(active)setError(cause instanceof Error?cause.message:'Không tải được tổng quan.');}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;abort.abort();};},[revision]);

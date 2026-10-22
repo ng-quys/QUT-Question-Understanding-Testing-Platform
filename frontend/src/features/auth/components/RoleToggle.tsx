@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import type{ UserRole } from '../../../types';
+import type{ UserRole } from '@shared/types';
 import { GraduationCap, BookOpen } from 'lucide-react';
 
 interface RoleToggleProps {

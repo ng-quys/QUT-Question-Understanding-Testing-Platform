@@ -42,10 +42,19 @@ try {
     function Same-Process($Entry) { return $true }
     $entry = Start-ServiceProcess 'frontend' $testDir 'exit 0'
     Assert ($entry.pid -eq 1003 -and @(Read-Tracked).Count -eq 3) 'Startup tracking of the third service failed.'
+    $adminEntry = Start-ServiceProcess 'frontend-admin' $testDir 'exit 0'
+    Assert ($adminEntry.name -eq 'frontend-admin' -and @(Read-Tracked).Count -eq 4) 'Admin frontend was not tracked independently.'
+    $script:testHtml = '<html data-qut-app="portal"><script src="/src/main.tsx"></script></html>'
+    function Read-Http([string]$Url) { return $script:testHtml }
+    Assert (Service-Ready 'frontend' 'http://localhost:5173') 'Portal identity was not recognized.'
+    Assert (-not (Service-Ready 'frontend-admin' 'http://localhost:5174')) 'Portal was mistaken for admin.'
+    $script:testHtml = '<html data-qut-app="admin"><script src="/src/main.tsx"></script></html>'
+    Assert (Service-Ready 'frontend-admin' 'http://localhost:5174') 'Admin identity was not recognized.'
+    Assert (-not (Service-Ready 'frontend' 'http://localhost:5173')) 'Admin was mistaken for portal.'
     Write-Host 'PASS: empty/single/multiple records, legacy recovery, PID identity and startup bookkeeping.'
 } finally {
     # Only files created in this test-owned directory are removed.
-    foreach ($name in @('processes.json', 'frontend.ps1')) {
+    foreach ($name in @('processes.json', 'frontend.ps1', 'frontend-admin.ps1')) {
         $file = Join-Path $testDir $name
         if (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file }
     }

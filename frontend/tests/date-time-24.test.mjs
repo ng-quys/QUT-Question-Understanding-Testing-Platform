@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
@@ -7,8 +8,8 @@ import { createServer } from 'vite';
 let server, splitDateTime24, joinDateTime24, isBeforeDateTimeMinimum, DateTime24Field;
 before(async () => {
   server = await createServer({ server: { middlewareMode: true, watch: null, hmr: false }, appType: 'custom' });
-  ({ splitDateTime24, joinDateTime24, isBeforeDateTimeMinimum } = await server.ssrLoadModule('/src/shared/components/dateTime24.ts'));
-  ({ DateTime24Field } = await server.ssrLoadModule('/src/shared/components/DateTime24Field.tsx'));
+  ({ splitDateTime24, joinDateTime24, isBeforeDateTimeMinimum } = await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-admin/src/shared/components/dateTime24.ts", import.meta.url))));
+  ({ DateTime24Field } = await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-admin/src/shared/components/DateTime24Field.tsx", import.meta.url))));
 });
 after(async () => { await server?.close(); });
 

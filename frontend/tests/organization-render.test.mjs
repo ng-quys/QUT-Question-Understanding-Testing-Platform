@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
@@ -6,15 +7,15 @@ import { createServer } from 'vite';
 let server, AssignedExams, ExamOrganization, LoginForm, StudentMonitoring, ExamSessionsPage, examDate, sidebarStructure, ReportSummary, LiveSessionBoard, SessionRosterPanel, AttemptRiskStats, SittingCandidateStatus;
 before(async()=>{
  server=await createServer({server:{middlewareMode:true,watch:null},appType:'custom'});
- ({SittingCandidateStatus}=await server.ssrLoadModule('/src/features/sessions/components/SittingCandidateStatus.tsx'));
- ({LiveSessionBoard}=await server.ssrLoadModule('/src/features/sessions/components/LiveSessionBoard.tsx'));
- ({SessionRosterPanel}=await server.ssrLoadModule('/src/features/sessions/components/SessionRosterPanel.tsx'));
- ({AttemptRiskStats}=await server.ssrLoadModule('/src/features/admin/components/AttemptRiskStats.tsx'));
- ({ReportSummary}=await server.ssrLoadModule('/src/features/admin/components/AdminOverview.tsx'));
- ({examDate}=await server.ssrLoadModule('/src/utils/examTime.ts'));
+ ({SittingCandidateStatus}=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-admin/src/features/sessions/components/SittingCandidateStatus.tsx", import.meta.url))));
+ ({LiveSessionBoard}=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-shared/src/features/sessions/components/LiveSessionBoard.tsx", import.meta.url))));
+ ({SessionRosterPanel}=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-shared/src/features/sessions/components/SessionRosterPanel.tsx", import.meta.url))));
+ ({AttemptRiskStats}=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-admin/src/features/admin/components/AttemptRiskStats.tsx", import.meta.url))));
+ ({ReportSummary}=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-admin/src/features/admin/components/AdminOverview.tsx", import.meta.url))));
+ ({examDate}=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-shared/src/utils/examTime.ts", import.meta.url))));
  ({AssignedExams}=await server.ssrLoadModule('/src/features/student/components/AssignedExams.tsx'));
- ({ExamOrganization}=await server.ssrLoadModule('/src/features/sessions/components/ExamOrganization.tsx'));
- ({sidebarStructure}=await server.ssrLoadModule('/src/features/admin/components/adminConfig.tsx'));
+ ({ExamOrganization}=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-admin/src/features/sessions/components/ExamOrganization.tsx", import.meta.url))));
+ ({sidebarStructure}=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-admin/src/features/admin/components/adminConfig.tsx", import.meta.url))));
  ({LoginForm}=await server.ssrLoadModule('/src/features/auth/components/LoginForm.tsx'));
  ({ExamSessionsPage}=await server.ssrLoadModule('/src/features/sessions/pages/ExamSessionsPage.tsx'));
  ({StudentMonitoring}=await server.ssrLoadModule('/src/features/student/components/StudentMonitoring.tsx'));

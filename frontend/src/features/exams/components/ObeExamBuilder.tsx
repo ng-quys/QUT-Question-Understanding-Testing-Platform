@@ -28,7 +28,7 @@ import {
   QuestionItem,
   Bloom3Level,
   ExamRecord,
-} from '../../../types';
+} from '@shared/types';
 import { BLOOM_3_CONFIG } from '../../dashboard/data/mockAcademicData';
 
 interface ObeExamBuilderProps {

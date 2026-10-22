@@ -7,12 +7,11 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
 import { StudentPortalPage } from '../features/student/pages/StudentPortalPage';
-import { ThemeProvider } from './providers/ThemeProvider';
-import { ROUTES } from './routes';
-import { AdminPage } from '../features/admin/pages/AdminPage';
-import { AdminLoginPage } from '../features/admin/pages/AdminLoginPage';
-import { SessionEntry } from './SessionEntry';
-import { WorkspaceHistoryBoundary } from './WorkspaceHistoryBoundary';
+import { ThemeProvider } from '@shared/app/providers/ThemeProvider';
+import { ROUTES } from '@shared/app/routes';
+import { LegacyAdminRedirect } from './LegacyAdminRedirect';
+import { SessionEntry } from '@shared/app/SessionEntry';
+import { WorkspaceHistoryBoundary } from '@shared/app/WorkspaceHistoryBoundary';
 
 export default function App() {
   return (
@@ -28,8 +27,8 @@ export default function App() {
           <Route path={ROUTES.STUDENT} element={<StudentPortalPage />} />
           <Route path={ROUTES.HOME} element={<SessionEntry />} />
           <Route path="*" element={<SessionEntry />} />
-          <Route path={ROUTES.ADMIN_LOGIN} element={<SessionEntry><AdminLoginPage /></SessionEntry>} />
-          <Route path={ROUTES.ADMIN} element={<AdminPage />} />
+          <Route path={ROUTES.ADMIN_LOGIN} element={<LegacyAdminRedirect login />} />
+          <Route path="/admin/*" element={<LegacyAdminRedirect />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

@@ -1,8 +1,9 @@
+import { monitorExamBrowser } from '../services/examBrowserMonitor';
 import { AttemptRecovery, indexedDraftStore, type RecoveryState } from '../services/attemptRecovery';
 import { AttemptSyncNotice } from '../components/AttemptSyncNotice';
 import { ExamConnection, type ExamConnectionPhase } from '../services/examConnection';
 import { ExamConnectionScreen } from '../components/ExamConnectionScreen';
-import { examDate } from '../../../utils/examTime';
+import { examDate } from '@shared/utils/examTime';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +14,7 @@ import {
   X
 } from 'lucide-react';
 
-import { getAuthSession, logout } from '../../auth/services/authService';
+import { getAuthSession, logout } from '@shared/features/auth/services/authService';
 import { loadStudentPhoto } from '../services/studentPhotoService';
 
 import {
@@ -24,7 +25,7 @@ import {
   type StudentSession,
 } from '../services/studentService';
 
-import { ROUTES } from '../../../app/routes';
+import { ROUTES } from '@shared/app/routes';
 import { StudentMonitoring } from '../components/StudentMonitoring';
 import { AssignedExams } from '../components/AssignedExams';
 import { ExamRunner, Overview, ProfileView, ResultDetail, Results, StudentDialog, StudentShell, type StudentView } from '../components/StudentWorkspace';
@@ -214,50 +215,13 @@ export const StudentPortalPage: React.FC = () => {
       return;
     }
 
-    const onFullscreenChange = () => {
-      const active = Boolean(document.fullscreenElement);
-      setFullscreenActive(active);
-
-      if (!active) {
-        if (fullscreenMonitoringArmed.current) {
-          recordViolation('FULLSCREEN_EXIT');
-        }
-      } else {
-        sendM7Event('FULLSCREEN_EXIT', false);
-      }
-    };
-
-    const onVisibilityChange = () => {
-      if (document.hidden) {
-        recordViolation('TAB_HIDDEN');
-      } else {
-        sendM7Event('TAB_HIDDEN', false);
-      }
-    };
-
-    const onWindowBlur = () => {
-      // A tab switch often fires blur and visibilitychange together.
-      // Let TAB_HIDDEN own that case so one action cannot become 2 violations.
-      if (!document.hidden) {
-        recordViolation('WINDOW_BLUR');
-      }
-    };
-
-    const onWindowFocus = () => {
-      sendM7Event('WINDOW_BLUR', false);
-    };
-
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('blur', onWindowBlur);
-    window.addEventListener('focus', onWindowFocus);
-
-    return () => {
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('blur', onWindowBlur);
-      window.removeEventListener('focus', onWindowFocus);
-    };
+    // Tab/window monitoring remains active even if fullscreen was initially denied.
+    fullscreenMonitoringArmed.current = true;
+    return monitorExamBrowser({
+      onFullscreen:setFullscreenActive,
+      onViolation:recordViolation,
+      onRestore:type=>sendM7Event(type,false),
+    });
   }, [view]);
 
   // ==========================================================
@@ -438,7 +402,7 @@ export const StudentPortalPage: React.FC = () => {
         setError(null);
         lastViolation.current = 0;
         autoSubmittingRef.current = false;
-        fullscreenMonitoringArmed.current = Boolean(document.fullscreenElement);
+        fullscreenMonitoringArmed.current = true;
         window.scrollTo({ top: 0, behavior: 'auto' });
       }
       setAttempt(data);
@@ -510,7 +474,7 @@ export const StudentPortalPage: React.FC = () => {
       });
       if(!resumed||!verified)return;
       setAttempt(verified);attemptRef.current=verified;
-      fullscreenMonitoringArmed.current=Boolean(document.fullscreenElement);
+      fullscreenMonitoringArmed.current=true;
       setError(null);setView('exam');
       void recoveryRef.current?.flush();
     }catch(e){setConnectionError(e instanceof Error?e.message:'Chưa thể mở lại bài thi. Vui lòng thử lại.');}

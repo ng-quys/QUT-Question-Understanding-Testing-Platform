@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseAccountsCsv } from '../src/features/admin/services/adminCsv.ts';
+import { parseAccountsCsv } from '../../frontend-admin/src/features/admin/services/adminCsv.ts';
 
 const header = 'username,email,fullName,password,role,department\r\n';
 const valid = '0012345678,student@example.com,Sinh viên thử,Example@2026,STUDENT,Khoa CNTT';

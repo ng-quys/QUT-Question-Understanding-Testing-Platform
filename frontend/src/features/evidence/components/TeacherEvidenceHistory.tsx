@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Search, X, RefreshCw } from 'lucide-react';
-import { evidenceApi, type HistoryAttempt } from '../services/evidenceApi';
-import { EvidenceTimeline } from './EvidenceTimeline';
+import { evidenceApi, type HistoryAttempt } from '@shared/features/evidence/services/evidenceApi';
+import { EvidenceTimeline } from '@shared/features/evidence/components/EvidenceTimeline';
 
 const date = (value: string | null) => value ? new Date(value).toLocaleString('vi-VN') : 'Chưa nộp bài';
 const statuses: Record<string, string> = { in_progress: 'Đang làm bài', submitted: 'Đã nộp', graded: 'Đã chấm', expired: 'Hết giờ', completed: 'Hoàn thành' };

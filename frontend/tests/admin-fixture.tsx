@@ -1,8 +1,8 @@
 // Isolated synthetic UI checks. No application database/Keycloak is contacted.
 import { useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AdminWorkspace } from '../src/features/admin/components/AdminWorkspace';
-import { adminWorkspaceApi, type CatalogKind, type DataRow, type WorkspaceApi } from '../src/features/admin/services/adminWorkspaceApi';
+import { AdminWorkspace } from '../../frontend-admin/src/features/admin/components/AdminWorkspace';
+import { adminWorkspaceApi, type CatalogKind, type DataRow, type WorkspaceApi } from '../../frontend-admin/src/features/admin/services/adminWorkspaceApi';
 const accounts = Array.from({ length: 42 }, (_, i) => ({ id: i + 1, username: String((i % 5 === 0 ? 8000000000 : 9000000000) + i + 1), fullName: ['Nguyễn Minh An', 'Trần Thanh Hà', 'Lê Hoàng Nam', 'Phạm Ngọc Linh'][i % 4] + ` (mẫu ${i + 1})`, email: `demo${i + 1}@example.com`, role: i % 5 === 0 ? 'teacher' : 'student', department: 'Công nghệ thông tin', studentClassId:1, classCode:'DHTH01', className:'DHTH01', status: i % 8 === 0 ? 'locked' : 'active', createdAt: '2026-10-16T09:00:00' }));
 const courses = [{ id: 10, code: 'INT3306', name: 'Phát triển ứng dụng Web', department: 'Khoa Công nghệ thông tin', questionCount: 120, examCount: 6, sessionCount: 3, status: 'active' }, { id: 11, code: 'INT2204', name: 'Lập trình hướng đối tượng', department: 'Khoa Công nghệ thông tin', questionCount: 80, examCount: 4, sessionCount: 2, status: 'active' }];
 const exams = [{ id: 20, code: 'WEB-GK-01', title: 'Kiểm tra giữa kỳ · Phát triển ứng dụng Web', courseCode: 'INT3306', courseName: 'Phát triển ứng dụng Web', totalQuestions: 40, totalPoints: 10, status: 'ongoing', antiCheatMode: true, sessionCount: 3, attemptCount: 26, averageScore: 7.4 }];
@@ -17,6 +17,7 @@ async function organizationRequest<T=unknown>(url:string,init:RequestInit={}):Pr
  if(path.endsWith('/bootstrap'))data={rooms:[{id:1,code:'P001',name:'Phòng máy 1',capacity:40,status:'active'}],classes:academicClasses,teachers:[{id:6,name:'Giảng viên mẫu'}],exams:[{id:20,code:'WEB-GK-01',name:'Đề Web',courseId:10,authorId:6}],serverTime:new Date().toISOString()};
  else if(path.endsWith('/department-exams/options'))data={courses:[{id:10,code:'INT3306',name:'Phát triển ứng dụng Web'}],periods:[{id:1,code:'CK2027',name:'Cuối kỳ 2027',status:'active'}],departments:[{name:'Công nghệ thông tin',studentCount:27}]};
  else if(path.endsWith('/department-exams'))data={total:1,items:[{id:1,code:'CT-1',name:'Thi cuối kỳ Web',courseId:10,department:'Công nghệ thông tin',courseCode:'INT3306',courseName:'Phát triển ứng dụng Web',periodName:'Cuối kỳ 2027',startTime:'2027-12-10T08:00:00',endTime:'2027-12-10T09:00:00',groupCount:1,studentCount:27,groupsWithExam:0,publishedGroups:0}]};
+ else if(path.endsWith('/department-exams/1'))data={id:1,code:'CT-1',name:'Thi cuối kỳ Web',courseId:10,department:'Công nghệ thông tin',courseCode:'INT3306',courseName:'Phát triển ứng dụng Web',periodName:'Cuối kỳ 2027',startTime:'2027-12-10T08:00:00',endTime:'2027-12-10T09:00:00',groupCount:1,studentCount:27,groupsWithExam:0,publishedGroups:0,status:'assignment',canEditSchedule:true,groups:[{id:101,number:1,status:'scheduled',studentCount:27,students:[],missing:['Phòng thi','Giảng viên','Đề thi'],ready:false,aiEnabled:true}]};
  else if(path.endsWith('/sessions'))data={items:sessions.map(s=>({...s,name:'Ca thi Web',roomName:'Phòng máy 1',status:'ongoing',totalStudents:35,aiEnabled:true,publishedAt:'2026-10-16T08:00:00Z'})),total:sessions.length,page:0,size:20,serverTime:new Date().toISOString()};
  else throw new Error(`Chưa hỗ trợ đường dẫn kiểm thử: ${path}`);
  return data as T;

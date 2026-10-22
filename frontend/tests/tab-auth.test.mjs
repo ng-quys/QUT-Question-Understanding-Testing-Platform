@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import axios from 'axios';
@@ -24,8 +25,8 @@ before(async()=>{
   };
   globalThis.window={location:{replace:()=>{}}};
   server=await createServer({server:{middlewareMode:true,watch:null,hmr:false},appType:'custom'});
-  auth=await server.ssrLoadModule('/src/features/auth/services/authService.ts');
-  api=await server.ssrLoadModule('/src/services/api.ts');
+  auth=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-shared/src/features/auth/services/authService.ts", import.meta.url)));
+  api=await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-shared/src/services/api.ts", import.meta.url)));
 });
 after(async()=>{axios.post=originalPost;globalThis.fetch=originalFetch;delete globalThis.window;delete globalThis.localStorage;delete globalThis.sessionStorage;await server?.close();});
 

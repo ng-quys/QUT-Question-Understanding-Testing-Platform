@@ -4,7 +4,7 @@ import {
   CourseChapter,
   CourseCLO,
   Bloom3Level,
-} from '../../../types';
+} from '@shared/types';
 import { MatrixKnowledgeUnit } from '../../matrix/types';
 
 export function generateQuestionsFromMatrix(

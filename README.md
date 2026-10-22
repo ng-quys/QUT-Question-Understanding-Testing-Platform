@@ -1,3 +1,5 @@
+> **Cấu trúc frontend mới:** admin chạy riêng tại `http://localhost:5174`, giảng viên/sinh viên tại `http://localhost:5173`. Cài npm ở thư mục gốc và xem [FRONTEND_SPLIT.md](FRONTEND_SPLIT.md) để chạy, build và triển khai. Các hướng dẫn Keycloak bên dưới là tài liệu cũ; bản hiện tại dùng đăng nhập database, xem [DATABASE_AUTHENTICATION.md](DATABASE_AUTHENTICATION.md).
+
 # QUT — Question Understanding Testing Platform
 
 **Hệ thống quản lý thi trắc nghiệm trực tuyến tích hợp AI.**
@@ -52,7 +54,7 @@ Keycloak quản lý đăng nhập và realm role. Backend tiếp tục kiểm tr
 | AI chống gian lận | Python, OpenCV, MediaPipe, ONNX Runtime, InsightFace, Ultralytics, SoundDevice, WebRTC VAD |
 | Công cụ phát triển | Git, VS Code/IntelliJ IDEA, Postman |
 
-Phiên bản dependency được khai báo tại `frontend/package.json`, `frontend/package-lock.json`, `backend/pom.xml` và `anticheating/requirements.txt`.
+Phiên bản dependency được khai báo tại `frontend/package.json`, `package-lock.json`, `backend/pom.xml` và `anticheating/requirements.txt`.
 
 ## Cấu trúc dự án
 
@@ -60,7 +62,9 @@ Phiên bản dependency được khai báo tại `frontend/package.json`, `front
 | --- | --- |
 | `frontend/src/app/` | Điểm tích hợp ứng dụng và route. |
 | `frontend/src/features/` | Các module giao diện, gồm auth, student, exams, sessions và ngân hàng câu hỏi. |
-| `frontend/src/services/` | API dùng chung và kết nối Keycloak. |
+| `frontend-shared/src/services/` | API và thông báo lỗi dùng chung. |
+| `frontend-admin/src/` | Ứng dụng quản trị độc lập trên cổng 5174. |
+| `frontend-shared/src/` | Thành phần, theme và phiên đăng nhập dùng chung. |
 | `backend/src/main/java/com/examflow/backend/` | Controller, service, DTO, entity, repository và cấu hình bảo mật. |
 | `backend/src/main/resources/application.properties` | Cấu hình backend theo môi trường. |
 | `anticheating/app/` | HTTP service, pipeline tích hợp và trạng thái runtime. |

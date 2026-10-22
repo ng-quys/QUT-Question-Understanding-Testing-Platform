@@ -1,4 +1,4 @@
-# Windows PowerShell 5.1 compatible. Secrets are never printed or copied into runners.
+﻿# Windows PowerShell 5.1 compatible. Secrets are never printed or copied into runners.
 [CmdletBinding()]
 param([switch]$CheckOnly, [switch]$Stop, [switch]$WebOnly, [switch]$NoBrowser)
 
@@ -70,7 +70,8 @@ function Service-Ready([string]$Name, [string]$Url) {
     switch ($Name) {
         'backend' { return ($response.PSObject.Properties.Name -contains 'application' -and $response.application -eq 'ExamFlow AI Backend' -and $response.status -eq 'UP') }
         'ai' { return ($response.PSObject.Properties.Name -contains 'serviceVersion' -and $response.serviceVersion -like 'qut-local-*') }
-        'frontend' { return ($response -is [string] -and $response -match 'src/main\.tsx|/assets/index-' -and $response -match 'ExamFlow') }
+        'frontend' { return ($response -is [string] -and $response -match 'data-qut-app="portal"') }
+        'frontend-admin' { return ($response -is [string] -and $response -match 'data-qut-app="admin"') }
     }
     return $false
 }
@@ -195,6 +196,7 @@ try {
     $backendPort = if ($env:SERVER_PORT) { [int]$env:SERVER_PORT } elseif ($settings.ContainsKey('server.port')) { [int](Resolve-Setting $settings['server.port']) } else { 8080 }
     $backendUrl = 'http://127.0.0.1:' + $backendPort
     $frontendUrl = 'http://localhost:5173'
+    $adminUrl = 'http://localhost:5174'
     $npm = Find-Tool 'npm.cmd'
     $java = Find-Tool 'java.exe'
     $maven = Find-Tool 'mvn.cmd'
@@ -215,16 +217,16 @@ try {
     }
     Info 'Tool and configuration checks passed. No secret values are displayed.'
     if ($CheckOnly) {
-        foreach ($service in @(@('backend',($backendUrl + '/api/health')), @('frontend',$frontendUrl))) { Info ($service[0] + ': ' + (Service-Ready $service[0] $service[1])) }
+        foreach ($service in @(@('backend',($backendUrl + '/api/health')), @('frontend',$frontendUrl), @('frontend-admin',$adminUrl))) { Info ($service[0] + ': ' + (Service-Ready $service[0] $service[1])) }
         if (-not $WebOnly) { Info ('AI HTTP service: ' + $aiReady) }
         Info 'CheckOnly finished. No services or installers were started.'
         exit 0
     }
     New-Item -ItemType Directory -Path $runDir -Force | Out-Null
-    if (-not (Test-Path -LiteralPath (Join-Path $projectRoot 'frontend/node_modules/vite'))) {
-        Info 'Installing frontend packages (first run only)...'
-        Push-Location (Join-Path $projectRoot 'frontend')
-        try { & $npm ci; if ($LASTEXITCODE -ne 0) { throw 'npm ci failed. Check network access and package-lock.json.' } } finally { Pop-Location }
+    if (-not (Test-Path -LiteralPath (Join-Path $projectRoot 'node_modules/vite')) -or -not (Test-Path -LiteralPath (Join-Path $projectRoot 'node_modules/@qut/shared'))) {
+        Info 'Installing frontend workspace packages (first run only)...'
+        Push-Location $projectRoot
+        try { & $npm ci; if ($LASTEXITCODE -ne 0) { throw 'npm ci failed. Check network access and the root package-lock.json.' } } finally { Pop-Location }
     }
     if (-not $WebOnly -and -not $aiReady) {
         # Preserve a copied/broken .venv; create a separate local environment instead.
@@ -265,12 +267,17 @@ try {
     } else { Info 'Reusing existing backend. Restart it manually after changing Java/configuration.' }
     if (-not (Service-Ready 'frontend' $frontendUrl)) {
         if (Port-InUse 5173) { throw 'Port 5173 is occupied by another application. No process was stopped.' }
-        $frontend = Start-ServiceProcess 'frontend' (Join-Path $projectRoot 'frontend') ('& ' + (Literal $npm) + ' run dev -- --host 127.0.0.1 --port 5173 --strictPort') @(('$env:VITE_API_URL = ' + (Literal ($backendUrl + '/api'))))
+        $frontend = Start-ServiceProcess 'frontend' (Join-Path $projectRoot 'frontend') ('& ' + (Literal $npm) + ' run dev -- --host 127.0.0.1 --port 5173 --strictPort') @(('$env:VITE_API_URL = ' + (Literal ($backendUrl + '/api'))), ('$env:VITE_ADMIN_URL = ' + (Literal $adminUrl)))
         Wait-Service 'frontend' $frontendUrl 45 $frontend
     } else { Info 'Reusing existing frontend.' }
+    if (-not (Service-Ready 'frontend-admin' $adminUrl)) {
+        if (Port-InUse 5174) { throw 'Port 5174 is occupied by another application. No process was stopped.' }
+        $admin = Start-ServiceProcess 'frontend-admin' (Join-Path $projectRoot 'frontend-admin') ('& ' + (Literal $npm) + ' run dev -- --host 127.0.0.1 --port 5174 --strictPort') @(('$env:VITE_API_URL = ' + (Literal ($backendUrl + '/api'))), ('$env:VITE_PORTAL_URL = ' + (Literal $frontendUrl)))
+        Wait-Service 'frontend-admin' $adminUrl 45 $admin
+    } else { Info 'Reusing existing admin frontend.' }
     Write-Host ''
     Info ('Website: ' + $frontendUrl)
-    Info ('Admin:   ' + $frontendUrl + '/admin/login')
+    Info ('Admin:   ' + $adminUrl)
     Info 'Logs: .qut-run/*.out.log and *.err.log'
     Info 'Use DUNG_QUT.bat to stop only services started by this launcher.'
     if ($WebOnly) { Write-Warning 'WebOnly mode: Python AI was not started. Exams requiring AI need the AI service.' }

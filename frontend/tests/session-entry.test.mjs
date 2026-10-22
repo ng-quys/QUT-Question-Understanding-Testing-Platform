@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
@@ -15,9 +16,9 @@ before(async () => {
     removeItem: key => values.delete(key),
   } });
   server = await createServer({ server: { middlewareMode: true, watch: null, hmr: false }, appType: 'custom' });
-  ({ sessionHome } = await server.ssrLoadModule('/src/app/sessionHome.ts'));
-  ({ SessionEntry } = await server.ssrLoadModule('/src/app/SessionEntry.tsx'));
-  ({ clearTabAuth } = await server.ssrLoadModule('/src/features/auth/services/authService.ts'));
+  ({ sessionHome } = await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-shared/src/app/sessionHome.ts", import.meta.url))));
+  ({ SessionEntry } = await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-shared/src/app/SessionEntry.tsx", import.meta.url))));
+  ({ clearTabAuth } = await server.ssrLoadModule(fileURLToPath(new URL("../../frontend-shared/src/features/auth/services/authService.ts", import.meta.url))));
 });
 after(async () => {
   await server?.close();

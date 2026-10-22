@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Printer, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
-import { Course, CourseChapter, CourseCLO } from '../../../types';
+import { Course, CourseChapter, CourseCLO } from '@shared/types';
 import { MatrixKnowledgeUnit, MatrixSummaryStats } from '../types';
 import { calculateRowTotal, calculateRowPercentage } from '../utils/matrixLogic';
 

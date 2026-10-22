@@ -1,7 +1,7 @@
 import { useEffect, type ElementType } from 'react';
 import { Activity, BookOpen, CalendarClock, ChevronLeft, ChevronRight, Database, FileSpreadsheet, GraduationCap, LayoutDashboard, LogOut, PlusCircle, Settings, WandSparkles, X } from 'lucide-react';
 import { useAiQuota } from '../../features/ai-generator/hooks/useAiQuota';
-import type { DashboardNavTab } from '../../types';
+import type { DashboardNavTab } from '@shared/types';
 interface SidebarProps { activeTab:DashboardNavTab;onTabChange:(tab:DashboardNavTab)=>void;onLogout:()=>void;isMobileOpen?:boolean;onMobileClose?:()=>void;onOpenAIGenerator:()=>void;isCollapsed?:boolean;onToggleCollapse?:()=>void }
 const groups:{label:string;items:{id:DashboardNavTab;label:string;icon:ElementType}[]}[]=[
  {label:'Không gian làm việc',items:[{id:'overview',label:'Tổng quan',icon:LayoutDashboard},{id:'courses',label:'Học phần phụ trách',icon:BookOpen}]},

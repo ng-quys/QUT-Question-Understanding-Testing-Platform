@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, X, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { SourceDocument } from '../../../../types';
+import { SourceDocument } from '@shared/types';
 
 interface FileQueueItemProps {
   document: SourceDocument;

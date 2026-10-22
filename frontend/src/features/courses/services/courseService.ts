@@ -1,5 +1,5 @@
-import { apiFetch } from '../../../services/api';
-import type { Course } from '../../../types';
+import { apiFetch } from '@shared/services/api';
+import type { Course } from '@shared/types';
 
 interface TeacherCourseResponse {
   id: number;

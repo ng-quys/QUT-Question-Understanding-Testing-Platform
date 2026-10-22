@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Palette, Check, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
-import { useTheme, THEMES, ThemeId } from '../../app/providers/ThemeProvider';
+import { useTheme, THEMES, ThemeId } from '@shared/app/providers/ThemeProvider';
 
 export const ThemeSwitcher: React.FC = () => {
   const { currentTheme, setTheme, activeConfig } = useTheme();

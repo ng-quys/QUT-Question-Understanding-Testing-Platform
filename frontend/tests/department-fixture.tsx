@@ -1,11 +1,11 @@
 // In-memory synthetic UI data; never calls a real API, Keycloak, Supabase or the AI.
 import { useState } from 'react';
-import { AdminExamReviewDialog } from '../src/features/admin/components/AdminExamReviewDialog';
-import { adminWorkspaceApi, type ExamReview } from '../src/features/admin/services/adminWorkspaceApi';
+import { AdminExamReviewDialog } from '../../frontend-admin/src/features/admin/components/AdminExamReviewDialog';
+import { adminWorkspaceApi, type ExamReview } from '../../frontend-admin/src/features/admin/services/adminWorkspaceApi';
 import { createRoot } from 'react-dom/client';
-import { DepartmentExamPanel } from '../src/features/sessions/components/DepartmentExamPanel';
-import '../src/features/sessions/components/organization.css';
-import '../src/features/admin/styles/admin.css';
+import { DepartmentExamPanel } from '../../frontend-admin/src/features/sessions/components/DepartmentExamPanel';
+import '../../frontend-shared/src/features/sessions/components/organization.css';
+import '../../frontend-admin/src/features/admin/styles/admin.css';
 const students=Array.from({length:100},(_,n)=>({id:n+1,username:String(9000000001+n),name:`Sinh viên tổng hợp ${String(n+1).padStart(3,'0')}`,className:'DHTH01',department:'Công nghệ thông tin'}));
 const rooms=Array.from({length:4},(_,n)=>({id:n+1,code:`P00${n+1}`,name:`Phòng ${n+1}`,status:'active',capacity:40}));
 const teachers=Array.from({length:4},(_,n)=>({id:n+1,name:`Giảng viên tổng hợp ${n+1}`}));

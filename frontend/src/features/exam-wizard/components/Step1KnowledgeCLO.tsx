@@ -19,7 +19,7 @@ import {
   HelpCircle,
   RotateCw,
 } from 'lucide-react';
-import { BloomLevel, CLOItem, UploadedDocFile } from '../../../types';
+import { BloomLevel, CLOItem, UploadedDocFile } from '@shared/types';
 import {
   SUBJECT_OPTIONS,
   SEMESTER_OPTIONS,

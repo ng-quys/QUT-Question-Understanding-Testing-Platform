@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check, AlertCircle, Trash2 } from 'lucide-react';
-import { CourseCLO } from '../../../types';
+import { CourseCLO } from '@shared/types';
 
 interface CLOSelectorProps {
   courseCLOs: CourseCLO[];

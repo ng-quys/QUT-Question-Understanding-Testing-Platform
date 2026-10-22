@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { saveAuthSession } from '../src/features/auth/services/authService';
+import { saveAuthSession } from '../../frontend-shared/src/features/auth/services/authService';
 import { StudentPortalPage } from '../src/features/student/pages/StudentPortalPage';
 import { studentApi, type StudentAttempt, type StudentDashboard, type StudentSession } from '../src/features/student/services/studentService';
 

@@ -15,7 +15,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { RECENT_EXAMS_DATA } from '../data/mockDashboardData';
-import type{ ExamRecord, ExamStatus } from '../../../types';
+import type{ ExamRecord, ExamStatus } from '@shared/types';
 
 interface RecentExamsTableProps {
   onViewExamDetail?: (exam: ExamRecord) => void;

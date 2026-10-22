@@ -3,7 +3,7 @@ import { ExamSummary } from './ExamSummary';
 import { RecentExamTable } from './RecentExamTable';
 import { DashboardAside } from './DashboardAside';
 import { useDashboardData } from '../hooks/useDashboardData';
-import type{ DashboardNavTab } from '../../../types';
+import type{ DashboardNavTab } from '@shared/types';
 
 interface OverviewTabContentProps {
   onNavigateTab: (tab: DashboardNavTab) => void;

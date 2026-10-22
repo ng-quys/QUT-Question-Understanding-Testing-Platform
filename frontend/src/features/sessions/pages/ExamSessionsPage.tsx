@@ -1,4 +1,4 @@
-import type { Course } from '../../../types';
+import type { Course } from '@shared/types';
 import { AssignedSittings } from '../components/AssignedSittings';
 
 interface Props { courses: Course[]; onShowToast: (message: string) => void; onCreateExam: () => void }

@@ -1,4 +1,4 @@
-# Shared lifecycle functions. Dot-sourcing this file never starts/stops services.
+﻿# Shared lifecycle functions. Dot-sourcing this file never starts/stops services.
 function Get-ExamFlowRuntimeDir {
     param([string]$Root)
     # Already ignored by the repository's .env.* rule; survives Maven clean.
@@ -37,7 +37,7 @@ function Save-ExamFlowState {
 }
 function Test-ExamFlowOwnedProcess {
     param($Record,[string]$Root)
-    if($Record.Pid -is [array] -or $Record.Root -ne $Root -or $Record.Name -notin @('Ollama','Backend','AIGenerator','AntiCheating','Frontend')){return $false}
+    if($Record.Pid -is [array] -or $Record.Root -ne $Root -or $Record.Name -notin @('Ollama','Backend','AIGenerator','AntiCheating','Frontend','AdminFrontend')){return $false}
     $process=Get-Process -Id $Record.Pid -ErrorAction SilentlyContinue
     if(-not $process){return $false}
     if([string]$process.StartTime.ToUniversalTime().ToFileTimeUtc() -ne [string]$Record.Started){return $false}
@@ -100,10 +100,10 @@ function Get-ExamFlowPlan {
     $aiUri=[uri](Get-ExamFlowSetting $properties 'ai.rag.url')
     $antiUri=[uri](Get-ExamFlowSetting $properties 'app.anticheat.url')
     $ollamaUri=[uri](Get-ExamFlowSetting $properties 'ai.ollama.url')
-    $ports=@{Ollama=$ollamaUri.Port;Backend=$bePort;AIGenerator=$aiUri.Port;AntiCheating=$antiUri.Port;Frontend=5173}
+    $ports=@{Ollama=$ollamaUri.Port;Backend=$bePort;AIGenerator=$aiUri.Port;AntiCheating=$antiUri.Port;Frontend=5173;AdminFrontend=5174}
     if($Config.Ports){foreach($p in $Config.Ports.PSObject.Properties){if(-not $ports.ContainsKey($p.Name)){throw 'Unknown service port configuration.'};$ports[$p.Name]=[int]$p.Value}}
     foreach($p in $ports.Values){if($p -lt 1 -or $p -gt 65535){throw 'Invalid service port.'}}
-    if(@($ports.Values | Select-Object -Unique).Count -ne 5){throw 'Service ports must be distinct.'}
+    if(@($ports.Values | Select-Object -Unique).Count -ne 6){throw 'Service ports must be distinct.'}
     $model=Get-ExamFlowSetting $properties 'ai.ollama.model'
     if($env:OLLAMA_MODEL){$model=$env:OLLAMA_MODEL}
     $embed='nomic-embed-text'
@@ -148,12 +148,15 @@ function Test-ExamFlowReady {
                 $process=Get-CimInstance Win32_Process -Filter ('ProcessId='+$owners[0])
                 return $data.ok -eq $true -and $null -ne $data.running -and $process.CommandLine -match 'run_service\.py'
             }
-            'Frontend' {
+            {$_ -in @('Frontend','AdminFrontend')} {
                 $r=Invoke-ExamFlowHttp $base
                 if($r.Status -ne 200 -or $r.Text -notmatch '/@vite/client'){return $false}
+                $kind=if($Name -eq 'AdminFrontend'){'admin'}else{'portal'}
+                if($r.Text -notmatch ('data-qut-app="'+$kind+'"')){return $false}
                 $owners=Get-ExamFlowListener $port;if($owners.Count -ne 1){return $false}
                 $process=Get-CimInstance Win32_Process -Filter ('ProcessId='+$owners[0])
-                return $process.CommandLine.Replace('/','\').IndexOf((Join-Path $Root 'frontend'),[StringComparison]::OrdinalIgnoreCase) -ge 0
+                $directory=if($Name -eq 'AdminFrontend'){'frontend-admin'}else{'frontend'}
+                return $process.CommandLine.Replace('/','\').IndexOf((Join-Path $Root $directory),[StringComparison]::OrdinalIgnoreCase) -ge 0
             }
         }
     } catch {return $false}
@@ -206,7 +209,7 @@ function Start-ExamFlow {
         if($env:SPRING_JPA_HIBERNATE_DDL_AUTO -and $env:SPRING_JPA_HIBERNATE_DDL_AUTO -ne 'validate'){throw 'Only existing ddl-auto=validate is supported; no schema-changing startup mode is allowed.'}
         $plan=Get-ExamFlowPlan $Root $config
         $maven=Get-ExamFlowMaven $Root $config.MavenPath
-        foreach($file in @('ai-service/.venv/Scripts/python.exe','anticheating/.venv/Scripts/python.exe','anticheating/app/run_service.py','frontend/node_modules/vite/bin/vite.js')){
+        foreach($file in @('ai-service/.venv/Scripts/python.exe','anticheating/.venv/Scripts/python.exe','anticheating/app/run_service.py','node_modules/vite/bin/vite.js','frontend-admin/package.json')){
             if(-not(Test-Path -LiteralPath (Join-Path $Root $file))){throw ('Missing prerequisite: '+$file+'. Install dependencies separately.')}
         }
         $ollama=Get-Command ollama.exe -ErrorAction SilentlyContinue
@@ -236,8 +239,10 @@ function Start-ExamFlow {
         Set-LaunchEnv 'ANTICHEAT_SERVICE_PORT' ([string]$p.AntiCheating)
         Set-LaunchEnv 'ANTICHEAT_BACKEND_CALLBACK_URL' ('http://127.0.0.1:'+$p.Backend+'/api/internal/anticheating/events')
         Set-LaunchEnv 'VITE_API_URL' ('http://127.0.0.1:'+$p.Backend+'/api')
+        Set-LaunchEnv 'VITE_ADMIN_URL' ('http://127.0.0.1:'+$p.AdminFrontend)
+        Set-LaunchEnv 'VITE_PORTAL_URL' ('http://127.0.0.1:'+$p.Frontend)
         $records=@(Read-ExamFlowState $Root)
-        foreach($name in @('Ollama','Backend','AIGenerator','AntiCheating','Frontend')){
+        foreach($name in @('Ollama','Backend','AIGenerator','AntiCheating','Frontend','AdminFrontend')){
             Write-Host ('CHECK '+$name+' port '+$p[$name])
             $owned=@($records | Where-Object {$_.Name -eq $name -and (Test-ExamFlowOwnedProcess $_ $Root)})
             $listeners=@(Get-ExamFlowListener $p[$name])
@@ -252,7 +257,8 @@ function Start-ExamFlow {
             Wait-ExamFlowService $Root $name $plan $record $TimeoutSeconds
             Write-Host ('READY '+$name)
         }
-        Write-Host ('ExamFlow ready. Lecturer/student/Admin share http://127.0.0.1:'+$p.Frontend)
+        Write-Host ('Lecturer/student: http://127.0.0.1:'+$p.Frontend)
+        Write-Host ('Admin: http://127.0.0.1:'+$p.AdminFrontend)
         Write-Host ('Separate service logs: '+(Join-Path (Get-ExamFlowRuntimeDir $Root) 'logs'))
     } finally {
         foreach($name in $saved.Keys){[Environment]::SetEnvironmentVariable($name,$saved[$name],'Process')}

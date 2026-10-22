@@ -7,12 +7,12 @@ import {
 
 import { LoginForm } from '../components/LoginForm';
 
-import type { UserRole } from '../../../types';
-import { ROUTES } from '../../../app/routes';
+import type { UserRole } from '@shared/types';
+import { ROUTES } from '@shared/app/routes';
 import {
   getToken,
   saveAuthSession,
-} from '../services/authService';
+} from '@shared/features/auth/services/authService';
 
 export const LoginPage: React.FC = () => {
   const [lang, setLang] =

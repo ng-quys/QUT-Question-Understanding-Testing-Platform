@@ -8,7 +8,7 @@ import {
   Calendar,
   Sparkles,
 } from 'lucide-react';
-import type{ Course, CourseChapter, CourseCLO } from '../../../types';
+import type{ Course, CourseChapter, CourseCLO } from '@shared/types';
 import { CourseContentStructureTab } from '../components/CourseContentStructureTab';
 import { CourseCLOsTab } from '../components/CourseCLOsTab';
 import { getCourseClos, getCourseStructure } from '../services/courseContentService';

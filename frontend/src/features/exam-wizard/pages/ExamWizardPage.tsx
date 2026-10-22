@@ -7,7 +7,7 @@ import {
   CheckCircle2,
   HelpCircle,
 } from 'lucide-react';
-import { WizardStepId } from '../../../types';
+import { WizardStepId } from '@shared/types';
 import { ExamWizardStepper } from '../components/ExamWizardStepper';
 import { Step1KnowledgeCLO } from '../components/Step1KnowledgeCLO';
 import { Step2Matrix } from '../components/Step2Matrix';

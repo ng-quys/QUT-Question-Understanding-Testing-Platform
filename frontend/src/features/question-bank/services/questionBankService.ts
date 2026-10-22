@@ -1,5 +1,5 @@
-import { apiFetch } from '../../../services/api';
-import type { Bloom3Level, QuestionItem } from '../../../types';
+import { apiFetch } from '@shared/services/api';
+import type { Bloom3Level, QuestionItem } from '@shared/types';
 
 type AnswerResponse = { id: number; label: string; content: string; correct: boolean; position: number };
 type QuestionResponse = { id:number; courseId:number; chapterId:number|null; topicId:number|null; cloId:number|null; bloom:string; difficulty:string; content:string; explanation:string|null; status:'approved'|'pending'|'rejected'; source:'manual'|'ai'; defaultScore:number; createdAt:string|null; updatedAt:string|null; answers:AnswerResponse[] };

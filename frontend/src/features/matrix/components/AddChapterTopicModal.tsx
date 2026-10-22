@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, FolderPlus, FilePlus2, Check } from 'lucide-react';
-import { CourseChapter } from '../../../types';
+import { CourseChapter } from '@shared/types';
 
 interface AddChapterTopicModalProps {
   isOpen: boolean;

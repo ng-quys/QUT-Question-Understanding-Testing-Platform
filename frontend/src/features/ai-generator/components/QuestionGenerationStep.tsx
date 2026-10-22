@@ -7,7 +7,7 @@ import {
   Course,
   CourseChapter,
   CourseCLO,
-} from '../../../types';
+} from '@shared/types';
 import { BLOOM_3_CONFIG } from '../../dashboard/data/mockAcademicData';
 
 interface QuestionGenerationStepProps {

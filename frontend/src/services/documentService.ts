@@ -1,5 +1,5 @@
-import { apiFetch } from './api';
-import { SourceDocument, DocumentExtractionSummary } from '../types';
+import { apiFetch } from '@shared/services/api';
+import { SourceDocument, DocumentExtractionSummary } from '@shared/types';
 
 export interface UploadProgressCallback {
   (phase: 'uploading' | 'extracting', currentDocId?: string, percent?: number): void;
