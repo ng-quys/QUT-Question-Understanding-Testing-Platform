@@ -16,15 +16,16 @@ type Group={id:number;number:number;roomId?:number;roomCode?:string;roomName?:st
 type Sitting={canEditSchedule?:boolean;scheduleLockReason?:string;id:number;code?:string;name:string;courseId:number;department:string;courseCode?:string;courseName?:string;periodName?:string;startTime:string;endTime:string;groups:Group[];groupCount?:number;studentCount?:number;publishedGroups?:number;groupsWithExam?:number;status?:string;kind?:string};
 type Input={requestId:string;periodId:number;courseId:number;department:string;name:string;startTime:string;endTime:string;studentsPerGroup:number};
 type Preview={previewToken:string;total:number;assigned:number;remaining:number;groups:{number:number;startTime:string;endTime:string;students:Student[]}[]};
-type Props={view?:'create'|'list'|'combined';initialSittingId?:number|null;onManageSitting?:(id:number)=>void;hideHeading?:boolean;rooms:Item[];classes?:Item[];teachers?:Item[];exams:Item[];request?:typeof apiFetch;onCreated:()=>void;onOpenExam?:(id:number)=>void;onOpenSession?:(id:number)=>void};
+type Props={activeView?:boolean;refreshKey?:number;view?:'create'|'list'|'combined';initialSittingId?:number|null;onManageSitting?:(id:number)=>void;hideHeading?:boolean;rooms:Item[];classes?:Item[];teachers?:Item[];exams:Item[];request?:typeof apiFetch;onCreated:()=>void;onOpenExam?:(id:number)=>void;onOpenSession?:(id:number)=>void};
 const base='/admin/organization/department-exams';
 const date=(value:string)=>examDate(value).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 
 const stages:Record<string,string>={assignment:'Chờ phân công',exam:'Chờ đề thi',ready:'Sẵn sàng',partial:'Công bố một phần',published:'Đã công bố',ongoing:'Đang diễn ra',completed:'Đã kết thúc',cancelled:'Đã hủy'};
-export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreated,onOpenSession,onOpenExam,onManageSitting,initialSittingId,hideHeading=false,view='combined'}:Props){
+export function DepartmentExamPanel({activeView=true,refreshKey=0,rooms,teachers=[],request=apiFetch,onCreated,onOpenSession,onOpenExam,onManageSitting,initialSittingId,hideHeading=false,view='combined'}:Props){
  const [options,setOptions]=useState<Options>({courses:[],periods:[],departments:[]}),[revision,setRevision]=useState(0);
  const [creating,setCreating]=useState(view==='create'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [loading,setLoading]=useState(true),[rows,setRows]=useState<Sitting[]>([]),[total,setTotal]=useState(0),[page,setPage]=useState(0),[search,setSearch]=useState(''),[query,setQuery]=useState(''),[status,setStatus]=useState('');
+ const loadedListKey=useRef('');
  const [listSyncError,setListSyncError]=useState('');
  const [form,setForm]=useState({periodId:'',courseId:'',department:'',name:'',startTime:'',endTime:'',studentsPerGroup:'30'});
  const [counts,setCounts]=useState<Counts|null>(null),[preview,setPreview]=useState<Preview|null>(null),[proposed,setProposed]=useState<Input|null>(null);
@@ -37,21 +38,23 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
  const wizard=useRef<HTMLDivElement>(null);
  useEffect(()=>{if(step>1){wizard.current?.scrollIntoView({block:'start',behavior:'smooth'});wizard.current?.focus({preventScroll:true});}},[step]);
  const dialog=useRef<HTMLDialogElement>(null);
- useEffect(()=>{const c=new AbortController();request<Options>(`${base}/options`,{signal:c.signal}).then(setOptions).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[revision,request]);
+ useEffect(()=>{if(!activeView)return;const c=new AbortController();request<Options>(`${base}/options`,{signal:c.signal}).then(setOptions).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[revision,request,activeView,refreshKey]);
  useEffect(()=>{
-  if(view==='create')return;
-  setLoading(true);setListSyncError('');
+  if(!activeView||view==='create')return;
+  const listKey=JSON.stringify([page,search,status]);
+  setLoading(loadedListKey.current!==listKey);setListSyncError('');
   return startVisiblePolling(async signal=>{
    try{
     const value=await request<{total:number;items:Sitting[]}>(`${base}?${new URLSearchParams({page:String(page),search,status})}`,{signal:AbortSignal.any([signal,AbortSignal.timeout(20000)])});
     if(signal.aborted)return;
-    setRows(value.items);setTotal(value.total);setListSyncError('');
+    loadedListKey.current=listKey;setRows(value.items);setTotal(value.total);setListSyncError('');
    }catch{
     if(!signal.aborted)setListSyncError('Chưa cập nhật được danh sách. Hệ thống sẽ tự thử lại; dữ liệu đang hiển thị có thể chưa mới nhất.');
    }finally{if(!signal.aborted)setLoading(false);}
   },{interval:ADMIN_REFRESH_INTERVAL_MS});
- },[page,search,status,revision,request,view]);
+ },[page,search,status,revision,request,view,activeView,refreshKey]);
  useEffect(()=>{
+  if(!activeView)return;
   const c=new AbortController();setCounts(null);setCountsError('');
   if(!form.courseId||!form.periodId||!form.department){setCountsLoading(false);return()=>c.abort();}
   setCountsLoading(true);
@@ -61,17 +64,17 @@ export function DepartmentExamPanel({rooms,teachers=[],request=apiFetch,onCreate
    .catch(cause=>{if(!c.signal.aborted)setCountsError(cause instanceof Error?cause.message:'Không kết nối được máy chủ.');})
    .finally(()=>{if(!c.signal.aborted)setCountsLoading(false);});
   return()=>c.abort();
- },[form.courseId,form.periodId,form.department,revision,countsRevision,request]);
- useEffect(()=>{if(!initialSittingId)return;const c=new AbortController();request<Sitting>(`${base}/${initialSittingId}`,{signal:c.signal}).then(setDetail).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[initialSittingId,request]);
+ },[form.courseId,form.periodId,form.department,revision,countsRevision,request,activeView]);
+ useEffect(()=>{if(!activeView||!initialSittingId)return;const c=new AbortController();request<Sitting>(`${base}/${initialSittingId}`,{signal:c.signal}).then(setDetail).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[initialSittingId,request,activeView]);
  useEffect(()=>{const element=dialog.current;if(detail){if(!element?.open)element?.showModal();}else element?.close();},[detail]);
  const detailId=detail?.id;
  useEffect(()=>{
-  if(!detailId||busy||assignment||confirmPublish||cancelId||scheduleEdit)return;
+  if(!activeView||!detailId||busy||assignment||confirmPublish||cancelId||scheduleEdit)return;
   return startVisiblePolling(async signal=>{
    const value=await request<Sitting>(`${base}/${detailId}`,{signal:AbortSignal.any([signal,AbortSignal.timeout(20000)])});
    if(!signal.aborted)setDetail(value);
   },{immediate:false,interval:ADMIN_REFRESH_INTERVAL_MS});
- },[detailId,busy,assignment,confirmPublish,cancelId,scheduleEdit,request]);
+ },[detailId,busy,assignment,confirmPublish,cancelId,scheduleEdit,request,activeView]);
  const update=(key:keyof typeof form,value:string)=>{setPreview(null);setProposed(null);setStep(1);setNotice('');if(['courseId','periodId','department'].includes(key))setCounts(null);setForm(f=>({...f,[key]:value}));};
  async function run(action:()=>Promise<unknown>,message:string){if(busy)return false;setBusy(true);setError('');setNotice('');try{await action();setNotice(message);setRevision(v=>v+1);return true;}catch(e){setError(e instanceof Error?e.message:'Thao tác chưa thành công');return false;}finally{setBusy(false);}}
  async function open(row:Sitting){if(row.kind==='legacy'){onOpenSession?.(row.id);return;}await run(async()=>{setDetail(await request<Sitting>(`${base}/${row.id}`));setAssignment(null);setCancelId(null);setConfirmPublish(false);},'');}

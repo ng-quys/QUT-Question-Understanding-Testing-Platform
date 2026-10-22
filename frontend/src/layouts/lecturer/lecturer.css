@@ -5,3 +5,24 @@
 @media(max-width:1023px){.t-sidebar{transform:translateX(-100%);width:248px!important}.t-sidebar.mobile-open{transform:translateX(0)}.t-sidebar .t-collapse{display:none}.t-mobile-close{display:block;margin-left:auto;background:#eef4ff;color:#234b9b;border-radius:8px;padding:6px}.t-header .t-menu{display:inline-flex}.t-header{padding:0 18px;height:68px}.lecturer-main{padding:22px 18px!important}.t-header-left>span,.t-header-left>svg{display:none}.t-today{display:none}}@media(max-width:700px){.t-dashboard-grid{grid-template-columns:1fr}.t-metrics{grid-template-columns:1fr 1fr;gap:10px}.t-metric{padding:16px}.t-metric strong{font-size:26px}.t-quick-actions{grid-template-columns:1fr}.t-heading{flex-direction:column}.t-heading h2{font-size:23px}.t-stepper{gap:7px}.t-stepper button{flex-direction:column;align-items:flex-start;padding:12px;font-size:11px;gap:8px}.t-summary-grid{grid-template-columns:1fr 1fr}.t-paper ul{grid-template-columns:1fr}.t-user div:last-of-type{display:none}.t-header h1{font-size:13px}.lecturer-dialog .t-dialog-body{padding:16px}.t-heading .t-actions{width:100%}.t-quick-actions button{padding:14px}.t-scroll-paper{max-height:60vh}}
 
 .lecturer-workspace .t-metric>span>svg{color:#4678c8}.lecturer-workspace .t-quick-actions button:hover{background:#f6f9ff;border-color:#bfd0ed}.lecturer-workspace .t-metric:hover{border-color:#bfd0ed;background:#fbfdff}
+
+/* Center native lecturer dialogs in the viewport, independent of the sidebar. */
+.lecturer-workspace dialog:is(.lecturer-dialog,.evidence-viewer,.evidence-history-dialog){position:fixed;inset:0;margin:auto;box-sizing:border-box;max-width:calc(100vw - 48px);max-height:calc(100dvh - 64px)}
+.lecturer-workspace dialog.lecturer-dialog{width:min(1000px,calc(100vw - 48px));padding:0;overflow:hidden;background:#fff;box-shadow:0 24px 80px #13223b40}
+.lecturer-workspace dialog.lecturer-dialog[open]{display:flex;flex-direction:column}
+.lecturer-dialog>header{flex:0 0 auto;position:relative;align-items:flex-start;padding:24px 28px}
+.lecturer-dialog>header>div{min-width:0}
+.lecturer-dialog>header h2{overflow-wrap:anywhere}
+.lecturer-dialog>header>.t-icon{width:40px;height:40px;flex:0 0 auto}
+.lecturer-dialog>.t-dialog-body{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:24px 28px}
+.lecturer-dialog>footer{flex:0 0 auto}
+.lecturer-workspace dialog.evidence-viewer[open]{display:flex;flex-direction:column;overflow:hidden}
+.lecturer-workspace .evidence-viewer>header,.lecturer-workspace .evidence-viewer>footer{flex:0 0 auto}
+.lecturer-workspace .evidence-viewer>.evidence-viewer-body,.lecturer-workspace .evidence-viewer>.evidence-attempt-content{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+@media(max-width:600px){
+ .lecturer-workspace dialog:is(.lecturer-dialog,.evidence-viewer,.evidence-history-dialog){max-width:calc(100vw - 24px);max-height:calc(100dvh - 32px)}
+ .lecturer-workspace dialog.lecturer-dialog{width:calc(100vw - 24px)}
+ .lecturer-dialog>header,.lecturer-dialog>.t-dialog-body{padding:18px}
+ .lecturer-dialog>header{gap:12px}
+ .lecturer-dialog>footer{padding:14px 18px}
+}

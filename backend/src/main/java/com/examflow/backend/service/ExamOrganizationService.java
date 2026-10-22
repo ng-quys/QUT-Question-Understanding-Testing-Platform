@@ -77,7 +77,7 @@ public class ExamOrganizationService {
         result.put("exams",rows("SELECT e.id,e.code,e.title,c.code,c.id,COALESCE(e.created_by,c.created_by) FROM exams e JOIN courses c ON c.id=e.course_id WHERE e.status NOT IN ('cancelled','completed') AND EXISTS(SELECT 1 FROM exam_questions eq WHERE eq.exam_id=e.id)"+(all?"":" AND e.created_by=:actor AND (c.created_by=:actor OR EXISTS(SELECT 1 FROM course_faculties f WHERE f.course_id=c.id AND f.faculty_id=:actor))")+" ORDER BY e.id DESC","id,code,name,courseCode,courseId,authorId",all?Map.of():args));return result;
     }
     public Page students(UserEntity actor,String q,Long classId,String department,int page,int size){
-        admin(actor);if(page<0||size<1||size>100)throw bad("Phân trang không hợp lệ");
+        admin(actor);if(page<0||size<1||size>100||(long)page*size>Integer.MAX_VALUE)throw bad("Phân trang không hợp lệ");
         String where=" WHERE u.role='student'";Map<String,Object> args=new HashMap<>();
         if(!clean(q).isEmpty()){where+=" AND (STRPOS(LOWER(u.username),LOWER(:q))>0 OR STRPOS(LOWER(u.full_name),LOWER(:q))>0)";args.put("q",q.trim());}
         if(classId!=null){where+=" AND u.student_class_id=:classId";args.put("classId",classId);}
@@ -216,10 +216,17 @@ public class ExamOrganizationService {
     }
     public Map<String,Object> detail(UserEntity actor,long id){session(actor,id,false);return sessionDetailData(id);} public Map<String,Object> monitoringDetail(UserEntity actor,long id){requireMonitoring(actor,id);return sessionDetailData(id);} private Map<String,Object> sessionDetailData(long id){Map<String,Object> result=new LinkedHashMap<>(workspace.sessionDetail(id));result.put("aiEnabled",query("SELECT COALESCE(s.ai_enabled,(SELECT p.enabled FROM exam_ai_policies p WHERE p.exam_id=s.exam_id),TRUE) FROM exam_sessions s WHERE s.id=:id",Map.of("id",id)).getSingleResult());if(batchMonitoring!=null){List<Long> ids=rows("SELECT id FROM exam_attempts WHERE exam_session_id=:id","id",Map.of("id",id)).stream().map(row->((Number)row.get("id")).longValue()).toList();result.put("monitoring",batchMonitoring.forAttempts(ids));}result.put("allocationManaged",managed(id));result.put("roster",rows("SELECT u.id,u.username,u.full_name,u.department,cl.name,a.id,CASE WHEN a.status='in_progress' AND s.end_time<=:clock THEN 'expired' ELSE a.status END,a.started_at,a.submitted_at,a.score,(SELECT COUNT(*) FROM anti_cheat_events v WHERE v.attempt_id=a.id AND v.active=TRUE),(SELECT COALESCE((ARRAY_AGG(v.risk_level ORDER BY v.risk_score DESC))[1],'LOW') FROM anti_cheat_events v WHERE v.attempt_id=a.id AND v.active=TRUE) FROM exam_session_students rs JOIN exam_sessions s ON s.id=rs.exam_session_id JOIN exams e ON e.id=s.exam_id JOIN users u ON u.id=rs.student_id LEFT JOIN student_classes cl ON cl.id=u.student_class_id LEFT JOIN exam_attempts a ON a.exam_session_id=rs.exam_session_id AND a.student_id=rs.student_id WHERE rs.exam_session_id=:id ORDER BY (SELECT a.position FROM exam_sitting_students a JOIN exam_sitting_groups g ON g.id=a.group_id WHERE g.session_id=rs.exam_session_id AND a.student_id=u.id),u.username","id,username,name,department,className,attemptId,attemptStatus,startedAt,submittedAt,score,warningCount,riskLevel",Map.of("id",id,"clock",now())));return result;}
     public Map<String,Object> status(UserEntity actor,long id,String status){session(actor,id,true);workspace.updateSessionStatus(actor.getId(),id,status);return detail(actor,id);}
-    public Page sessions(UserEntity actor,boolean live,String q,int page,int size){return sessionPage(actor,live,q,page,size,false);} public Page monitoringSessions(UserEntity actor,boolean live,String q,int page,int size){return sessionPage(actor,live,q,page,size,true);} private Page sessionPage(UserEntity actor,boolean live,String q,int page,int size,boolean monitorOnly){
-        if(page<0||size<1||size>100)throw bad("Phân trang không hợp lệ");
+    public Page sessions(UserEntity actor,boolean live,String q,int page,int size){return sessionPage(actor,live,q,page,size,false,false);}
+    public Page monitoringSessions(UserEntity actor,boolean live,String q,int page,int size){return sessionPage(actor,live,q,page,size,true,false);}
+    public Page warningSessions(UserEntity actor,boolean live,String q,int page,int size){
+        if(!Set.of("teacher","faculty").contains(actor.getRole())||!"active".equals(actor.getStatus()))throw denied();
+        return sessionPage(actor,live,q,page,size,true,true);
+    }
+    private Page sessionPage(UserEntity actor,boolean live,String q,int page,int size,boolean monitorOnly,boolean warningsOnly){
+        if(page<0||size<1||size>100||(long)page*size>Integer.MAX_VALUE)throw bad("Phân trang không hợp lệ");
         Map<String,Object> args=new HashMap<>();String where=" WHERE TRUE";
         if(monitorOnly){where+=" AND s.published_at IS NOT NULL";if(!isAdmin(actor)){where+=" AND "+monitoringAccess();args.put("actor",actor.getId());}}else if(!isAdmin(actor)){where+=" AND e.created_by=:actor AND EXISTS(SELECT 1 FROM exam_room_teachers rt WHERE rt.room_id=s.room_id AND rt.teacher_id=:actor) AND (c.created_by=:actor OR EXISTS(SELECT 1 FROM course_faculties cf WHERE cf.course_id=c.id AND cf.faculty_id=:actor))";args.put("actor",actor.getId());}
+        if(warningsOnly)where+=" AND EXISTS(SELECT 1 FROM exam_attempts wa JOIN anti_cheat_events wv ON wv.attempt_id=wa.id WHERE wa.exam_session_id=s.id AND wv.active=TRUE)";
         if(live){where+=" AND s.published_at IS NOT NULL AND s.status IN ('scheduled','ongoing') AND s.start_time<=:clock AND s.end_time>:clock";args.put("clock",now());}
         if(!clean(q).isEmpty()){where+=" AND STRPOS(LOWER(CONCAT_WS(' ',s.name,r.code,r.name,e.code,e.title,c.code,(SELECT STRING_AGG(u.full_name,' ') FROM users u WHERE u.id IN (SELECT teacher_id FROM exam_sitting_groups WHERE session_id=s.id UNION SELECT rt.teacher_id FROM exam_room_teachers rt WHERE rt.room_id=r.id AND NOT EXISTS(SELECT 1 FROM exam_sitting_groups g WHERE g.session_id=s.id))))),LOWER(:q))>0";args.put("q",q.trim());}
         String from=" FROM exam_sessions s JOIN exams e ON e.id=s.exam_id JOIN courses c ON c.id=e.course_id LEFT JOIN exam_rooms r ON r.id=s.room_id";
@@ -232,7 +239,8 @@ public class ExamOrganizationService {
           "(SELECT COUNT(*)"+roster+" AND a.status='in_progress' AND s.end_time>:clock),"+
           "(SELECT COUNT(*)"+roster+" AND a.status IN ('submitted','completed')),"+
           "(SELECT COUNT(*)"+roster+" AND (a.status='expired' OR (a.status='in_progress' AND s.end_time<=:clock))),"+
-          "(SELECT COUNT(*)"+roster+" AND EXISTS(SELECT 1 FROM anti_cheat_events v WHERE v.attempt_id=a.id AND v.active=TRUE))"+from+where+" ORDER BY s.start_time DESC,s.id DESC LIMIT :size OFFSET :offset";
-        return new Page(rows(sql,"id,name,roomId,roomCode,roomName,examId,examCode,examTitle,courseCode,startTime,endTime,status,publishedAt,aiEnabled,allocationManaged,teachers,totalStudents,notEntered,inProgress,submitted,expired,warnedAttempts",args),total,page,size,now());
+          "(SELECT COUNT(*)"+roster+" AND EXISTS(SELECT 1 FROM anti_cheat_events v WHERE v.attempt_id=a.id AND v.active=TRUE))"+
+          (warningsOnly?",(SELECT COUNT(*) FROM exam_attempts wa JOIN anti_cheat_events wv ON wv.attempt_id=wa.id WHERE wa.exam_session_id=s.id AND wv.active=TRUE AND wv.module='M7'),(SELECT COUNT(*) FROM exam_attempts wa JOIN anti_cheat_events wv ON wv.attempt_id=wa.id WHERE wa.exam_session_id=s.id AND wv.active=TRUE AND wv.module<>'M7')":"")+from+where+" ORDER BY s.start_time DESC,s.id DESC LIMIT :size OFFSET :offset";
+        return new Page(rows(sql,"id,name,roomId,roomCode,roomName,examId,examCode,examTitle,courseCode,startTime,endTime,status,publishedAt,aiEnabled,allocationManaged,teachers,totalStudents,notEntered,inProgress,submitted,expired,warnedAttempts"+(warningsOnly?",browserEvents,aiEvents":""),args),total,page,size,now());
     }
 }

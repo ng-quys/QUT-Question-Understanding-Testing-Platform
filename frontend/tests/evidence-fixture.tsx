@@ -8,7 +8,7 @@ const events: EvidenceEvent[] = ['uploaded', 'pending', 'failed', 'none', 'local
 function Fixture() {
   const [mode, setMode] = useState('success'), [calls, setCalls] = useState(0);
   const api = useMemo<typeof evidenceApi>(() => ({
-    events: async () => ({ items: events, total: events.length, size: 20, page: 0 }),
+    events: async () => ({ items: events, total: events.length, size: 20, page: 0, attemptStatus: new URLSearchParams(location.search).has('completed') ? 'completed' : 'in_progress' }),
     link: async (_audience, _attempt, event) => {
       setCalls(value => value + 1);
       if (event === 2) throw new Error('Ảnh đang chờ tải lên. Vui lòng thử lại sau.');

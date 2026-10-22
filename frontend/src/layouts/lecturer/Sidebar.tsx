@@ -1,12 +1,12 @@
 import { useEffect, type ElementType } from 'react';
-import { Activity, BookOpen, CalendarClock, ChevronLeft, ChevronRight, Database, FileSpreadsheet, GraduationCap, LayoutDashboard, LogOut, PlusCircle, Settings, WandSparkles, X } from 'lucide-react';
+import { Activity, BookOpen, CalendarClock, ChevronLeft, ChevronRight, Database, FileSpreadsheet, GraduationCap, LayoutDashboard, LogOut, ShieldAlert, PlusCircle, Settings, WandSparkles, X } from 'lucide-react';
 import { useAiQuota } from '../../features/ai-generator/hooks/useAiQuota';
 import type { DashboardNavTab } from '@shared/types';
 interface SidebarProps { activeTab:DashboardNavTab;onTabChange:(tab:DashboardNavTab)=>void;onLogout:()=>void;isMobileOpen?:boolean;onMobileClose?:()=>void;onOpenAIGenerator:()=>void;isCollapsed?:boolean;onToggleCollapse?:()=>void }
 const groups:{label:string;items:{id:DashboardNavTab;label:string;icon:ElementType}[]}[]=[
  {label:'Không gian làm việc',items:[{id:'overview',label:'Tổng quan',icon:LayoutDashboard},{id:'courses',label:'Học phần phụ trách',icon:BookOpen}]},
  {label:'Ngân hàng câu hỏi',items:[{id:'question-bank',label:'Danh sách câu hỏi',icon:Database},{id:'new-question',label:'Thêm câu hỏi',icon:PlusCircle}]},
- {label:'Khảo thí',items:[{id:'quick-exam',label:'Tạo đề tự động',icon:WandSparkles},{id:'exams',label:'Quản lý đề thi',icon:FileSpreadsheet},{id:'exam-sessions',label:'Ca thi được phân công',icon:CalendarClock},{id:'monitoring',label:'Giám sát ca thi',icon:Activity}]},
+ {label:'Khảo thí',items:[{id:'quick-exam',label:'Tạo đề tự động',icon:WandSparkles},{id:'exams',label:'Quản lý đề thi',icon:FileSpreadsheet},{id:'exam-sessions',label:'Ca thi được phân công',icon:CalendarClock},{id:'monitoring',label:'Giám sát ca thi',icon:Activity},{id:'warnings',label:'Cảnh báo ca thi',icon:ShieldAlert}]},
  {label:'Tài khoản',items:[{id:'settings',label:'Cài đặt',icon:Settings}]},
 ];
 export function Sidebar({activeTab,onTabChange,onLogout,isMobileOpen=false,onMobileClose,isCollapsed=false,onToggleCollapse}:SidebarProps){

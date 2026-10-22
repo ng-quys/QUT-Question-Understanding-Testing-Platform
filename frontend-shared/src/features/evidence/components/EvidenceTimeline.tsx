@@ -28,6 +28,8 @@ export function EvidenceTimeline({ attemptId, audience, api = evidenceApi }: { a
         if (!active || signal.aborted) return;
         resource.current.loaded = true;
         setData(result); setError('');
+        // stop() aborts this poll's signal; finish the UI before stopping terminal attempts.
+        setLoading(false);
         // Older backends omit status: keep polling until a terminal status is confirmed.
         if (result.attemptStatus && ['completed', 'submitted', 'expired', 'cancelled'].includes(result.attemptStatus)) stop();
       } catch (cause) {

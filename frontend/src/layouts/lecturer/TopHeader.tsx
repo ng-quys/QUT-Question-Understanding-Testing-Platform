@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, LogOut, Menu, UserRound } from 'lucide-react
 import { useTeacherProfile } from '../../features/profile-teacher/hooks/useTeacherProfile';
 import type { DashboardNavTab } from '@shared/types';
 interface Props {activeTab:DashboardNavTab;onMobileMenuToggle:()=>void;onLogout:()=>void;onOpenAIGenerator:()=>void;onOpenProfile:()=>void}
-const titles:Record<DashboardNavTab,string>={overview:'Tổng quan',courses:'Học phần phụ trách','question-bank':'Ngân hàng câu hỏi','new-question':'Thêm câu hỏi','ai-generator':'AI Generator','quick-exam':'Tạo đề tự động',exams:'Quản lý đề thi','exam-sessions':'Ca thi được phân công',monitoring:'Giám sát ca thi',settings:'Cài đặt tài khoản'};
+const titles:Record<DashboardNavTab,string>={overview:'Tổng quan',courses:'Học phần phụ trách','question-bank':'Ngân hàng câu hỏi','new-question':'Thêm câu hỏi','ai-generator':'AI Generator','quick-exam':'Tạo đề tự động',exams:'Quản lý đề thi','exam-sessions':'Ca thi được phân công',monitoring:'Giám sát ca thi',warnings:'Cảnh báo ca thi',settings:'Cài đặt tài khoản'};
 export function TopHeader({activeTab,onMobileMenuToggle,onLogout,onOpenProfile}:Props){
  const {profile}=useTeacherProfile();const [open,setOpen]=useState(false);const ref=useRef<HTMLDivElement>(null);
  useEffect(()=>{const close=(event:PointerEvent)=>{if(!ref.current?.contains(event.target as Node))setOpen(false);};const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')setOpen(false);};document.addEventListener('pointerdown',close);document.addEventListener('keydown',escape);return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',escape);};},[]);
