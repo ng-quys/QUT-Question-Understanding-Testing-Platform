@@ -68,6 +68,18 @@ public class StudentController {
         );
     }
 
+    public record CameraImage(String jpeg){}
+    public record CameraDevice(boolean available,String reason){}
+    public record CameraProof(String verificationToken){}
+    @PostMapping("/attempts/{id}/offline-grant") public com.examflow.backend.service.OfflineSubmissionService.Grant offlineGrant(@AuthenticationPrincipal Jwt jwt,@PathVariable long id){return studentService.offlineGrant(studentId(jwt),id);}
+    @PostMapping("/attempts/{id}/offline-evidence") public com.examflow.backend.service.OfflineEvidenceService.Receipt offlineEvidence(@AuthenticationPrincipal Jwt jwt,@PathVariable long id,@RequestBody com.examflow.backend.service.OfflineEvidenceService.Capture frame){return studentService.uploadOfflineEvidence(studentId(jwt),id,frame);}
+    @PostMapping("/attempts/{id}/offline-evidence/finish") public ApiMessage finishOfflineEvidence(@AuthenticationPrincipal Jwt jwt,@PathVariable long id,@RequestBody com.examflow.backend.service.OfflineEvidenceService.Finish manifest){studentService.finishOfflineEvidence(studentId(jwt),id,manifest);return new ApiMessage("Đã nhận đủ ảnh thiết bị báo cáo.");}
+    @PostMapping("/attempts/{id}/offline-submit") public StudentResultDto offlineSubmit(@AuthenticationPrincipal Jwt jwt,@PathVariable long id,@Valid @RequestBody com.examflow.backend.dto.OfflineSubmissionRequest request){return studentService.submitOffline(studentId(jwt),id,request);}
+    @PostMapping("/attempts/{id}/camera-restore") public com.examflow.backend.service.CameraVerificationService.CameraHealth restoreCamera(@AuthenticationPrincipal Jwt jwt,@PathVariable long id,@RequestBody CameraProof proof){return studentService.restoreCamera(studentId(jwt),id,proof.verificationToken());}
+    @GetMapping("/sessions/{id}/camera-check") public java.util.Map<String,Object> cameraRequirements(@AuthenticationPrincipal Jwt jwt,@PathVariable long id){return studentService.cameraRequirements(studentId(jwt),id);}
+    @PostMapping("/sessions/{id}/camera-check") public com.examflow.backend.service.CameraVerificationService.Result cameraCheck(@AuthenticationPrincipal Jwt jwt,@PathVariable long id,@RequestBody CameraImage image){return studentService.checkCamera(studentId(jwt),id,image.jpeg());}
+    @PostMapping("/attempts/{id}/camera-health") public com.examflow.backend.service.CameraVerificationService.CameraHealth cameraHealth(@AuthenticationPrincipal Jwt jwt,@PathVariable long id,@RequestBody CameraDevice device){return studentService.cameraHealth(studentId(jwt),id,device.available(),device.reason());}
+
     @PostMapping("/sessions/{sessionId}/start")
     public StudentAttemptDto start(
             @AuthenticationPrincipal Jwt jwt,

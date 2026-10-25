@@ -17,7 +17,7 @@ class BatchMonitoringTests {
     final ExamAttemptRepository attempts=mock(ExamAttemptRepository.class);
     final StudentProfileService photos=mock(StudentProfileService.class);
     final HttpClient client=mock(HttpClient.class);
-    final BatchMonitoringService service=new BatchMonitoringService(attempts,photos,"http://localhost:8000","test-placeholder");
+    final BatchMonitoringService service=new BatchMonitoringService(attempts,photos,"http://localhost:8000","test-placeholder",client);
     ExamAttempt attempt;
     @BeforeEach @SuppressWarnings("unchecked") void setup() throws Exception {
         Exam exam=new Exam();

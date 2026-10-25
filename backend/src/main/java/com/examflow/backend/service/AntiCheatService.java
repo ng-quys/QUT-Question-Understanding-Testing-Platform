@@ -28,6 +28,7 @@ public class AntiCheatService {
             "TAB_HIDDEN", "FULLSCREEN_EXIT", "WINDOW_BLUR", "COPY", "PASTE", "RIGHT_CLICK"
     );
 
+    @org.springframework.beans.factory.annotation.Autowired private CameraVerificationService cameraVerification;
     @PersistenceContext private EntityManager entityManager;
     @org.springframework.beans.factory.annotation.Autowired private BatchMonitoringService batchMonitoring;
     @org.springframework.beans.factory.annotation.Autowired private AiEvidenceIngest evidenceIngest;
@@ -131,10 +132,58 @@ public class AntiCheatService {
         } else {
             JsonNode current = batchMonitoring.status(attemptId, studentId);
             current.properties().forEach(entry -> result.set(entry.getKey(), entry.getValue()));
+            cameraVerification.observe(attemptId,current);
+            var health=cameraVerification.status(attemptId,studentId);
+            result.put("cameraVerified",health.cameraVerified()).put("cameraReason",health.cameraReason()).put("cameraMessage",health.cameraMessage());
+            syncCameraInterruptions(attemptId);
         }
         return result;
     }
 
+    @Transactional
+    public void syncCameraInterruptions(long attempt){
+        var pending=cameraVerification.interruptions(attempt);
+        if(pending.isEmpty())return;
+        ensureTable();
+        // Serialize writers for this attempt; retrying a rolled-back poll is idempotent.
+        entityManager.createNativeQuery("SELECT id FROM exam_attempts WHERE id=:id FOR UPDATE").setParameter("id",attempt).getResultList();
+        var zone=java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+        for(var incident:pending){
+            String event=MonitoringReviewPolicy.interruptionEvent(incident.reason());
+            var start=java.time.Instant.ofEpochMilli(incident.since()).atZone(zone).toLocalDateTime();
+            boolean active=incident.until()==0;
+            int score=MonitoringReviewPolicy.interruptionScore(incident.reason(),active);
+            var occurred=active?start:java.time.Instant.ofEpochMilli(incident.until()).atZone(zone).toLocalDateTime();
+            double duration=active?0:Math.max(0,(incident.until()-incident.since())/1000.0);
+            if(!active)entityManager.createNativeQuery("UPDATE anti_cheat_events SET duration_seconds=:duration WHERE attempt_id=:id AND event=:event AND active=TRUE AND occurred_at=:start")
+                .setParameter("event",event).setParameter("duration",duration).setParameter("id",attempt).setParameter("start",start).executeUpdate();
+            entityManager.createNativeQuery("""
+                INSERT INTO anti_cheat_events(attempt_id,event,module,active,occurred_at,duration_seconds,risk_score,risk_level)
+                SELECT :id,:event,'M10',:active,:clock,:duration,:score,:level
+                WHERE NOT EXISTS(SELECT 1 FROM anti_cheat_events WHERE attempt_id=:id AND event=:event AND active=:active AND occurred_at=:clock)
+                """).setParameter("event",event).setParameter("score",score).setParameter("level",MonitoringReviewPolicy.level(score))
+                .setParameter("id",attempt).setParameter("active",active).setParameter("clock",occurred).setParameter("duration",duration).executeUpdate();
+            afterCommit(()->cameraVerification.acknowledge(attempt,incident.key()));
+        }
+    }
+    @Transactional
+    public void maintainCamera(long attempt){
+        boolean ended=cameraVerification.maintain(attempt);
+        syncCameraInterruptions(attempt);
+        if(ended)afterCommit(()->cameraVerification.clear(attempt));
+    }
+    public void recordOfflineReceipt(long attempt,java.time.Instant offlineSince){
+        ensureTable();
+        var received=java.time.Instant.now();
+        double duration=offlineSince==null?0:Math.max(0,java.time.Duration.between(offlineSince,received).toMillis()/1000.0);
+        entityManager.createNativeQuery("INSERT INTO anti_cheat_events(attempt_id,event,module,active,occurred_at,duration_seconds,risk_score,risk_level,source_module) VALUES (:id,'OFFLINE_SUBMISSION_RECEIVED','SYSTEM',TRUE,:clock,:duration,0,'LOW','offline_deferred_client_time_unverified')")
+            .setParameter("id",attempt).setParameter("clock",received.atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDateTime()).setParameter("duration",duration).executeUpdate();
+    }
+    private void afterCommit(Runnable action){
+        if(org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive())
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization(){@Override public void afterCommit(){action.run();}});
+        else action.run();
+    }
     public void queueSession(Long attemptId, Long studentId) { batchMonitoring.queue(attemptId,studentId); }
 
     public JsonNode cameraFrame(Long attemptId,Long studentId,BatchMonitoringService.Frame frame){
@@ -175,7 +224,9 @@ public class AntiCheatService {
         }
     }
 
+    @Transactional
     public void stopSession(Long attemptId) {
+        if(cameraVerification!=null){cameraVerification.finish(attemptId);syncCameraInterruptions(attemptId);afterCommit(()->cameraVerification.clear(attemptId));}
         if(batchMonitoring!=null) batchMonitoring.stop(attemptId);
     }
 
@@ -194,11 +245,52 @@ public class AntiCheatService {
             throw new ApiException(HttpStatus.CONFLICT, "Bài thi không còn ở trạng thái đang làm");
         }
         ensureTable();
+        if("FULLSCREEN_EXIT".equals(event)){
+            recordFullscreen(attemptId,request.active());
+            return;
+        }
         entityManager.createNativeQuery("INSERT INTO anti_cheat_events(attempt_id,event,module,active,occurred_at) VALUES (:attemptId,:event,'M7',:active,:occurredAt)")
                 .setParameter("attemptId", attemptId).setParameter("event", event).setParameter("active", request.active())
                 .setParameter("occurredAt", LocalDateTime.now()).executeUpdate();
 
         // Browser monitoring remains continuous; no local webcam bridge is required.\n
+    }
+
+    private void recordFullscreen(long attempt,boolean active){
+        entityManager.createNativeQuery("SELECT id FROM exam_attempts WHERE id=:id FOR UPDATE").setParameter("id",attempt).getResultList();
+        var latest=entityManager.createNativeQuery("SELECT id,active,occurred_at FROM anti_cheat_events WHERE attempt_id=:id AND event='FULLSCREEN_EXIT' ORDER BY id DESC LIMIT 1")
+            .setParameter("id",attempt).getResultList();
+        Object[] previous=latest.isEmpty()?null:(Object[])latest.get(0);
+        // Browser retries and duplicate fullscreenchange callbacks must not inflate counts.
+        if(previous==null&&!active||previous!=null&&Boolean.TRUE.equals(previous[1])==active)return;
+        var now=LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        long count=((Number)entityManager.createNativeQuery("SELECT COUNT(*) FROM anti_cheat_events WHERE attempt_id=:id AND event='FULLSCREEN_EXIT' AND active=TRUE")
+            .setParameter("id",attempt).getSingleResult()).longValue()+(active?1:0);
+        double duration=0;
+        if(!active){
+            var raw=previous[2];var start=raw instanceof java.sql.Timestamp timestamp?timestamp.toLocalDateTime():(LocalDateTime)raw;
+            duration=Math.max(0,Duration.between(start,now).toMillis()/1000.0);
+        }
+        int score=MonitoringReviewPolicy.fullscreenScore(duration,count);
+        if(!active)entityManager.createNativeQuery("UPDATE anti_cheat_events SET duration_seconds=:duration,risk_score=:score,risk_level=:level WHERE id=:id")
+            .setParameter("duration",duration).setParameter("score",score).setParameter("level",MonitoringReviewPolicy.level(score)).setParameter("id",previous[0]).executeUpdate();
+        entityManager.createNativeQuery("INSERT INTO anti_cheat_events(attempt_id,event,module,active,occurred_at,duration_seconds,risk_score,risk_level) VALUES (:id,'FULLSCREEN_EXIT','M7',:active,:clock,:duration,:score,:level)")
+            .setParameter("id",attempt).setParameter("active",active).setParameter("clock",now).setParameter("duration",duration)
+            .setParameter("score",active?score:0).setParameter("level",active?MonitoringReviewPolicy.level(score):"LOW").executeUpdate();
+    }
+
+    @Transactional
+    public void updateOpenFullscreenReviews(){
+        ensureTable();
+        entityManager.createNativeQuery("""
+            UPDATE anti_cheat_events v SET risk_score=20,risk_level='LOW',
+                duration_seconds=EXTRACT(EPOCH FROM (LEAST(CAST(:clock AS timestamp),s.end_time)-v.occurred_at))
+            FROM exam_attempts a JOIN exam_sessions s ON s.id=a.exam_session_id
+            WHERE a.id=v.attempt_id AND a.status='in_progress' AND s.end_time>=v.occurred_at+INTERVAL '10 seconds'
+              AND v.event='FULLSCREEN_EXIT' AND v.active=TRUE AND COALESCE(v.risk_score,0)<20
+              AND v.occurred_at<=CAST(:clock AS timestamp)-INTERVAL '10 seconds'
+              AND NOT EXISTS(SELECT 1 FROM anti_cheat_events newer WHERE newer.attempt_id=v.attempt_id AND newer.event=v.event AND newer.id>v.id)
+            """).setParameter("clock",LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))).executeUpdate();
     }
 
     @Transactional

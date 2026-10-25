@@ -1,10 +1,12 @@
 """Bounded, server-wide round robin. No camera, model or cloud imports here."""
 import base64
+import queue
 import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from datetime import datetime
+from uuid import uuid4
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -19,6 +21,12 @@ class Session:
     last_received: float = 0
     last_processed: float = 0
     error: str = ""
+    camera_bad_since: float = 0
+    camera_good_since: float = 0
+    camera_good_frames: int = 0
+    camera_state: str = "checking"
+    camera_reason: str = "checking"
+    identity_lock_evidence_saved: bool = False
     generation: int = 0
     context: dict = field(default_factory=dict)
 
@@ -40,6 +48,77 @@ class BatchMonitor:
         self.model_status = "starting"
         self.thread = None
         self.cursor = 0
+        self.preflights = queue.Queue(maxsize=16)
+        self.offline_jobs = queue.Queue(maxsize=16)
+        self.last_offline = 0
+
+    def offline_analysis(self, data):
+        if self.model_status != "ready":
+            return {"ok": False, "reason": "ai_unavailable"}
+        image = base64.b64decode(data["jpeg"], validate=True)
+        reference = base64.b64decode(data["referencePhotoBase64"], validate=True)
+        if not 4 <= len(image) <= 250000 or not image.startswith(b"\xff\xd8") or not 4 <= len(reference) <= 2*1024*1024 or not reference.startswith(b"\xff\xd8"):
+            raise ValueError("Invalid offline JPEG")
+        job = {"image": image, "reference": reference, "done": threading.Event(), "expires": self.clock()+8}
+        try:
+            self.offline_jobs.put_nowait(job)
+        except queue.Full:
+            return {"ok": False, "reason": "busy"}
+        if not job["done"].wait(8):
+            job["done"].set()
+        return job.get("result", {"ok": False, "reason": "busy"})
+
+    def process_offline(self, evaluator, live_busy=False):
+        # Preflight always wins; live cameras keep their turn. At most one backfill
+        # frame per ten seconds while live inference is busy, using the same models.
+        if not self.preflights.empty() or (live_busy and self.clock()-self.last_offline < 10):
+            return False
+        try:
+            job = self.offline_jobs.get_nowait()
+        except queue.Empty:
+            return False
+        try:
+            if not job["done"].is_set() and self.clock() < job["expires"]:
+                self.last_offline = self.clock()
+                job["result"] = evaluator.analyze_offline(job["image"], job["reference"])
+        except Exception:
+            job["result"] = {"ok": False, "reason": "analysis_failed"}
+        finally:
+            job["done"].set()
+            self.offline_jobs.task_done()
+        return True
+
+    def preflight(self, data):
+        if self.model_status != "ready":
+            return {"verified": False, "reason": "ai_unavailable"}
+        image = base64.b64decode(data["jpeg"], validate=True)
+        reference = base64.b64decode(data["referencePhotoBase64"], validate=True)
+        if not 4 <= len(image) <= 250000 or not image.startswith(b"\xff\xd8") or not 4 <= len(reference) <= 2*1024*1024 or not reference.startswith(b"\xff\xd8"):
+            raise ValueError("Invalid verification image")
+        job = {"image": image, "reference": reference, "done": threading.Event(), "expires": self.clock()+8}
+        try:
+            self.preflights.put_nowait(job)
+        except queue.Full:
+            return {"verified": False, "reason": "busy"}
+        if not job["done"].wait(8):
+            job["done"].set()
+            return {"verified": False, "reason": "busy"}
+        return job.get("result", {"verified": False, "reason": "ai_unavailable"})
+
+    def process_preflight(self, evaluator):
+        try:
+            job = self.preflights.get_nowait()
+        except queue.Empty:
+            return False
+        try:
+            if not job["done"].is_set() and self.clock() < job["expires"]:
+                job["result"] = evaluator.verify_identity(job["image"], job["reference"])
+        except Exception:
+            job["result"] = {"verified": False, "reason": "invalid_image"}
+        finally:
+            job["done"].set()
+            self.preflights.task_done()
+        return True
 
     def start(self):
         if self.thread is None:
@@ -106,6 +185,8 @@ class BatchMonitor:
                       "pollAfterMs": 1500, "frameIntervalMs": 250}
             if item is None:
                 return dict(result, status="unregistered", message="Chưa kết nối giám sát")
+            result.update(cameraState=item.camera_state, cameraReason=item.camera_reason,
+                          cameraBadSince=item.camera_bad_since or None)
             selected = attempt in self.selected
             allowed = selected and self.model_status == "ready"
             result.update(captureAllowed=allowed, lastProcessedAt=item.last_processed or None,
@@ -135,7 +216,7 @@ class BatchMonitor:
                 return {"accepted": False, "reason": "rate_limited"}
             image = base64.b64decode(data["jpeg"], validate=True)
             audio = base64.b64decode(data.get("audioPcm16", ""), validate=True)
-            if not 4 <= len(image) <= 250_000 or not image.startswith(b"\xff\xd8") or not 960 <= len(audio) <= 32000 or len(audio) % 2:
+            if not 4 <= len(image) <= 250_000 or not image.startswith(b"\xff\xd8") or (len(audio) != 0 and not 960 <= len(audio) <= 32000) or len(audio) % 2:
                 raise ValueError("Invalid frame size")
             item.frame = (image, audio, self.generation, self.clock())  # one latest slot per attempt
             item.last_received = self.clock()
@@ -168,11 +249,45 @@ class BatchMonitor:
                 return True
         try:
             # Models are shared by this single worker; context is isolated per attempt.
+            item.context["capture_uuid"] = str(uuid4())
+            item.context["capture_at"] = datetime.fromtimestamp(received, timezone.utc).isoformat()
             events = evaluator.analyze(item, image, audio, self.clock(), generation)
             with self.lock:
                 self.tick()
                 if self.sessions.get(item.attempt) is not item or generation != self.generation or item.attempt not in self.selected:
                     return True
+                # A sampling gap/rotation cannot turn missing coverage into a continuous failure.
+                now = self.clock()
+                if item.generation != generation or now-item.last_processed > 3:
+                    item.camera_bad_since = item.camera_good_since = 0
+                    item.camera_good_frames = 0
+                    item.camera_state, item.camera_reason = "checking", "checking"
+                good = item.context.get("camera_identity_good")
+                if item.context.get("identity_mismatch_observed") or (good is False and item.context.get("camera_identity_reason") == "identity_mismatch"):
+                    # Save and queue the first offending frame before exposing a locked state.
+                    evaluator.deliver_identity_observation(item, image)
+                if good is True:
+                    item.camera_state, item.camera_reason = "checking", "checking"
+                    item.camera_bad_since = 0
+                    item.camera_good_since = item.camera_good_since or now
+                    item.camera_good_frames += 1
+                    if item.camera_good_frames >= 3 and now-item.camera_good_since >= 1:
+                        item.camera_state, item.camera_reason = "verified", "verified"
+                        item.identity_lock_evidence_saved = False
+                        item.context.pop("identity_evidence", None)
+                elif good is False:
+                    if item.camera_state != "blocked":
+                        item.camera_state = "checking"
+                    item.camera_good_frames = 0
+                    item.camera_good_since = 0
+                    item.camera_bad_since = item.camera_bad_since or now
+                    if now-item.camera_bad_since >= 5:
+                        reason = item.context.get("camera_identity_reason", "no_face")
+                        if reason == "identity_mismatch" and not item.identity_lock_evidence_saved:
+                            evaluator.deliver_camera_lock(item, image, max(0, now-item.camera_bad_since))
+                            item.identity_lock_evidence_saved = True
+                        item.camera_state = "blocked"
+                        item.camera_reason = reason
                 evaluator.deliver(item, events)
                 item.last_processed = self.clock()
                 item.generation = generation
@@ -200,7 +315,10 @@ class BatchMonitor:
             return
         try:
             while not self.stop_event.is_set():
-                if not self.process_one(evaluator):
+                checked = self.process_preflight(evaluator)
+                monitored = self.process_one(evaluator)
+                backfilled = self.process_offline(evaluator, live_busy=bool(self.sessions)) if not checked else False
+                if not checked and not monitored and not backfilled:
                     self.stop_event.wait(.05)
         finally:
             evaluator.close()

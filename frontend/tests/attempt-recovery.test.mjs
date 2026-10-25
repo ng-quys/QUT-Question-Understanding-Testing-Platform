@@ -75,3 +75,20 @@ test('stopping a page does not delete an unfinished write or send it under the n
  const f=fixture();await f.recovery.restore();f.recovery.choose(2,22);f.recovery.stop();await f.recovery.prepareSubmit();
  assert.equal(f.store.rows.size,1);assert.deepEqual(f.sent,[]);assert.equal(f.store.clears,0);
 });
+
+
+test('camera lock preserves pending drafts, rejects new choices and resumes synchronization after verification',async()=>{
+ let online=false;const f=fixture({online:()=>online});await f.recovery.restore();
+ f.recovery.choose(1,12);await settle();f.recovery.setMonitoringBlocked(true);online=true;
+ assert.equal(f.recovery.choose(2,22),false);await f.recovery.flush();assert.deepEqual(f.sent,[]);
+ assert.equal(f.store.clears,0);assert.equal(f.store.rows.size,1);
+ f.recovery.setMonitoringBlocked(false);await f.recovery.flush();
+ assert.deepEqual(f.sent,[[1,12]]);assert.equal(f.store.clears,0);assert.equal(f.recovery.choose(2,22),true);
+});
+
+test('camera restoration cannot override submission pause or extend the deadline',async()=>{
+ let now=100;const f=fixture({clock:()=>now,online:()=>true});await f.recovery.restore();
+ f.recovery.setMonitoringBlocked(true);await f.recovery.prepareSubmit();f.recovery.setMonitoringBlocked(false);
+ assert.equal(f.recovery.choose(1,12),false);f.recovery.resume();now=1000;
+ assert.equal(f.recovery.choose(1,12),false);assert.equal(f.options.deadline,1000);
+});

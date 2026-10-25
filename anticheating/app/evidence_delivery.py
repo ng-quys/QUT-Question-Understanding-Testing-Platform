@@ -10,6 +10,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import OrderedDict
 from pathlib import Path
 from uuid import UUID
 
@@ -64,6 +65,7 @@ class EvidenceDelivery:
         self.opener = opener or urllib.request.build_opener(NoRedirect()).open
         self.clock = clock or time.time
         self.stop_event = threading.Event()
+        self.uploaded_frames = OrderedDict()
 
     def request(self, request):
         try:
@@ -85,7 +87,8 @@ class EvidenceDelivery:
         if not self.bucket or any(c not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for c in self.bucket):
             raise DeliveryError("INVALID_BUCKET", False)
         # Only a generated key and the new local evidence image can be uploaded.
-        key = f"attempt-{int(payload['attemptId'])}/{UUID(payload['eventUuid'])}.jpg"
+        capture = str(UUID(payload.get("captureUuid") or payload["eventUuid"]))
+        key = f"attempt-{int(payload['attemptId'])}/{capture}.jpg"
         path = Path(payload["evidencePath"]).resolve()
         expected_root = (ROOT / "evidence" / f"attempt-{int(payload['attemptId'])}").resolve()
         if not path.is_relative_to(expected_root) or not path.is_file() or path.suffix.lower() != ".jpg":
@@ -93,6 +96,11 @@ class EvidenceDelivery:
         size = path.stat().st_size
         if not 0 < size <= 5 * 1024 * 1024:
             raise DeliveryError("IMAGE_SIZE_INVALID", False)
+        cache_key = (int(payload["attemptId"]), capture)
+        cached = self.uploaded_frames.get(cache_key)
+        if payload.get("captureUuid") and cached and cached[2] > self.clock():
+            self.uploaded_frames.move_to_end(cache_key)
+            return cached[:2]
         headers = {"apikey": self.key, "Content-Type": "image/jpeg", "x-upsert": "true", "Cache-Control": "private, max-age=0"}
         if self.key.count(".") == 2:  # Legacy service_role JWT; sb_secret uses apikey only.
             headers["Authorization"] = "Bearer " + self.key
@@ -105,6 +113,11 @@ class EvidenceDelivery:
         except (ValueError, AttributeError):
             raise DeliveryError("INVALID_BUCKET_RESPONSE", False) from None
         self.request(urllib.request.Request(endpoint, data=path.read_bytes(), headers=headers, method="POST"))
+        if payload.get("captureUuid"):
+            self.uploaded_frames[cache_key] = (self.bucket, key, self.clock()+600)
+            self.uploaded_frames.move_to_end(cache_key)
+            while len(self.uploaded_frames) > 128:
+                self.uploaded_frames.popitem(last=False)
         return self.bucket, key
 
     def process(self, path):

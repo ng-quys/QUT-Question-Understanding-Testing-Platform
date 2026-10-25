@@ -25,6 +25,7 @@ class StudentSessionTimingTests {
     Exam exam; ExamSession session; ExamAttempt attempt; ExamSessionStudent registration;
 
     @BeforeEach void setup() {
+        org.springframework.test.util.ReflectionTestUtils.setField(service,"em",mock(jakarta.persistence.EntityManager.class));
         UserEntity student=new UserEntity();student.setId(1L);student.setRole("student");student.setStatus("active");
         when(users.findById(1L)).thenReturn(Optional.of(student));
         Course course=new Course();course.setCode("CS01");course.setName("Test course");

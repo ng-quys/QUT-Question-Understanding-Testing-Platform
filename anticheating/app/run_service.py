@@ -218,7 +218,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             data = read_json(self)
             if self.path.startswith("/monitoring/"):
-                if self.path == "/monitoring/register":
+                if self.path == "/monitoring/offline-analysis":
+                    result = batch_monitor.offline_analysis(data)
+                elif self.path == "/monitoring/verify-identity":
+                    result = batch_monitor.preflight(data)
+                elif self.path == "/monitoring/register":
                     result = batch_monitor.register(data)
                 elif self.path == "/monitoring/status":
                     result = batch_monitor.status(int(data["attemptId"]) if data.get("attemptId") else None)

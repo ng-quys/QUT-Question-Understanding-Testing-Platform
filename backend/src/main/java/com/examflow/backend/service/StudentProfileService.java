@@ -217,6 +217,19 @@ public class StudentProfileService {
         return getFacePhoto(studentId);
     }
 
+    @Transactional(readOnly=true)
+    public String referenceVersion(long studentId){return referenceVersion(requireStudent(studentId));}
+    @Transactional
+    public String lockReferenceVersion(long studentId){
+        UserEntity student=userRepository.findForPhotoUpdate(studentId).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Không tìm thấy sinh viên"));
+        entityManager.refresh(student);return referenceVersion(student);
+    }
+    private String referenceVersion(UserEntity student){
+        if(student.getPhotoKey()!=null)return student.getPhotoBucket()+":"+student.getPhotoKey();
+        try{Path path=photoPath(student.getId());return "local:"+Files.getLastModifiedTime(path).toMillis()+":"+Files.size(path);}
+        catch(IOException error){throw new ApiException(HttpStatus.CONFLICT,"Vui lòng cập nhật ảnh khuôn mặt trước khi xác minh vào thi.");}
+    }
+
     private Path photoPath(Long studentId) {
         return profileDir.resolve(studentId + ".jpg");
     }

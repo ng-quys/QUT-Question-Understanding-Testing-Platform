@@ -47,6 +47,19 @@ import jakarta.transaction.Transactional;
 @Service
 public class StudentService {
     @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
+    @org.springframework.beans.factory.annotation.Autowired private CameraVerificationService cameraVerification;
+    @org.springframework.beans.factory.annotation.Autowired private OfflineSubmissionService offlineSubmissions;
+    @org.springframework.beans.factory.annotation.Autowired private OfflineEvidenceService offlineEvidence;
+    @org.springframework.beans.factory.annotation.Autowired private SupabaseEvidenceStorage evidenceStorage;
+
+    // Cloud I/O runs outside a database transaction and never delays the answer submission path.
+    public OfflineEvidenceService.Receipt uploadOfflineEvidence(long student,long attempt,OfflineEvidenceService.Capture frame){
+        byte[] bytes=OfflineEvidenceService.image(frame.jpeg());
+        if(offlineEvidence.reserve(student,attempt,frame,bytes))return new OfflineEvidenceService.Receipt(frame.captureId(),true);
+        evidenceStorage.uploadOffline(attempt,frame.captureId(),bytes);
+        return offlineEvidence.confirm(attempt,frame);
+    }
+    public void finishOfflineEvidence(long student,long attempt,OfflineEvidenceService.Finish manifest){offlineEvidence.finish(student,attempt,manifest);}
     private final ExamSnapshotReadService snapshotReadService;
     private final UserRepository userRepository;
     private final ExamSessionStudentRepository registrationRepository;
@@ -174,20 +187,57 @@ public class StudentService {
     }
 
     @Transactional
+    public Map<String,Object> cameraRequirements(long student,long sessionId){
+        ExamSession session=sessionRepository.findById(sessionId).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Không tìm thấy ca thi"));
+        requireAssignment(student,session,true);
+        return Map.of("required",antiCheatService.isRequired(session.getExam().getId(),session));
+    }
+    @Transactional
+    public CameraVerificationService.Result checkCamera(long student,long sessionId,String jpeg){
+        boolean required=(Boolean)cameraRequirements(student,sessionId).get("required");
+        if(!required)return new CameraVerificationService.Result(false,true,"disabled","Ca thi không yêu cầu giám sát camera.",null,0);
+        return cameraVerification.check(student,sessionId,jpeg);
+    }
+    @Transactional
+    public CameraVerificationService.CameraHealth cameraHealth(long student,long attemptId,boolean available){
+        return cameraHealth(student,attemptId,available,"device_unavailable");
+    }
+    @Transactional
+    public CameraVerificationService.CameraHealth cameraHealth(long student,long attemptId,boolean available,String reason){
+        ExamAttempt attempt=requireInProgressAttempt(student,attemptId);
+        if(!antiCheatService.isRequired(attempt.getExam().getId(),attempt.getExamSession()))return new CameraVerificationService.CameraHealth(true,"disabled","");
+        cameraVerification.device(attemptId,student,available,reason);
+        var health=cameraVerification.status(attemptId,student);
+        antiCheatService.syncCameraInterruptions(attemptId);
+        return health;
+    }
+    @Transactional
+    public CameraVerificationService.CameraHealth restoreCamera(long student,long attemptId,String token){
+        ExamAttempt attempt=requireInProgressAttempt(student,attemptId);
+        if(!antiCheatService.isRequired(attempt.getExam().getId(),attempt.getExamSession()))return new CameraVerificationService.CameraHealth(true,"disabled","");
+        var proof=cameraVerification.consume(student,attempt.getExamSession().getId(),token);
+        cameraVerification.bind(attemptId,proof,effectiveEnd(attempt).atZone(APP_ZONE).toInstant().toEpochMilli());
+        antiCheatService.queueSession(attemptId,student);
+        antiCheatService.syncCameraInterruptions(attemptId);
+        return cameraVerification.status(attemptId,student);
+    }
+    private void requireCamera(ExamAttempt attempt,long student){if(antiCheatService.isRequired(attempt.getExam().getId(),attempt.getExamSession()))cameraVerification.requireHealthy(attempt.getId(),student);}
+
+    @Transactional
     public StudentAttemptDto startExam(Long studentId, Long sessionId, StartExamRequest request) {
         return startExamForRoom(studentId, sessionId,
                 request == null ? null : request.roomCode(),
-                request == null ? null : request.accessCode());
+                request == null ? null : request.accessCode(),request == null ? null : request.verificationToken());
     }
 
     // Compatibility entry point for callers that supply a single room code.
     @Transactional
     public StudentAttemptDto startExamByCode(Long studentId, Long sessionId, String roomCode) {
-        return startExamForRoom(studentId, sessionId, roomCode, roomCode);
+        return startExamForRoom(studentId, sessionId, roomCode, roomCode,null);
     }
 
     private StudentAttemptDto startExamForRoom(Long studentId, Long sessionId,
-            String roomCode, String password) {
+            String roomCode, String password,String verificationToken) {
         UserEntity student = requireStudent(studentId);
         ExamSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy ca thi"));
@@ -195,10 +245,10 @@ public class StudentService {
         em.refresh(session,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         requireAssignment(studentId,session,true);
         String code=session.getRoomCode();
-        return startExamWithSessionAndRegistration(student, session, code);
+        return startExamWithSessionAndRegistration(student, session, code,verificationToken);
     }
 
-    private StudentAttemptDto startExamWithSessionAndRegistration(UserEntity student, ExamSession session, String supplied) {
+    private StudentAttemptDto startExamWithSessionAndRegistration(UserEntity student, ExamSession session, String supplied,String verificationToken) {
         Exam exam = session.getExam();
         LocalDateTime now = now();
         if (!isWithinSession(session, now)) {
@@ -207,6 +257,7 @@ public class StudentService {
         }
 
         antiCheatService.lockPolicy(exam.getId());
+        CameraVerificationService.Proof proof=antiCheatService.isRequired(exam.getId(),session)?cameraVerification.consume(student.getId(),session.getId(),verificationToken):null;
         Optional<ExamAttempt> existing = attemptRepository.findByExamSessionIdAndStudentId(session.getId(), student.getId());
         if (existing.isPresent()) {
             ExamAttempt a = existing.get();
@@ -221,6 +272,7 @@ public class StudentService {
                     antiCheatService.stopSession(a.getId());
                     throw new ApiException(HttpStatus.CONFLICT, "Thời gian làm bài đã kết thúc trong lúc kết nối AI");
                 }
+                if(proof!=null)cameraVerification.bind(a.getId(),proof,effectiveEnd(a).atZone(APP_ZONE).toInstant().toEpochMilli());
                 return buildAttemptDto(a);
             }
             throw new ApiException(HttpStatus.CONFLICT, "Thời gian làm bài của bài thi trước đã kết thúc");
@@ -239,6 +291,7 @@ public class StudentService {
         if (antiCheatService.isRequired(exam.getId(),session)) {
             antiCheatService.queueSession(attempt.getId(), student.getId());
         }
+        if(proof!=null)cameraVerification.bind(attempt.getId(),proof,effectiveEnd(attempt).atZone(APP_ZONE).toInstant().toEpochMilli());
         // The deadline is shared by the whole session; monitoring follows commit.
         return buildAttemptDto(attempt);
     }
@@ -249,14 +302,41 @@ public class StudentService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bài làm"));
         requireAssignment(studentId,attempt.getExamSession(),true);
         if(!effectiveEnd(attempt).isAfter(now()))throw new ApiException(HttpStatus.CONFLICT,"Thời gian làm bài đã kết thúc");
+        requireCamera(attempt,studentId);
         return buildAttemptDto(attempt);
     }
 
     @Transactional
     public ApiMessage saveAnswer(Long studentId, Long attemptId, SaveAnswerRequest request) {
         ExamAttempt attempt = requireInProgressAttempt(studentId, attemptId);
+        em.refresh(attempt,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        if(!"in_progress".equals(attempt.getStatus())||!effectiveEnd(attempt).isAfter(now()))
+            throw new ApiException(HttpStatus.CONFLICT,"Bài thi đã nộp hoặc đã hết giờ, không thể sửa đáp án.");
+        requireCamera(attempt,studentId);
         saveAnswerInternal(attempt, request);
         return new ApiMessage("Đã lưu câu trả lời");
+    }
+
+    @Transactional
+    public OfflineSubmissionService.Grant offlineGrant(long student,long attemptId){
+        ExamAttempt attempt=requireInProgressAttempt(student,attemptId);
+        requireCamera(attempt,student);
+        return offlineSubmissions.issue(attempt,antiCheatService.isRequired(attempt.getExam().getId(),attempt.getExamSession()));
+    }
+
+    @Transactional
+    public StudentResultDto submitOffline(long student,long attemptId,com.examflow.backend.dto.OfflineSubmissionRequest request){
+        ExamAttempt attempt=attemptRepository.findOwnedAttempt(attemptId,student).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Không tìm thấy bài làm"));
+        em.refresh(attempt,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        requireAssignment(student,attempt.getExamSession(),false);
+        boolean retry=offlineSubmissions.accept(attempt,request);
+        if(retry)return getResult(student,attemptId);
+        // Offline acceptance is explicit and auditable; normal answer APIs still enforce the deadline.
+        if(effectiveEnd(attempt).isAfter(now()))requireCamera(attempt,student);
+        for(var answer:request.answers())saveAnswerInternal(attempt,answer);
+        if(request.offlineSince()!=null||!effectiveEnd(attempt).isAfter(now())||java.time.Duration.between(request.frozenAt(),java.time.Instant.now()).getSeconds()>=10)
+            antiCheatService.recordOfflineReceipt(attemptId,request.offlineSince());
+        return finishSubmission(attempt);
     }
 
     // Snapshot is immutable for an exam_question. Legacy JPA rows are retained for FK compatibility.
@@ -298,6 +378,7 @@ public class StudentService {
     public StudentResultDto submit(Long studentId, Long attemptId, SubmitExamRequest request) {
         ExamAttempt attempt = attemptRepository.findOwnedAttempt(attemptId, studentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bài làm"));
+        em.refresh(attempt,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         requireAssignment(studentId,attempt.getExamSession(),false);
         if ("completed".equalsIgnoreCase(attempt.getStatus()) || "submitted".equalsIgnoreCase(attempt.getStatus())) {
             return getResult(studentId, attemptId);
@@ -306,13 +387,18 @@ public class StudentService {
             throw new ApiException(HttpStatus.CONFLICT, "Bài thi không còn ở trạng thái đang làm");
         }
         if (effectiveEnd(attempt).isAfter(now()) && request != null && request.answers() != null) {
+            if(!request.answers().isEmpty())requireCamera(attempt,studentId);
             for (SaveAnswerRequest item : request.answers()) {
                 saveAnswerInternal(attempt, item);
             }
         }
 
+        return finishSubmission(attempt);
+    }
+
+    private StudentResultDto finishSubmission(ExamAttempt attempt){
         List<ExamQuestion> examQuestions = examQuestionRepository.findByExamIdWithQuestion(attempt.getExam().getId());
-        List<StudentAnswer> saved = studentAnswerRepository.findByAttemptIdWithDetails(attemptId);
+        List<StudentAnswer> saved = studentAnswerRepository.findByAttemptIdWithDetails(attempt.getId());
         Map<Long, StudentAnswer> byQuestion = saved.stream()
                 .collect(Collectors.toMap(sa -> sa.getQuestionId(), sa -> sa, (a, b) -> a));
 

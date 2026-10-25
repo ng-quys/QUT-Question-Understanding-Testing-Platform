@@ -8,6 +8,7 @@ export interface DraftAnswer {
   answerId: number;
   revision: string;
   synced: boolean;
+  changedAt?: number;
 }
 export interface DraftStore {
   list(owner: string, attemptId: number): Promise<DraftAnswer[]>;
@@ -102,6 +103,7 @@ export class AttemptRecovery {
   private flushing: Promise<void> | undefined;
   private stopped = false;
   private paused = false;
+  private monitoringBlocked = false;
   private storageError = false;
   private syncError = false;
   private localSaving = 0;
@@ -137,10 +139,10 @@ export class AttemptRecovery {
     this.emit();
     return { selected, restored: this.pending.size };
   }
-  choose(questionId: number, answerId: number): boolean {
-    if (this.stopped || this.paused || this.clock() >= this.options.deadline || !this.valid(questionId, answerId)) return false;
+  choose(questionId: number, answerId: number,changedAt=this.clock()): boolean {
+    if (this.stopped || this.paused || this.monitoringBlocked || this.clock() >= this.options.deadline || !this.valid(questionId, answerId)) return false;
     const answer: DraftAnswer = { key: JSON.stringify([this.owner, this.attemptId, questionId]), owner: this.owner, attemptId: this.attemptId,
-      questionId, answerId, revision: crypto.randomUUID(), synced: false };
+      questionId, answerId, revision: crypto.randomUUID(), synced: false,changedAt };
     this.pending.set(questionId, answer);
     this.unpersisted.set(questionId, answer.revision);
     this.localSaving++;
@@ -157,16 +159,16 @@ export class AttemptRecovery {
   }
   flush(): Promise<void> {
     if (this.flushing) return this.flushing;
-    if (this.stopped || this.paused || !this.online() || this.clock() >= this.options.deadline || !this.pending.size) { this.emit(); return Promise.resolve(); }
+    if (this.stopped || this.paused || this.monitoringBlocked || !this.online() || this.clock() >= this.options.deadline || !this.pending.size) { this.emit(); return Promise.resolve(); }
     this.syncError = false;
     this.flushing = this.drain().finally(() => { this.flushing = undefined; this.emit(); });
     this.emit();
     return this.flushing;
   }
   private async drain() {
-    while (!this.stopped && !this.paused && this.online() && this.clock() < this.options.deadline && this.pending.size) {
+    while (!this.stopped && !this.paused && !this.monitoringBlocked && this.online() && this.clock() < this.options.deadline && this.pending.size) {
       await this.waitForWrites();
-      if (this.stopped || this.paused || !this.online() || this.clock() >= this.options.deadline) break;
+      if (this.stopped || this.paused || this.monitoringBlocked || !this.online() || this.clock() >= this.options.deadline) break;
       const answer = this.pending.values().next().value!;
       try { await this.options.send(answer.questionId, answer.answerId); }
       catch { this.syncError = true; this.emit(); break; }
@@ -185,6 +187,7 @@ export class AttemptRecovery {
     await this.waitForWrites();
     await this.flushing;
   }
+  setMonitoringBlocked(blocked:boolean) {this.monitoringBlocked=blocked;this.emit();if(!blocked)void this.flush();}
   resume() { this.paused = false; this.emit(); }
   async complete() {
     this.stop();

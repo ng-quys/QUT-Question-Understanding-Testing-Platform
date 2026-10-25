@@ -2,6 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ExamConnection } from '../src/features/student/services/examConnection.ts';
 
+test('offline-enabled exam reconnects automatically after a successful server probe',async()=>{
+  let reachable=false;let notifications=0;
+  const connection=new ExamConnection({automaticRecovery:true,online:()=>true,probe:async()=>{if(!reachable)throw new Error('offline');},onChange:()=>{},onDisconnect:()=>notifications++});
+  assert.equal(await connection.check(),false);assert.equal(connection.phase,'offline');
+  reachable=true;assert.equal(await connection.check(),true);assert.equal(connection.phase,'active');assert.equal(notifications,1);
+});
+
 function fixture() {
   let online = true, reachable = true, pauses = 0;
   const states = [];

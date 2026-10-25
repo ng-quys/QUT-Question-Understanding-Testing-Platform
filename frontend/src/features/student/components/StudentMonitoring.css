@@ -11,3 +11,5 @@
 .student-monitoring-warning button{padding:5px 9px;border:1px solid #c99543;border-radius:7px;background:white;color:#82500f;font:inherit;cursor:pointer}
 .student-exam-toolbar-actions:has(.student-monitoring-compact){flex-wrap:wrap;justify-content:flex-end;gap:12px}
 @media(max-width:700px){.student-monitoring-compact{max-width:100%;gap:5px}.student-monitoring-label{padding:5px 8px;font-size:10px}.student-monitoring-camera>div{left:0;right:auto}}
+
+.student-monitoring-audio-option{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0;color:#6f8097;font-size:12px}.student-monitoring-audio-option button{border:1px solid #dbe4f0;border-radius:8px;background:#fff;color:#46668e;padding:6px 10px;font:inherit;cursor:pointer}

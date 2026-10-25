@@ -2,13 +2,18 @@
 import { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { EvidenceTimeline } from '../../frontend-shared/src/features/evidence/components/EvidenceTimeline';
+import { groupEvidenceEvents } from '../../frontend-shared/src/features/evidence/services/evidenceGroups';
 import type { evidenceApi, EvidenceEvent } from '../../frontend-shared/src/features/evidence/services/evidenceApi';
 
 const events: EvidenceEvent[] = ['uploaded', 'pending', 'failed', 'none', 'local'].map((status, index) => ({ id: index + 1, event: 'NO_FACE', active: true, occurredAt: '2026-10-16T10:00:00', module: 'M10', duration: 2.5, riskScore: 20, riskLevel: 'LOW', provider: status === 'local' ? 'local' : 'supabase', evidenceStatus: status, hasEvidence: status !== 'none' }));
+if(new URLSearchParams(location.search).has('grouped')){
+  events[0].captureId='synthetic-shared-capture';
+  events.push({...events[0],id:6,event:'SPEECH',riskScore:50,riskLevel:'HIGH'}, {...events[0],id:7,event:'CAMERA_IDENTITY_LOCK',riskScore:0,riskLevel:'LOW'});
+}
 function Fixture() {
   const [mode, setMode] = useState('success'), [calls, setCalls] = useState(0);
   const api = useMemo<typeof evidenceApi>(() => ({
-    events: async () => ({ items: events, total: events.length, size: 20, page: 0, attemptStatus: new URLSearchParams(location.search).has('completed') ? 'completed' : 'in_progress' }),
+    events: async () => ({ items: events, total: events.length, groupTotal: groupEvidenceEvents(events).length, size: 20, page: 0, attemptStatus: new URLSearchParams(location.search).has('completed') ? 'completed' : 'in_progress' }),
     link: async (_audience, _attempt, event) => {
       setCalls(value => value + 1);
       if (event === 2) throw new Error('Ảnh đang chờ tải lên. Vui lòng thử lại sau.');
