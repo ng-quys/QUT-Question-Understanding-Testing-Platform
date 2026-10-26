@@ -114,7 +114,7 @@ class AiJobTransportTest {
             tick(owner);assertEquals("running",shared.get("credit_state"));
             tick(other);assertEquals("unknown",shared.get("credit_state"));
             tick(owner);
-            verify(ownerProvider,times(1)).start(eq(token),any());
+            verify(ownerProvider,times(1)).start(eq(token),any(),anyString(),eq(7L));
             verify(ownerProvider,never()).status(token);
             verify(otherProvider,times(1)).status(token);
             verify(credits,never()).finish(anyLong(),any(),anyList(),anyBoolean(),any(),any());
@@ -144,12 +144,14 @@ class AiJobTransportTest {
             ReflectionTestUtils.setField(provider,"key","test-only-internal-key-at-least-32-characters");
             var request=new AiGenerateRequest(11L,"qwen",null,"Synthetic document for HTTP contract",null,
                 "synthetic-proof",0.5,List.of(25L),10,
-                List.of(new AiGenerateRequest.AiCloDto(25L,"CLO1","Explain DNS")));
+                List.of(new AiGenerateRequest.AiCloDto(25L,"CLO1","Explain DNS")),5,null,3);
             provider.start(token,request);
             var payload=captured.get();
             assertEquals("POST",method.get());assertEquals("HTTP/1.1",protocol.get());
             assertEquals("test-only-internal-key-at-least-32-characters",auth.get());
             assertEquals(10,payload.path("questionCount").asInt());
+            assertEquals(3,payload.path("inferenceBatchSize").asInt());
+            assertEquals(5,payload.path("batchSize").asInt());
             assertEquals(25,payload.path("cloIds").get(0).asInt());
             assertEquals("Explain DNS",payload.path("selectedClos").get(0).path("description").asText());
             assertTrue(payload.has("instruction")&&payload.get("instruction").isNull());
@@ -215,13 +217,13 @@ class AiJobTransportTest {
         UUID token=(UUID)job.get("execution_token");
         when(credits.enabled()).thenReturn(true);when(credits.active()).thenReturn(List.of(job));
         when(credits.payload(job)).thenReturn(request());when(credits.claim(7)).thenReturn(true);
-        doThrow(new AiCreditsProvider.ProviderException(503,"AI_INTERNAL_KEY_MISSING")).when(provider).start(eq(token),any());
+        doThrow(new AiCreditsProvider.ProviderException(503,"AI_INTERNAL_KEY_MISSING")).when(provider).start(eq(token),any(),anyString(),eq(7L));
         when(provider.status(token)).thenThrow(new AiCreditsProvider.ProviderException(503,"AI_INTERNAL_KEY_MISSING"));
         doAnswer(i->{job.put("credit_state","unknown");return null;}).when(credits).unknown(eq(7L),eq(token),anyString());
         var worker=worker(credits,provider,job);
         try {
             tick(worker);tick(worker);
-            verify(provider,times(1)).start(eq(token),any());verify(provider,never()).status(token);
+            verify(provider,times(1)).start(eq(token),any(),anyString(),eq(7L));verify(provider,never()).status(token);
             verify(credits,never()).finish(anyLong(),any(),anyList(),anyBoolean(),any(),any());
             verify(credits,never()).checkpoint(anyLong(),any(),anyList());
         } finally {ReflectionTestUtils.invokeMethod(worker,"close");}

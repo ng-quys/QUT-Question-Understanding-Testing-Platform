@@ -1,0 +1,62 @@
+{
+  "job": {
+    "id": 15,
+    "requested_by": 35,
+    "course_id": 11,
+    "status": "processing",
+    "credit_state": "running",
+    "execution_token": "496d1a3f-ae1c-4986-9be6-6ff0f0e2c0c7",
+    "requested_question_count": 10,
+    "accepted_count": 2,
+    "reserved_monthly": 10,
+    "reserved_extra": 0,
+    "charged_monthly": 0,
+    "charged_extra": 0,
+    "credit_created_at": "2026-10-23 07:41:47.317720+00:00",
+    "dispatched_at": "2026-10-23 07:41:52.464854+00:00",
+    "heartbeat_at": "2026-10-23 07:47:03.642886+00:00",
+    "lease_expires_at": "2026-10-23 07:49:03.642886+00:00",
+    "cancel_requested_at": null,
+    "credit_completed_at": null,
+    "credit_error_code": null,
+    "registry": "1ce90ec2-e57c-43ea-a845-b89a0cbf7870",
+    "checkpoint_count": 2
+  },
+  "ledger": [
+    {
+      "id": 37,
+      "event_type": "reserve",
+      "monthly_used_delta": 0,
+      "monthly_reserved_delta": 10,
+      "extra_balance_delta": 0,
+      "extra_reserved_delta": 0
+    }
+  ],
+  "quota": [
+    [
+      "2026-10-01",
+      200,
+      6,
+      10
+    ]
+  ],
+  "extra": [
+    [
+      0,
+      0
+    ]
+  ],
+  "checkpoint_count": 2,
+  "checkpoint_fields": [
+    {
+      "cloId": 25,
+      "bloom": "understand",
+      "correctIndex": 2
+    },
+    {
+      "cloId": 26,
+      "bloom": "remember",
+      "correctIndex": 1
+    }
+  ]
+}

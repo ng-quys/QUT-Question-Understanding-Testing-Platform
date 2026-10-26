@@ -1,0 +1,27 @@
+{
+  "main": [],
+  "checkpoint_validation": [
+    {
+      "options": 4,
+      "correctIndex": 2,
+      "explanation": true,
+      "evidence": true,
+      "cloId": 25,
+      "bloom": "understand"
+    },
+    {
+      "options": 4,
+      "correctIndex": 1,
+      "explanation": true,
+      "evidence": true,
+      "cloId": 26,
+      "bloom": "remember"
+    }
+  ],
+  "latest_job": {
+    "state": "cancel_requested",
+    "accepted": 2,
+    "heartbeat": "2026-10-23 07:47:03.642886+00:00"
+  },
+  "questionbank": []
+}

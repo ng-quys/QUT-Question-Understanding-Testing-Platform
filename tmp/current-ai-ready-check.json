@@ -1,0 +1,102 @@
+{
+  "primary_pid": 26452,
+  "poller_thread_count": 1,
+  "thread_inspection_ok": true,
+  "worker_flags": {
+    "AI_CREDITS_WORKER_ENABLED": "true",
+    "AI_CREDITS_WORKER_CLUSTER_READY": "true"
+  },
+  "worker_command_overrides": [],
+  "main": {
+    "configured_port": 5432,
+    "connected": true
+  },
+  "unresolved_jobs": [],
+  "job15": [
+    15,
+    "partial",
+    2,
+    2,
+    0
+  ],
+  "ledger15": [
+    [
+      "reserve",
+      0,
+      10
+    ],
+    [
+      "settle",
+      2,
+      -10
+    ]
+  ],
+  "teacher_month": [
+    200,
+    8,
+    0
+  ],
+  "teacher_extra": [
+    0,
+    0
+  ],
+  "readiness_legacy_poller_block": false,
+  "connection_groups": [
+    [
+      "",
+      "idle",
+      2
+    ],
+    [
+      "ExamFlow-Main/ai-worker-v1",
+      "idle",
+      4
+    ],
+    [
+      "postgres_exporter",
+      "idle",
+      1
+    ],
+    [
+      "PostgREST 14.18",
+      "idle",
+      2
+    ],
+    [
+      "Supavisor",
+      "active",
+      1
+    ],
+    [
+      "Supavisor",
+      "idle",
+      2
+    ],
+    [
+      "Supavisor (auth_query)",
+      "idle",
+      2
+    ]
+  ],
+  "questionbank": {
+    "configured_port": 5432,
+    "connected": true,
+    "questions_missing_incompatible": [
+      152,
+      3,
+      0
+    ]
+  },
+  "backend_http": 200,
+  "fastapi_http": 200,
+  "registry": "99464dd9-63cf-407f-8338-5af26d559aa9",
+  "qwen_model": "qwen2.5:7b",
+  "ollama_http": 200,
+  "ollama_models": [
+    "nomic-embed-text:latest",
+    "llama3.1:8b",
+    "qwen2.5:7b"
+  ],
+  "key_handshake_http": 204,
+  "ai_questionbank_dsn_present": true
+}

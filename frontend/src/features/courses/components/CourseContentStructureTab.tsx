@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import {TopicCodeTree} from './TopicCodeTree';
 import {
   FolderTree,
   ChevronDown,
@@ -378,7 +379,7 @@ export const CourseContentStructureTab: React.FC<CourseContentStructureTabProps>
                       </button>
                     </div>
                   ) : (
-                    chapter.topics.map((topic) => {
+                    <TopicCodeTree topics={chapter.topics} chapterCode={chapter.code} renderTopic={(topic) => {
                       const isEditingTop = editingTopicId === topic.id;
 
                       return (
@@ -459,7 +460,7 @@ export const CourseContentStructureTab: React.FC<CourseContentStructureTabProps>
                           </div>
                         </div>
                       );
-                    })
+                    }}/>
                   )}
                 </div>
               )}
