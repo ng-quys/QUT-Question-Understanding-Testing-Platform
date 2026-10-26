@@ -22,7 +22,7 @@ import java.util.concurrent.*;
 public class BatchMonitoringService {
     private final ExamAttemptRepository attempts;
     private final StudentProfileService photos;
-    private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
+    private final HttpClient client;
     private final JsonMapper json = JsonMapper.builder().build();
     private final String url, secret;
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(2,2,0,TimeUnit.SECONDS,
@@ -30,9 +30,11 @@ public class BatchMonitoringService {
     private static final ZoneId ZONE=ZoneId.of("Asia/Ho_Chi_Minh");
     private static class Registration {volatile boolean pending,cancelled;volatile int tries;volatile long next;long expires;}
     private final ConcurrentMap<Long,Registration> registrations=new ConcurrentHashMap<>();
+    @org.springframework.beans.factory.annotation.Autowired
     public BatchMonitoringService(ExamAttemptRepository attempts,StudentProfileService photos,
             @Value("${app.anticheat.url:http://127.0.0.1:8000}") String url,
-            @Value("${app.anticheat.secret:change-me}") String secret){this.attempts=attempts;this.photos=photos;this.url=url.replaceAll("/$","");this.secret=secret;}
+            @Value("${app.anticheat.secret:change-me}") String secret){this(attempts,photos,url,secret,HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build());}
+    BatchMonitoringService(ExamAttemptRepository attempts,StudentProfileService photos,String url,String secret,HttpClient client){this.attempts=attempts;this.photos=photos;this.url=url.replaceAll("/$","");this.secret=secret;this.client=client;}
     @PreDestroy public void close(){executor.shutdownNow();}
     static LocalDateTime now(){return LocalDateTime.now(ZONE);}
     static boolean active(ExamAttempt a){return "in_progress".equals(a.getStatus())&&a.getExamSession()!=null&&
@@ -78,6 +80,7 @@ public class BatchMonitoringService {
             return result;
         }catch(Exception error){schedule(attempt,student,false);return json.valueToTree(Map.of("ready",false,"captureAllowed",false,"status","offline","message","Chưa kết nối được dịch vụ giám sát"));}
     }
+    public JsonNode verifyIdentity(String jpeg,byte[] reference){return post("verify-identity",Map.of("jpeg",jpeg,"referencePhotoBase64",Base64.getEncoder().encodeToString(reference)));}
     public record Frame(long lease,String jpeg,String audioPcm16){}
     public JsonNode frame(long attempt,long student,Frame frame){
         activeOwned(attempt,student);
@@ -101,9 +104,10 @@ public class BatchMonitoringService {
         }catch(Exception error){return Map.of();}
     }
     public JsonNode runtimeStatus(){return post("status",Map.of());}
+    public JsonNode analyzeOffline(byte[] jpeg,byte[] reference){return post("offline-analysis",Map.of("jpeg",Base64.getEncoder().encodeToString(jpeg),"referencePhotoBase64",Base64.getEncoder().encodeToString(reference)));}
     private JsonNode post(String action,Object body){
         try{
-            var request=HttpRequest.newBuilder(URI.create(url+"/monitoring/"+action)).timeout(Duration.ofSeconds(4))
+            var request=HttpRequest.newBuilder(URI.create(url+"/monitoring/"+action)).timeout(Duration.ofSeconds(Set.of("verify-identity","offline-analysis").contains(action)?10:4))
                     .header("Content-Type","application/json").header("X-AntiCheat-Secret",secret).POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build();
             var response=client.send(request,HttpResponse.BodyHandlers.ofString());
             if(response.statusCode()!=200)throw new IllegalStateException("Monitoring unavailable");

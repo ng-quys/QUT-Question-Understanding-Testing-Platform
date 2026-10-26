@@ -9,7 +9,7 @@ interface Entry {
   monthly_reserved_delta:number;extra_reserved_delta:number;monthly_limit_delta:number;
   reason:string|null;created_at:string;actor_name:string|null;job_id:number|null;
 }
-export function AiCreditsAdmin(){
+export function AiCreditsAdmin({active:visible=true}:{active?:boolean}){
   const [query,setQuery]=useState(''),[page,setPage]=useState(0),[revision,setRevision]=useState(0);
   const [rows,setRows]=useState<Teacher[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false);
   const [teacher,setTeacher]=useState<Teacher|null>(null),[entries,setEntries]=useState<Entry[]>([]);
@@ -42,16 +42,17 @@ export function AiCreditsAdmin(){
     return ()=>window.removeEventListener('examflow-admin-ai-credits-refresh',refresh);
   },[]);
   useEffect(()=>{
+    if(!visible)return;
     let active=true;
     const timer=setTimeout(()=>{
       setBusy(true);
       void apiFetch<{items:Teacher[]}>('/admin/ai-credits?q='+encodeURIComponent(query)+'&page='+page+'&size=20')
         .then(data=>{if(active){setRows(data.items);setError('');}})
-        .catch(e=>{if(active){setRows([]);setError(e instanceof Error?e.message:'Không tải được quota.');}})
+        .catch(e=>{if(active){setError(e instanceof Error?e.message:'Không tải được quota.');}})
         .finally(()=>{if(active)setBusy(false);});
     },250);
     return ()=>{active=false;clearTimeout(timer);};
-  },[query,page,revision]);
+  },[query,page,revision,visible]);
   useEffect(()=>{
     if(teacher)setTeacher(rows.find(r=>r.id===teacher.id) || teacher);
   },[rows]);

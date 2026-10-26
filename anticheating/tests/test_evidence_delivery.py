@@ -12,6 +12,14 @@ import evidence_delivery as delivery
 
 
 class EvidenceDeliveryTests(unittest.TestCase):
+    def test_same_capture_uploads_once_for_distinct_events_and_uses_capture_key(self):
+        del self.worker.upload
+        capture=str(uuid4());self.payload['captureUuid']=capture
+        self.worker.request=Mock(side_effect=[b'{"public":false}',b'{}'])
+        self.assertEqual(('exam-evidence',f'attempt-125/{capture}.jpg'),self.worker.upload(self.payload))
+        self.assertEqual(('exam-evidence',f'attempt-125/{capture}.jpg'),self.worker.upload({**self.payload,'eventUuid':str(uuid4())}))
+        self.assertEqual(2,self.worker.request.call_count)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

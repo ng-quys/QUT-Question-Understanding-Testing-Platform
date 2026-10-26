@@ -48,4 +48,13 @@ class EvidenceHttpSecurityTests {
         when(evidence.link(any(),eq(125L),eq(456L))).thenThrow(new ApiException(HttpStatus.FORBIDDEN,"Bạn không phụ trách học phần của lượt thi này"));
         mvc.perform(get(path("teacher")).with(jwt().authorities(new SimpleGrantedAuthority("ROLE_TEACHER")))).andExpect(status().isForbidden()).andExpect(jsonPath("$.message").value("Bạn không phụ trách học phần của lượt thi này"));
     }
+    @Test void groupedPhotosKeepTheSameRoleAndAssignmentChecks() throws Exception {
+        for(String role:new String[]{"admin","teacher"}){
+            String grouped="/api/"+role+"/evidence/attempts/125/event-groups";
+            mvc.perform(get(grouped)).andExpect(status().isUnauthorized());
+            mvc.perform(get(grouped).with(jwt().authorities(new SimpleGrantedAuthority("ROLE_STUDENT")))).andExpect(status().isForbidden());
+        }
+        when(evidence.groupedEvents(any(),eq(125L),eq(0),eq(20))).thenReturn(new EvidenceReadService.EventPage(java.util.List.of(),0,0,20,"in_progress",0L));
+        mvc.perform(get("/api/teacher/evidence/attempts/125/event-groups").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_TEACHER")))).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store")).andExpect(jsonPath("$.groupTotal").value(0));
+    }
 }

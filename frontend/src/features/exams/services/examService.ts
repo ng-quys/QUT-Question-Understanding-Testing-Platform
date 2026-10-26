@@ -38,4 +38,4 @@ export const checkAutomaticExam = (body: AutomaticExamRequest) =>
 export const previewAutomaticExam = (body: AutomaticExamRequest) =>
   apiFetch<AutomaticPreview>('/teacher/exams/automatic/preview', { method: 'POST', body: JSON.stringify(body) });
 export const saveAutomaticExam = (previewId: string) =>
-  apiFetch<{ examIds: number[] }>('/teacher/exams/automatic/save', { method: 'POST', body: JSON.stringify({ previewId }) });
+  apiFetch<{ examIds: number[]; examCodes: string[] }>('/teacher/exams/automatic/save', { method: 'POST', body: JSON.stringify({ previewId }) });

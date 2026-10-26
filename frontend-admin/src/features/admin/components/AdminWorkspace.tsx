@@ -1,10 +1,11 @@
+import { createAdminViewCache } from '../services/adminViewCache';
 import { WarningSessionStatus } from './WarningSessionStatus';
 import { AutoRefreshIndicator } from '../../sessions/components/AutoRefreshIndicator';
 import { AdminExamReviewDialog } from './AdminExamReviewDialog';
 import { AiCreditsAdmin } from './AiCreditsAdmin';
 import { ExamOrganization } from '../../sessions/components/ExamOrganization';
 import { ADMIN_REFRESH_INTERVAL_MS } from '../../sessions/services/visiblePolling';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import {
   Check,
@@ -263,6 +264,13 @@ function InPageTabs({
   );
 }
 
+const organizationTabs: AdminTab[] = ['organization','studentClasses','sessionList','sessions','liveSessions'];
+const standaloneTabs: AdminTab[] = [...organizationTabs, 'aiCredits'];
+type ViewState = { draft: Filters; filters: Filters; pageIndex: number; size: number; accountSubTab: string; monitorSubTab: string; warnedSession: DataRow | null; scroll: number };
+type ViewData = { page?: Page; dashboard?: AdminDashboard; report?: Report; updated: Date };
+const resourceFor = (tab: AdminTab, sub: string, warned: DataRow | null) => tab === 'accounts' ? sub === 'student' ? 'students' : sub === 'teacher' ? 'teachers' : 'users' : tab === 'monitor' ? sub === 'warned' ? warned ? 'anti' : 'warning-sessions' : 'attempts' : tab;
+const tableKey = (tab: AdminTab, state: ViewState) => JSON.stringify([tab,resourceFor(tab,tab==='accounts'?state.accountSubTab:state.monitorSubTab,state.warnedSession),state.filters,state.pageIndex,state.size,state.warnedSession?.id,state.monitorSubTab]);
+
 // ── Main WorkspaceComponent ───────────────────────────────────────────────────
 
 export function AdminWorkspace({
@@ -311,7 +319,22 @@ export function AdminWorkspace({
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing,setRefreshing]=useState(false);
-  const loadedTableKey=useRef<string|null>(null);
+  const loadSeq = useRef(0);
+  const dataCache = useRef(createAdminViewCache<ViewData>());
+  const viewStates = useRef(new Map<string, ViewState>());
+  const lastViews = useRef(new Map<AdminTab, string>());
+  const pendingScroll = useRef<number | null>(null);
+  const [visited, setVisited] = useState<AdminTab[]>([]);
+  const [organizationRevision, setOrganizationRevision] = useState(0);
+  const currentView = (): ViewState => ({draft,filters,pageIndex,size,accountSubTab,monitorSubTab,warnedSession,scroll:window.scrollY});
+  const viewId = (target: AdminTab, sub: string) => ['accounts','monitor'].includes(target) ? `${target}:${sub}` : target;
+  useLayoutEffect(() => { if (pendingScroll.current !== null) { window.scrollTo({top:pendingScroll.current,behavior:'auto'}); pendingScroll.current = null; } });
+  const invalidate = useCallback(() => { loadSeq.current++; dataCache.current.clear(); setOrganizationRevision(v=>v+1); }, []);
+  const organizationRequest = useCallback(async <T,>(url: string, init?: RequestInit): Promise<T> => {
+    const result = await api.organizationRequest<T>(url, init);
+    if (init?.method && !['GET','HEAD'].includes(init.method.toUpperCase()) && !url.endsWith('/preview')) invalidate();
+    return result;
+  }, [api, invalidate]);
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
   const [toast, setToast] = useState('');
@@ -338,7 +361,6 @@ export function AdminWorkspace({
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const exportCancelled = useRef(false);
-  const loadSeq = useRef(0);
   useBodyScrollLock(mobile && compact);
 
   useEffect(() => {
@@ -388,13 +410,17 @@ export function AdminWorkspace({
 
   const current = adminTabs.find(item => item.id === tab) ?? adminTabs[0];
 
+  useEffect(() => { dataCache.current.clear(); viewStates.current.clear(); lastViews.current.clear(); }, [api]);
+
   // Load data — sequence-guarded so a slow earlier response never overwrites newer filters.
   useEffect(() => {
     if(['aiCredits','organization','studentClasses','sessionList','sessions','liveSessions'].includes(tab)){setLoading(false);setRefreshing(false);return;}
     const seq = ++loadSeq.current;
     let active = true;
     const queryKey=JSON.stringify([tab,effectiveApiResource,filters,pageIndex,size,warnedSession?.id,monitorSubTab]);
-    const background=tab==='monitor'&&loadedTableKey.current===queryKey;
+    const cached=dataCache.current.get(queryKey);
+    const background=Boolean(cached);
+    if(cached){if(cached.page)setPage(cached.page);if(cached.dashboard)setDashboard(cached.dashboard);setReport(cached.report??null);setLastUpdated(cached.updated);}
     setLoading(!background);
     setRefreshing(background);
     if(!background){setError('');setLoadError('');}
@@ -404,9 +430,12 @@ export function AdminWorkspace({
         if (tab === 'overview') {
           const [data, summary] = await Promise.all([api.dashboard(), api.report(emptyFilters)]);
           if (active && loadSeq.current === seq) {
+            const updated=new Date();
+            dataCache.current.set(queryKey,{dashboard:data,report:summary,updated});
             setDashboard(data);
             setReport(summary);
-            setLastUpdated(new Date());
+            setError('');setLoadError('');
+            setLastUpdated(updated);
           }
         } else {
           const [data, summary] = await Promise.all([
@@ -416,7 +445,7 @@ export function AdminWorkspace({
           if (active && loadSeq.current === seq) {
             const last = Math.max(0, Math.ceil(data.total / size) - 1);
             if (pageIndex > last) setPageIndex(last);
-            else {setPage(data);loadedTableKey.current=queryKey;}
+            else {setPage(data);dataCache.current.set(queryKey,{page:data,report:summary??undefined,updated:new Date()});}
             if (summary) setReport(summary);
             setError('');setLoadError('');
             setLastUpdated(new Date());
@@ -425,7 +454,7 @@ export function AdminWorkspace({
       } catch (cause) {
         if (active && loadSeq.current === seq) {
           const message = cause instanceof Error ? cause.message : 'Không thể tải dữ liệu';
-          if(background)setToast('Chưa cập nhật được cảnh báo. Đang giữ dữ liệu gần nhất; hệ thống sẽ thử lại.');
+          if(background)setToast('Chưa cập nhật được dữ liệu. Đang hiển thị dữ liệu đã tải; bạn có thể thử Làm mới.');
           else {setError(message);setLoadError(message);}
         }
       } finally {
@@ -465,29 +494,23 @@ export function AdminWorkspace({
   useEffect(() => () => { exportCancelled.current = true; }, []);
 
   function go(next: AdminTab, sub?: string) {
-    loadedTableKey.current=null;
-    exportCancelled.current = true;
-    loadSeq.current++;
-    setTab(next);
-    setMobile(false);
+    const previousId=viewId(tab,tab==='accounts'?accountSubTab:monitorSubTab);
+    viewStates.current.set(previousId,currentView()); lastViews.current.set(tab,previousId);
+    const targetId=sub ? viewId(next,sub) : lastViews.current.get(next) ?? viewId(next,next==='accounts'?'all':'warned');
+    const state=viewStates.current.get(targetId) ?? {draft:{...emptyFilters},filters:{...emptyFilters},pageIndex:0,size:20,accountSubTab:sub??'all',monitorSubTab:'warned',warnedSession:null,scroll:0};
+    const cached=dataCache.current.get(tableKey(next,state));
+    exportCancelled.current=true; loadSeq.current++;
+    setTab(next);setMobile(false);setResource(null);
     if(next!=='sessionList')setManagedSittingId(null);
-    setWarnedSession(null);
-    setDraft({ ...emptyFilters });
-    setFilters({ ...emptyFilters });
-    setPageIndex(0);
-    setError('');
-    setLoading(true);
-    setLastUpdated(null);
-    setPage({ items: [], total: 0, page: 0, size });
-    setResource(null);
-    const groupId = sidebarStructure.find(item => item.children?.some(child => child.id === next))?.groupId;
-    if (groupId) setOpenGroups(previous => new Set([...previous, groupId]));
-    // Preserve deep-link sub-tab when provided (e.g. quick links), otherwise reset.
-    if (next === 'accounts') setAccountSubTab(sub === 'student' || sub === 'teacher' ? sub : 'all');
-    else setAccountSubTab('all');
-    setWarnedSession(null);
-    setMonitorSubTab('warned');
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    setVisited(previous=>standaloneTabs.includes(next)&&!previous.includes(next)?[...previous,next]:previous);
+    setDraft(state.draft);setFilters(state.filters);setPageIndex(state.pageIndex);setSize(state.size);
+    setAccountSubTab(state.accountSubTab);setMonitorSubTab(state.monitorSubTab);setWarnedSession(state.warnedSession);
+    setError('');setLoadError('');setLoading(!cached&&!standaloneTabs.includes(next));setRefreshing(false);
+    setPage(cached?.page??{items:[],total:0,page:state.pageIndex,size:state.size});
+    setDashboard(cached?.dashboard??null);setReport(cached?.report??null);setLastUpdated(cached?.updated??null);
+    pendingScroll.current=state.scroll;
+    const groupId=sidebarStructure.find(item=>item.children?.some(child=>child.id===next))?.groupId;
+    if(groupId)setOpenGroups(previous=>new Set([...previous,groupId]));
   }
 
   function toggleGroup(id: string) {
@@ -500,6 +523,7 @@ export function AdminWorkspace({
 
   function refresh() {
     if (tab === 'aiCredits') window.dispatchEvent(new Event('examflow-admin-ai-credits-refresh'));
+    else if(organizationTabs.includes(tab))setOrganizationRevision(v=>v+1);
     else setRevision(p => p + 1);
   }
 
@@ -526,6 +550,7 @@ export function AdminWorkspace({
   function saved(message = 'Đã lưu thay đổi.') {
     setAccount(undefined);
     setToast(message);
+    invalidate();
     refresh();
   }
 
@@ -724,23 +749,7 @@ export function AdminWorkspace({
     null;
   const activeSubTab = tab === 'accounts' ? accountSubTab : tab === 'monitor' ? monitorSubTab : '';
 
-  function changeSubTab(id: string) {
-    exportCancelled.current = true;
-    loadSeq.current++;
-    setLoading(true);
-    setPage({ items: [], total: 0, page: 0, size });
-    if (tab === 'accounts') {
-      setAccountSubTab(id);
-    } else if (tab === 'monitor') {
-      setMonitorSubTab('warned');
-    }
-    // Always reset page and filters when switching sub-tab
-    setWarnedSession(null);
-    setDraft({ ...emptyFilters });
-    setFilters({ ...emptyFilters });
-    setPageIndex(0);
-    setError('');
-  }
+  function changeSubTab(id: string) { go(tab,id); }
 
   // Status options for current logical tab
   const statusOptions = warnedSessionList?['scheduled','ongoing','completed','cancelled']:statuses[tab] ?? statuses[columnTab as AdminTab] ?? [];
@@ -843,7 +852,9 @@ export function AdminWorkspace({
             </Notice>
           )}
 
-          {['organization','studentClasses','sessionList','sessions','liveSessions'].includes(tab) ? <ExamOrganization key={`${tab}-${revision}`} initialTab={tab==='liveSessions'?'live':tab==='sessions'?'allocation':tab==='studentClasses'?'classes':tab==='sessionList'?'sessions':'rooms'} hideNavigation initialSittingId={managedSittingId} onManageSitting={id=>{setManagedSittingId(id);go('sessionList');}} onCreateSitting={()=>go('sessions')} request={api.organizationRequest} admin onOpenAttempt={setAttemptId} onOpenExam={setExamReviewId}/> : tab === 'overview' ? (
+          {visited.filter(item=>organizationTabs.includes(item)).map(item=><div key={item} hidden={tab!==item} style={tab!==item?{display:'none'}:undefined}><ExamOrganization active={tab===item} refreshKey={organizationRevision} initialTab={item==='liveSessions'?'live':item==='sessions'?'allocation':item==='studentClasses'?'classes':item==='sessionList'?'sessions':'rooms'} hideNavigation initialSittingId={item==='sessionList'?managedSittingId:null} onManageSitting={id=>{setManagedSittingId(id);go('sessionList');}} onCreateSitting={()=>go('sessions')} request={organizationRequest} admin onOpenAttempt={setAttemptId} onOpenExam={setExamReviewId}/></div>)}
+          {visited.includes('aiCredits')&&<div hidden={tab!=='aiCredits'} style={tab!=='aiCredits'?{display:'none'}:undefined}><AiCreditsAdmin active={tab==='aiCredits'}/></div>}
+          {organizationTabs.includes(tab) ? null : tab === 'overview' ? (
             loading ? (
               <Loading />
             ) : dashboard && report ? (
@@ -851,7 +862,7 @@ export function AdminWorkspace({
             ) : (
               <Empty title="Chưa tải được tổng quan" description={error || 'Thử tải lại danh sách.'} action={<button className="admin-button secondary" onClick={refresh}>Thử lại</button>} />
             )
-          ) : tab === 'aiCredits' ? <AiCreditsAdmin /> : (
+          ) : tab === 'aiCredits' ? null : (
             <>
               {/* In-page sub-tabs for Accounts and Monitor */}
               {subTabs && subTabs.length > 1 && (
@@ -1031,12 +1042,12 @@ export function AdminWorkspace({
         <AdminImportDialog
           api={api}
           onClose={() => setShowImport(false)}
-          onFinished={summary => { setToast(summary); refresh(); }}
+          onFinished={summary => { setToast(summary); invalidate(); refresh(); }}
         />
       )}
 
       {resource && <AdminResourceDialog resource={resource.kind} row={resource.row} onClose={() => setResource(null)} onNavigate={(next, course) => { go(next); setDraft({ ...emptyFilters, course }); setFilters({ ...emptyFilters, course }); }} />}
-      {examReviewId!==null&&<AdminExamReviewDialog id={examReviewId} api={api} onClose={()=>setExamReviewId(null)} onEdit={()=>{setCatalog({kind:'exams',id:examReviewId});setExamReviewId(null);}} onChanged={()=>setRevision(v=>v+1)}/>}
+      {examReviewId!==null&&<AdminExamReviewDialog id={examReviewId} api={api} onClose={()=>setExamReviewId(null)} onEdit={()=>{setCatalog({kind:'exams',id:examReviewId});setExamReviewId(null);}} onChanged={()=>{invalidate();setRevision(v=>v+1);}}/>}
       {catalog&&<AdminCatalogDialog kind={catalog.kind} id={catalog.id} api={api} onClose={()=>setCatalog(null)} onSaved={message=>{setCatalog(null);saved(message);}}/>}
 
       {/* Attempt Dialog */}
@@ -1045,7 +1056,7 @@ export function AdminWorkspace({
           id={attemptId}
           api={api}
           onClose={() => setAttemptId(null)}
-          onSaved={() => { setToast('Đã lưu đánh giá lượt thi.'); refresh(); }}
+          onSaved={() => { setToast('Đã lưu đánh giá lượt thi.'); invalidate(); refresh(); }}
         />
       )}
 
@@ -1056,7 +1067,7 @@ export function AdminWorkspace({
           api={api}
           onClose={() => setSessionId(null)}
           onOpenAttempt={id => setAttemptId(id)}
-          onSaved={msg => { setToast(msg); refresh(); }}
+          onSaved={msg => { setToast(msg); invalidate(); refresh(); }}
         />
       )}
 

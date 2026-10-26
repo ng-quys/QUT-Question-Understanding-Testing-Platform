@@ -12,25 +12,51 @@ import java.util.*;
 @Service
 public class EvidenceReadService {
     @PersistenceContext private EntityManager em;
+    @org.springframework.beans.factory.annotation.Autowired private OfflineEvidenceService offlineEvidence;
     private final EvidenceAccessService access;
     private final EvidenceSchema schema;
     private final SupabaseEvidenceStorage storage;
     private final AdminEvidenceService local;
     public EvidenceReadService(EvidenceAccessService access,EvidenceSchema schema,SupabaseEvidenceStorage storage,AdminEvidenceService local) { this.access=access; this.schema=schema; this.storage=storage; this.local=local; }
-    public record Event(Long id,String event,boolean active,Object occurredAt,String module,double duration,int riskScore,String riskLevel,String provider,String evidenceStatus,boolean hasEvidence,String evidenceError) {}
-    public record EventPage(List<Event> items,long total,int page,int size,String attemptStatus) {}
-    private static String SELECT = "SELECT id,event,active,occurred_at,module,duration_seconds,risk_score,risk_level,evidence_provider,evidence_status,evidence_path,evidence_error FROM anti_cheat_events WHERE attempt_id=:id";
+    public record Event(Long id,String event,boolean active,Object occurredAt,String module,double duration,int riskScore,String riskLevel,String provider,String evidenceStatus,boolean hasEvidence,String evidenceError,String captureId,Object receivedAt,String analysisStatus) {
+        public Event(Long id,String event,boolean active,Object occurredAt,String module,double duration,int riskScore,String riskLevel,String provider,String evidenceStatus,boolean hasEvidence,String evidenceError,String captureId){this(id,event,active,occurredAt,module,duration,riskScore,riskLevel,provider,evidenceStatus,hasEvidence,evidenceError,captureId,null,null);}
+    }
+    public record EventPage(List<Event> items,long total,int page,int size,String attemptStatus,Long groupTotal,OfflineEvidenceService.Summary offlineEvidence) {
+        public EventPage(List<Event> items,long total,int page,int size,String attemptStatus,Long groupTotal){this(items,total,page,size,attemptStatus,groupTotal,null);}
+        public EventPage(List<Event> items,long total,int page,int size,String attemptStatus){this(items,total,page,size,attemptStatus,null);}
+    }
+    private static String SELECT = "SELECT id,event,active,occurred_at,module,duration_seconds,risk_score,risk_level,evidence_provider,evidence_status,evidence_path,evidence_error,capture_uuid FROM anti_cheat_events WHERE attempt_id=:id";
     @Transactional
     public EventPage events(Jwt jwt,Long id,int page,int size) {
         var attempt=access.require(jwt,id); schema.ensure();
+        var offline=offlineEvidence==null?null:offlineEvidence.summary(id);
         if (page<0 || size<1 || size>100 || (long)page*size>Integer.MAX_VALUE) throw new ApiException(HttpStatus.BAD_REQUEST,"Phân trang không hợp lệ");
         long total=((Number)em.createNativeQuery("SELECT COUNT(*) FROM anti_cheat_events WHERE attempt_id=:id").setParameter("id",id).getSingleResult()).longValue();
-        List<?> rows=em.createNativeQuery(SELECT + " ORDER BY occurred_at,id").setParameter("id",id).setFirstResult(page*size).setMaxResults(size).getResultList();
-        return new EventPage(rows.stream().map(row -> event((Object[])row)).toList(),total,page,size,attempt.getStatus());
+        List<?> rows=em.createNativeQuery(select() + " ORDER BY occurred_at,id").setParameter("id",id).setFirstResult(page*size).setMaxResults(size).getResultList();
+        return new EventPage(rows.stream().map(row -> event((Object[])row)).toList(),total,page,size,attempt.getStatus(),null,offline);
+    }
+    private static final String GROUP_KEY="COALESCE('capture:' || capture_uuid,'event:' || id::text)";
+    @Transactional
+    public EventPage groupedEvents(Jwt jwt,Long id,int page,int size){
+        var attempt=access.require(jwt,id);schema.ensure();
+        var offline=offlineEvidence==null?null:offlineEvidence.summary(id);
+        if(page<0||size<1||size>100||(long)page*size>Integer.MAX_VALUE)throw new ApiException(HttpStatus.BAD_REQUEST,"Phân trang không hợp lệ");
+        Object[] counts=(Object[])em.createNativeQuery("SELECT COUNT(*),COUNT(DISTINCT "+GROUP_KEY+") FROM anti_cheat_events WHERE attempt_id=:id").setParameter("id",id).getSingleResult();
+        long total=((Number)counts[0]).longValue(),groups=((Number)counts[1]).longValue();
+        List<?> keys=em.createNativeQuery("SELECT "+GROUP_KEY+" FROM anti_cheat_events WHERE attempt_id=:id GROUP BY "+GROUP_KEY+" ORDER BY MIN(occurred_at),MIN(id)")
+            .setParameter("id",id).setFirstResult(page*size).setMaxResults(size).getResultList();
+        if(keys.isEmpty())return new EventPage(List.of(),total,page,size,attempt.getStatus(),groups,offline);
+        // Paginate capture groups, then fetch all warnings for those captures; never split one photo across pages.
+        List<?> rows=em.createNativeQuery(select()+" AND "+GROUP_KEY+" IN (:groups) ORDER BY occurred_at,id").setParameter("id",id).setParameter("groups",keys).getResultList();
+        return new EventPage(rows.stream().map(row->event((Object[])row)).toList(),total,page,size,attempt.getStatus(),groups,offline);
+    }
+    private String select(){
+        if(offlineEvidence==null)return SELECT;
+        return SELECT.replace(" FROM anti_cheat_events WHERE",",(SELECT received_at FROM offline_evidence_frames f WHERE f.attempt_id=anti_cheat_events.attempt_id AND f.capture_uuid=anti_cheat_events.capture_uuid),(SELECT status FROM offline_evidence_frames f WHERE f.attempt_id=anti_cheat_events.attempt_id AND f.capture_uuid=anti_cheat_events.capture_uuid) FROM anti_cheat_events WHERE");
     }
     private Event event(Object[] row) {
         boolean legacy = "local".equals(row[8]) && row[10]!=null && !row[10].toString().isBlank();
-        return new Event(((Number)row[0]).longValue(),(String)row[1],Boolean.TRUE.equals(row[2]),row[3] instanceof java.sql.Timestamp t?t.toLocalDateTime():row[3],(String)row[4],row[5]==null?0:((Number)row[5]).doubleValue(),row[6]==null?0:((Number)row[6]).intValue(),row[7]==null?"LOW":row[7].toString(),(String)row[8],legacy?"local":(String)row[9],legacy || !"none".equals(row[9]),(String)row[11]);
+        return new Event(((Number)row[0]).longValue(),(String)row[1],Boolean.TRUE.equals(row[2]),row[3] instanceof java.sql.Timestamp t?t.toLocalDateTime():row[3],(String)row[4],row[5]==null?0:((Number)row[5]).doubleValue(),row[6]==null?0:((Number)row[6]).intValue(),row[7]==null?"LOW":row[7].toString(),(String)row[8],legacy?"local":(String)row[9],legacy || !"none".equals(row[9]),(String)row[11],row.length>12?(String)row[12]:null,row.length>13?(row[13] instanceof java.sql.Timestamp t?t.toLocalDateTime():row[13]):null,row.length>14?(String)row[14]:null);
     }
     @Transactional
     public SupabaseEvidenceStorage.SignedLink link(Jwt jwt,Long id,Long eventId) {

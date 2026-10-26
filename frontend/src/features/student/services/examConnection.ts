@@ -4,6 +4,7 @@ type ConnectionOptions = {
   probe: () => Promise<void>;
   onChange: (phase: ExamConnectionPhase) => void;
   onDisconnect: () => void;
+  automaticRecovery?: boolean;
 };
 
 /** A browser online event is a hint; only a server response permits resuming. */
@@ -35,7 +36,7 @@ export class ExamConnection {
         await this.options.probe();
         if (this.stopped || generation !== this.generation) return false;
         if (!this.options.online()) { this.disconnect(); return false; }
-        if (this.phase !== 'active') this.set('ready');
+        if (this.phase !== 'active') this.set(this.options.automaticRecovery?'active':'ready');
         return true;
       } catch {
         if (!this.stopped && generation === this.generation) this.disconnect();

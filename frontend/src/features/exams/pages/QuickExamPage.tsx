@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, BookOpen, CheckCircle2, Download, Loader2, Save, WandSparkles } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle2, Download, Eye, Loader2, Save, WandSparkles } from 'lucide-react';
 import type { Course, CourseCLO } from '@shared/types';
 import { checkAutomaticExam, getAutomaticBank, getAutomaticCourses, previewAutomaticExam, saveAutomaticExam,
   type AutomaticBank, type AutomaticCheck, type AutomaticExamRequest, type AutomaticPreview,
   type MatrixDimension, type MatrixGroup } from '../services/examService';
 import { TeacherHeading } from '../../../layouts/lecturer/TeacherUI';
 import { exportAutomaticExams } from '../services/exportAutomaticExams';
+import { QuestionBankPreviewDialog } from '../../question-bank/components/QuestionBankPreviewDialog';
 
 interface Props { courses: Course[]; clos: CourseCLO[]; onShowToast: (message: string) => void; onCreated: () => void }
 const dimensions: { key: MatrixDimension; label: string; description: string }[] = [
@@ -30,6 +31,7 @@ export const QuickExamPage: React.FC<Props> = ({ onShowToast, onCreated }) => {
   const [coursesLoading, setCoursesLoading] = useState(true), [coursesError, setCoursesError] = useState('');
   const [coursesRevision, setCoursesRevision] = useState(0);
   const [courseId, setCourseId] = useState('');
+  const [showBankPreview, setShowBankPreview] = useState(false);
   const [step,setStep] = useState(1);
   const move=(next:number)=>{setStep(next);window.scrollTo({top:0,behavior:'smooth'});};
   const [title, setTitle] = useState(''), [code, setCode] = useState('');
@@ -125,7 +127,13 @@ export const QuickExamPage: React.FC<Props> = ({ onShowToast, onCreated }) => {
   async function save() {
     if (!preview || !confirmed || busy || saved) return;
     setBusy('save'); setError('');
-    try { const result = await saveAutomaticExam(preview.previewId); setSaved(true); onShowToast(`Đã lưu ${result.examIds.length} mã đề ở trạng thái nháp.`); }
+    try {
+      const result = await saveAutomaticExam(preview.previewId);
+      const codes = new Map(preview.variants.map((v, i) => [v.code, result.examCodes[i]]));
+      setPreview({ ...preview, variants: preview.variants.map(v => ({ ...v, code: codes.get(v.code)! })),
+        pairs: preview.pairs.map(p => ({ ...p, first: codes.get(p.first)!, second: codes.get(p.second)! })) });
+      setSaved(true); onShowToast(`Đã lưu ${result.examIds.length} mã đề: ${result.examCodes.join(', ')}.`);
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể lưu bộ đề.'); }
     finally { setBusy(null); }
   }
@@ -146,7 +154,7 @@ export const QuickExamPage: React.FC<Props> = ({ onShowToast, onCreated }) => {
       <fieldset disabled={!!busy} className="min-w-0 space-y-5 disabled:opacity-80">
         <section className={panel}><h3 className="mb-5 flex items-center gap-2 text-base font-bold"><BookOpen size={18} className="text-indigo-600" />Thông tin đề thi</h3>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="text-sm font-medium">Ngân hàng câu hỏi theo học phần<select className={control} value={courseId} onChange={event => { invalidate(); setCourseId(event.target.value); }} required><option value="">Chọn ngân hàng câu hỏi</option>{courses.map(c => <option key={c.id} value={c.id}>Ngân hàng {c.code} · {c.name}</option>)}</select><span className="mt-1 block text-xs font-normal leading-5 text-slate-500">Mỗi học phần có một ngân hàng câu hỏi. Đề được lưu thuộc học phần này và chưa gắn với ca thi nào.</span></label>
+            <div className="text-sm font-medium"><label htmlFor="automatic-bank">Ngân hàng câu hỏi theo học phần</label><div className="qb-bank-select-row"><select id="automatic-bank" className={control} value={courseId} onChange={event => { invalidate(); setCourseId(event.target.value); }} required><option value="">Chọn ngân hàng câu hỏi</option>{courses.map(c => <option key={c.id} value={c.id}>Ngân hàng {c.code} · {c.name}</option>)}</select><button type="button" className="qb-bank-view" aria-label="Xem ngân hàng câu hỏi" title="Xem ngân hàng câu hỏi" disabled={!courseId || !courses.some(c => c.id === courseId)} onClick={() => setShowBankPreview(true)}><Eye size={15}/>Xem</button></div><span className="mt-1.5 block text-xs font-normal leading-5 text-slate-500">Đề được lưu theo học phần đã chọn, chưa gắn với ca thi.</span></div>
             <label className="text-sm font-medium">Tiền tố mã đề<input className={control} value={code} maxLength={40} placeholder="VD: CSDL_CK" onChange={event => { invalidate(); setCode(event.target.value); }} required /><span className="mt-1 block text-xs font-normal text-slate-500">Mã đề: {code || 'CSDL_CK'}-001, {code || 'CSDL_CK'}-002…</span></label>
             <label className="text-sm font-medium sm:col-span-2">Tên đề thi<input className={control} value={title} maxLength={150} placeholder="Nhập tên đề thi" onChange={event => { invalidate(); setTitle(event.target.value); }} required /></label>
             <label className="text-sm font-medium">Số mã đề (M)<input type="number" min={1} max={10} step={1} className={control} value={variants} onChange={event => { invalidate(); setVariants(Number(event.target.value)); }} /></label>
@@ -206,5 +214,6 @@ export const QuickExamPage: React.FC<Props> = ({ onShowToast, onCreated }) => {
           <button type="button" disabled={!!busy} onClick={() => void exportWord()} className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold disabled:opacity-40"><Download size={16} />{busy === 'export' ? 'Đang xuất…' : 'Xuất Word & đáp án'}</button></div>
       </div>
     </section>}
+    {showBankPreview && courses.find(c => c.id === courseId) && <QuestionBankPreviewDialog key={courseId} course={courses.find(c => c.id === courseId)!} onClose={() => setShowBankPreview(false)}/>}
   </div>;
 };

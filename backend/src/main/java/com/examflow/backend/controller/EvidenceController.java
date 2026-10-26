@@ -20,6 +20,10 @@ public class EvidenceController {
     public ResponseEntity<EvidenceReadService.EventPage> events(@AuthenticationPrincipal Jwt jwt,@PathVariable Long id,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(evidence.events(jwt,id,page,size));
     }
+    @GetMapping("/attempts/{id}/event-groups")
+    public ResponseEntity<EvidenceReadService.EventPage> groups(@AuthenticationPrincipal Jwt jwt,@PathVariable Long id,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size){
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(evidence.groupedEvents(jwt,id,page,size));
+    }
     @GetMapping("/attempts/{id}/events/{eventId}/link")
     public ResponseEntity<SupabaseEvidenceStorage.SignedLink> link(@AuthenticationPrincipal Jwt jwt,@PathVariable Long id,@PathVariable Long eventId) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(evidence.link(jwt,id,eventId));

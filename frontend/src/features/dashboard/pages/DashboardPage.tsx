@@ -1,4 +1,5 @@
 import {SimpleOverview} from '../components/SimpleOverview';
+import { TeacherWarningsPage } from '../../sessions/pages/TeacherWarningsPage';
 import {TeacherProfilePage} from '../../profile-teacher/pages/TeacherProfilePage';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -36,10 +37,10 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const [searchParams,setSearchParams]=useSearchParams();
-  const tabs:DashboardNavTab[]=['overview','courses','question-bank','new-question','ai-generator','quick-exam','exams','exam-sessions','monitoring','settings'];
+  const tabs:DashboardNavTab[]=['overview','courses','question-bank','new-question','ai-generator','quick-exam','exams','exam-sessions','monitoring','warnings','settings'];
   const requestedTab=searchParams.get('tab') as DashboardNavTab;
   const activeTab:DashboardNavTab=tabs.includes(requestedTab)?requestedTab:'overview';
-  const setActiveTab=useCallback((tab:DashboardNavTab)=>{setSearchParams(previous=>{const next=new URLSearchParams(previous);next.set('tab',tab);if(tab!=='monitoring')next.delete('session');return next;});},[setSearchParams]);
+  const setActiveTab=useCallback((tab:DashboardNavTab)=>{setSearchParams(previous=>{const next=new URLSearchParams(previous);next.set('tab',tab);if(tab!=='monitoring')next.delete('session');if(tab!=='warnings')next.delete('warningSession');return next;});},[setSearchParams]);
   const [showProfile,setShowProfile]=useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -282,6 +283,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
           )}
 
           {activeTab === 'monitoring' && <TeacherMonitoringPage/>}
+          {activeTab === 'warnings' && <TeacherWarningsPage/>}
 
           {/* TAB 7: SETTINGS (Cài đặt) */}
           {activeTab === 'settings' && (

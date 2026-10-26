@@ -1,6 +1,6 @@
 import { examDate } from '@shared/utils/examTime';
 import { AlertTriangle, ArrowDown, ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, ChevronRight, Clock3, Flag, GraduationCap, LayoutDashboard, Loader2, LogOut, Maximize2, PanelLeftClose, PanelLeftOpen, QrCode, RefreshCw, Search, ShieldCheck, Trophy, Upload, User, X } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { StudentAttempt, StudentDashboard, StudentProfile, StudentResult } from '../services/studentService';
 import '../styles/student.css';
 
@@ -25,7 +25,7 @@ export function StudentDialog({ title, description, onClose, children }: { title
   </dialog>;
 }
 
-export function StudentShell({ name, email, view, onNavigate, onLogout, children }: { name: string; email: string; view: StudentView; onNavigate: (view: StudentView) => void; onLogout: () => void; children: ReactNode }) {
+export function StudentShell({ name, studentCode, view, onNavigate, onLogout, children }: { name: string; studentCode: string; view: StudentView; onNavigate: (view: StudentView) => void; onLogout: () => void; children: ReactNode }) {
   const exam = view === 'exam';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('examflow.student.sidebarCollapsed') === 'true'; }
@@ -70,7 +70,7 @@ export function StudentShell({ name, email, view, onNavigate, onLogout, children
               {name}
             </strong>
             <span>
-              {email}
+              MSSV: {studentCode}
             </span>
           </div>
           {!exam && <button className="student-icon-button" onClick={onLogout} aria-label="Đăng xuất" title="Đăng xuất">
@@ -428,12 +428,59 @@ export function ProfileView({ profile, photoUrl, onUpload }: { profile: StudentP
   </div>;
 }
 
-export function ExamRunner({ attempt, selected, remaining, monitoring, savingQuestion, pendingQuestions = [], failedQuestions, onChoose, onSubmit, submitting, expired=false, violationCount, fullscreenActive, onFullscreen }: { attempt: StudentAttempt; selected: Record<number, number>; remaining: string; monitoring?:ReactNode; savingQuestion: number | null; pendingQuestions?: number[]; failedQuestions: number[]; onChoose: (q: number, a: number) => void; onSubmit: () => void; submitting: boolean; expired?:boolean; violationCount: number; fullscreenActive: boolean; onFullscreen: () => void }) {
+type ExamQuestion = StudentAttempt['questions'][number];
+const ExamQuestionCard=memo(function ExamQuestionCard({q,index,selectedAnswer,marked,current,disabled,onChoose,onToggleFlag,register}:{
+  q:ExamQuestion;index:number;selectedAnswer:number|undefined;marked:boolean;current:boolean;disabled:boolean;
+  onChoose:(question:number,answer:number)=>void;onToggleFlag:(question:number)=>void;
+  register:(question:number,element:HTMLElement|null)=>void;
+}){
+  const attach=useCallback((element:HTMLElement|null)=>register(q.questionId,element),[q.questionId,register]);
+  return <article key={q.questionId} ref={attach} data-index={index} className={`student-question ${current ? 'current' : ''}`} id={`student-question-${q.questionId}`}>
+            <div className="student-question-heading">
+              <div>
+                <span className="student-question-number">{"Câu "}{q.position}
+                </span>
+                <span className="student-question-points">
+                  {q.points}{" điểm "}{q.cloCode ? ` · ${q.cloCode}` : ''}
+                </span>
+              </div>
+              <button className={`student-flag ${marked ? 'marked' : ''}`} aria-pressed={marked} aria-label={`${marked ? 'Bỏ đánh dấu' : 'Đánh dấu xem lại'} câu ${q.position}`} onClick={() => onToggleFlag(q.questionId)}>
+                <Flag size={16} />
+                <span>
+                  {marked ? 'Đã đánh dấu' : 'Xem lại'}
+                </span>
+              </button>
+            </div>
+            <h2>
+              {q.content}
+            </h2>
+            <div className="student-options" role="radiogroup" aria-label={`Đáp án câu ${q.position}`}>
+              {q.options.map((opt, optionIndex) => {
+                const active = selectedAnswer === opt.id; return <button key={opt.id} disabled={disabled} role="radio" aria-checked={active} tabIndex={active || selectedAnswer === undefined && optionIndex === 0 ? 0 : -1} onKeyDown={event => { const direction = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0; if(!direction) return; event.preventDefault(); const next = (optionIndex + direction + q.options.length) % q.options.length; event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus(); onChoose(q.questionId, q.options[next].id); }} className={`student-option ${active ? 'selected' : ''}`} onClick={() => onChoose(q.questionId, opt.id)}>
+                  <span className="student-option-letter">
+                    {opt.label}
+                  </span>
+                  <span>
+                    {opt.content}
+                  </span>
+                  <span className="student-option-indicator">
+                    {active && <Check size={14} />}
+                  </span>
+                </button>;
+              })}
+            </div>
+
+          </article>;
+});
+
+export function ExamRunner({ attempt, selected, remaining, monitoring, savingQuestion, onChoose, onSubmit, submitting, expired=false, violationCount, fullscreenActive, onFullscreen }: { attempt: StudentAttempt; selected: Record<number, number>; remaining: string; monitoring?:ReactNode; savingQuestion: number | null; onChoose: (q: number, a: number) => void; onSubmit: () => void; submitting: boolean; expired?:boolean; violationCount: number; fullscreenActive: boolean; onFullscreen: () => void }) {
   const [flagged, setFlagged] = useState<number[]>([]);
   const [current, setCurrent] = useState(0);
   const [filter, setFilter] = useState('all');
   const [mapOpen, setMapOpen] = useState(false);
   const questionRefs = useRef(new Map<number, HTMLElement>());
+  const registerQuestion=useCallback((id:number,element:HTMLElement|null)=>{if(element)questionRefs.current.set(id,element);else questionRefs.current.delete(id);},[]);
+  const toggleFlag=useCallback((id:number)=>setFlagged(previous=>previous.includes(id)?previous.filter(value=>value!==id):[...previous,id]),[]);
   const answered = attempt.questions.filter(q => selected[q.questionId] !== undefined).length;
   const total = attempt.questions.length;
   const seconds = remaining.split(':').reduce((n, part) => n * 60 + Number(part), 0);
@@ -487,46 +534,7 @@ export function ExamRunner({ attempt, selected, remaining, monitoring, savingQue
             {violationCount >= 3 ? 'Hệ thống đang tự động nộp bài.' : 'Vui lòng giữ trang thi ở chế độ toàn màn hình. Bài thi tự nộp khi đủ 3 lần cảnh báo.'}
           </span>
         </div>}
-        {attempt.questions.map((q, index) => {
-          const marked = flagged.includes(q.questionId); const failed = failedQuestions.includes(q.questionId); return <article key={q.questionId} ref={element => { if(element) questionRefs.current.set(q.questionId, element); else questionRefs.current.delete(q.questionId); }} data-index={index} className={`student-question ${current === index ? 'current' : ''}`} id={`student-question-${q.questionId}`}>
-            <div className="student-question-heading">
-              <div>
-                <span className="student-question-number">{"Câu "}{q.position}
-                </span>
-                <span className="student-question-points">
-                  {q.points}{" điểm "}{q.cloCode ? ` · ${q.cloCode}` : ''}
-                </span>
-              </div>
-              <button className={`student-flag ${marked ? 'marked' : ''}`} aria-pressed={marked} aria-label={`${marked ? 'Bỏ đánh dấu' : 'Đánh dấu xem lại'} câu ${q.position}`} onClick={() => setFlagged(prev => marked ? prev.filter(id => id !== q.questionId) : [...prev, q.questionId])}>
-                <Flag size={16} />
-                <span>
-                  {marked ? 'Đã đánh dấu' : 'Xem lại'}
-                </span>
-              </button>
-            </div>
-            <h2>
-              {q.content}
-            </h2>
-            <div className="student-options" role="radiogroup" aria-label={`Đáp án câu ${q.position}`}>
-              {q.options.map((opt, optionIndex) => {
-                const active = selected[q.questionId] === opt.id; return <button key={opt.id} disabled={submitting||expired} role="radio" aria-checked={active} tabIndex={active || selected[q.questionId] === undefined && optionIndex === 0 ? 0 : -1} onKeyDown={event => { const direction = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0; if(!direction) return; event.preventDefault(); const next = (optionIndex + direction + q.options.length) % q.options.length; event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus(); onChoose(q.questionId, q.options[next].id); }} className={`student-option ${active ? 'selected' : ''}`} onClick={() => onChoose(q.questionId, opt.id)}>
-                  <span className="student-option-letter">
-                    {opt.label}
-                  </span>
-                  <span>
-                    {opt.content}
-                  </span>
-                  <span className="student-option-indicator">
-                    {active && <Check size={14} />}
-                  </span>
-                </button>;
-              })}
-            </div>
-            {failed && !pendingQuestions.includes(q.questionId) && savingQuestion !== q.questionId && <div className="student-question-save failed" role="status">
-              <AlertTriangle size={13} />Chưa đồng bộ lên máy chủ. Hệ thống sẽ tự thử lại.
-            </div>}
-          </article>;
-        })}
+        {attempt.questions.map((q,index)=><ExamQuestionCard key={q.questionId} q={q} index={index} selectedAnswer={selected[q.questionId]} marked={flagged.includes(q.questionId)} current={current===index} disabled={submitting||expired} onChoose={onChoose} onToggleFlag={toggleFlag} register={registerQuestion}/>)}
         <div className="student-question-pagination">
           <button className="student-button secondary" disabled={current <= 0} onClick={() => jump(current - 1)}>
             <ArrowLeft size={16} />{" Câu trước"}</button>
@@ -582,7 +590,7 @@ export function ExamRunner({ attempt, selected, remaining, monitoring, savingQue
               </select>
             </label>
             <nav className="student-question-map" aria-label="Điều hướng câu hỏi">
-              {attempt.questions.map((q, index) => filter === 'unanswered' && selected[q.questionId] !== undefined || filter === 'flagged' && !flagged.includes(q.questionId) ? null : <button key={q.questionId} className={`${selected[q.questionId] !== undefined ? 'answered' : ''} ${flagged.includes(q.questionId) ? 'flagged' : ''} ${failedQuestions.includes(q.questionId) ? 'save-failed' : ''} ${current === index ? 'active' : ''}`} aria-label={`Câu ${q.position}, ${selected[q.questionId] !== undefined ? 'đã chọn' : 'chưa trả lời'}${flagged.includes(q.questionId) ? ', đánh dấu xem lại' : ''}`} aria-current={current === index ? 'step' : undefined} onClick={() => jump(index)}>
+              {attempt.questions.map((q, index) => filter === 'unanswered' && selected[q.questionId] !== undefined || filter === 'flagged' && !flagged.includes(q.questionId) ? null : <button key={q.questionId} className={`${selected[q.questionId] !== undefined ? 'answered' : ''} ${flagged.includes(q.questionId) ? 'flagged' : ''} ${current === index ? 'active' : ''}`} aria-label={`Câu ${q.position}, ${selected[q.questionId] !== undefined ? 'đã chọn' : 'chưa trả lời'}${flagged.includes(q.questionId) ? ', đánh dấu xem lại' : ''}`} aria-current={current === index ? 'step' : undefined} onClick={() => jump(index)}>
                 {q.position}
                 {flagged.includes(q.questionId) && <Flag size={9} />}
               </button>)}

@@ -29,6 +29,41 @@ public class SupabaseEvidenceStorage {
         this.base = base.replaceAll("/+$", ""); this.key = key; this.bucket = bucket; this.client = client;
     }
     public String bucket() { return bucket; }
+    public void uploadOffline(long attempt,String capture,byte[] jpeg){
+        String object="attempt-"+attempt+"/"+java.util.UUID.fromString(capture)+".jpg";
+        validateObject(attempt,bucket,object);
+        authenticated("/storage/v1/bucket/"+encode(bucket));
+        try{
+            var info=send("/storage/v1/bucket/"+encode(bucket),null);
+            if(!info.path("public").isBoolean()||info.path("public").asBoolean())throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"Bucket bằng chứng phải PRIVATE");
+            var request=authenticated("/storage/v1/object/"+encode(bucket)+"/"+encodePath(object)).header("Content-Type","image/jpeg").header("x-upsert","true")
+                .POST(HttpRequest.BodyPublishers.ofByteArray(jpeg)).build();
+            var response=client.send(request,HttpResponse.BodyHandlers.discarding());
+            if(response.statusCode()<200||response.statusCode()>=300)throw new IllegalStateException();
+        }catch(InterruptedException ex){Thread.currentThread().interrupt();throw new ApiException(HttpStatus.BAD_GATEWAY,"Gửi ảnh bị gián đoạn, bản trên máy vẫn được giữ.");}
+        catch(ApiException ex){throw ex;}
+        catch(Exception ex){throw new ApiException(HttpStatus.BAD_GATEWAY,"Chưa lưu được ảnh trên máy chủ, vui lòng thử lại.");}
+    }
+    public byte[] readOffline(long attempt,String capture){
+        String object="attempt-"+attempt+"/"+java.util.UUID.fromString(capture)+".jpg";validateObject(attempt,bucket,object);
+        try{
+            var response=client.send(authenticated("/storage/v1/object/"+encode(bucket)+"/"+encodePath(object)).GET().build(),HttpResponse.BodyHandlers.ofInputStream());
+            try(var body=response.body()){
+                byte[] bytes=body.readNBytes(250001);
+                if(response.statusCode()!=200||bytes.length>250000)throw new IllegalStateException();
+                return bytes;
+            }
+        }catch(InterruptedException ex){Thread.currentThread().interrupt();throw new IllegalStateException("OFFLINE_IMAGE_UNAVAILABLE");}
+        catch(Exception ex){throw new IllegalStateException("OFFLINE_IMAGE_UNAVAILABLE");}
+    }
+    private HttpRequest.Builder authenticated(String path){
+        URI origin;
+        try{origin=URI.create(base);if(!"https".equals(origin.getScheme())||origin.getHost()==null||origin.getUserInfo()!=null||origin.getQuery()!=null||origin.getFragment()!=null||!origin.getPath().isEmpty()||key.isBlank())throw new IllegalArgumentException();}
+        catch(Exception ex){throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"Cấu hình Storage không hợp lệ");}
+        var request=HttpRequest.newBuilder(URI.create(base+path)).timeout(Duration.ofSeconds(8)).header("apikey",key);
+        if(key.split("\\.").length==3)request.header("Authorization","Bearer "+key);
+        return request;
+    }
     public SignedLink sign(Long attemptId, String storedBucket, String objectKey) {
         validateObject(attemptId,storedBucket,objectKey);
         if (base.isBlank() || key.isBlank()) throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"Máy chủ chưa cấu hình Supabase Storage");

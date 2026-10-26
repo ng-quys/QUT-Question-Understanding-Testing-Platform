@@ -1,0 +1,18 @@
+.teacher-warning-update{display:flex;align-items:center;gap:7px;color:#667d8b;font-size:12px;margin:-6px 0 20px}
+.teacher-warning-update i{width:6px;height:6px;border-radius:50%;background:#42a382}
+.teacher-warning-context{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:20px}
+.teacher-warning-context strong{color:#304c70;font-size:15px}
+.teacher-warnings .t-table{overflow-x:auto;background:#fff;border:1px solid #dfe7f2;border-radius:13px}
+.teacher-warnings table{min-width:980px;width:100%;border-collapse:collapse}
+.teacher-warnings th,.teacher-warnings td{padding:17px 18px;text-align:left;vertical-align:middle;border-bottom:1px solid #eaf0f7;font-size:12px}
+.teacher-warnings th{background:#f6f8fc;color:#6d819e;font-weight:600;white-space:nowrap}
+.teacher-warnings tbody tr:last-child td{border-bottom:0}
+.teacher-warnings td strong{display:block;font-size:13px;font-weight:600;color:#2c4568}
+.teacher-warnings td small{display:block;margin-top:6px;font-size:11px;color:#7b8da5;line-height:1.6}
+.teacher-warning-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid #f0dbac;border-radius:7px;background:#fff8e9;color:#a5731e;white-space:nowrap;font-size:11px}
+.teacher-warning-tag.high{background:#fff1f3;border-color:#efc6d0;color:#ba4b65}
+.teacher-warning-count{font-weight:650;color:#a57522}
+.teacher-warning-stage{display:inline-flex;border-radius:7px;padding:6px 9px;background:#f0f3f8;color:#71839c;white-space:nowrap;font-size:11px}
+.teacher-warning-stage.ongoing{background:#edf8f2;color:#2b8969}
+.teacher-warning-stage.cancelled{background:#fff1f3;color:#b65068}
+.teacher-warnings .t-button{white-space:nowrap}
