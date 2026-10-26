@@ -1,0 +1,40 @@
+.date-time-24{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:10px;align-items:stretch;width:100%;min-width:0}
+.date-time-24>input[type=date]{box-sizing:border-box;width:100%;min-width:0;font-variant-numeric:tabular-nums}
+.date-time-24 .time-picker-trigger{display:flex;align-items:center;justify-content:center;gap:9px;min-height:46px;width:100%;margin:0;padding:10px 12px;border:1px solid #d3dff0;border-radius:10px;background:#fff;color:#73839b;font:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.date-time-24 .time-picker-trigger.has-value{color:#203d64;font-weight:600;font-variant-numeric:tabular-nums}
+.date-time-24 .time-picker-trigger>svg:first-child{color:#577bb3;flex-shrink:0}
+.date-time-24 .time-picker-trigger>svg:last-child{margin-left:auto;color:#8192ad}
+.date-time-24 .time-picker-trigger:hover{border-color:#8eaee0;background:#f8faff}
+.date-time-24 .time-picker-trigger:focus-visible,.date-time-24 .time-picker-trigger[aria-expanded=true]{outline:0;border-color:#3975d2;box-shadow:0 0 0 3px #2563eb18}
+.date-time-24-error{grid-column:1/-1;font-size:12px;font-weight:400;color:#be3e39}
+.time-picker-popover[popover]{position:fixed;inset:auto;margin:0;box-sizing:border-box;width:310px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;padding:16px;border:1px solid #dbe5f3;border-radius:16px;background:#fff;color:#233e61;box-shadow:0 16px 48px #233f6829,0 3px 12px #233f6812;font-family:inherit;font-size:13px;line-height:1.4;font-weight:400;text-align:left;scrollbar-width:thin}
+.time-picker-popover[popover]:popover-open{display:block;animation:time-picker-enter .12s ease-out}
+.time-picker-popover[popover] .time-picker-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin:0 0 12px}
+.time-picker-popover[popover] .time-picker-heading strong{display:block;font-size:14px;font-weight:650;color:#203b60}
+.time-picker-popover[popover] .time-picker-heading small{display:block;margin-top:4px;font-size:11px;color:#7b8ba1}
+.time-picker-popover[popover] button{box-sizing:border-box;margin:0;min-width:0;font-family:inherit;cursor:pointer;transition:background .12s,border-color .12s}
+.time-picker-popover[popover] button:focus-visible{outline:2px solid #3f78d5;outline-offset:2px}
+.time-picker-popover[popover] .time-picker-close{display:grid;place-items:center;width:28px;height:28px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent;color:#7d8ca3}
+.time-picker-popover[popover] .time-picker-close:hover{background:#f0f4fa;color:#254a7c}
+.time-picker-popover[popover] .time-picker-segments{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:12px;padding:8px;background:#f6f8fc;border-radius:12px}
+.time-picker-popover[popover] .time-picker-segments>button{display:flex;flex-direction:column;align-items:center;gap:3px;width:76px;min-height:56px;padding:7px 12px;border:1px solid transparent;border-radius:10px;background:transparent;color:#70829c}
+.time-picker-popover[popover] .time-picker-segments>button small{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em}
+.time-picker-popover[popover] .time-picker-segments>button strong{font-size:27px;line-height:1.1;font-weight:650;font-variant-numeric:tabular-nums}
+.time-picker-popover[popover] .time-picker-segments>button.active{background:#fff;border-color:#dce6f6;color:#245cca;box-shadow:0 2px 5px #2446750a}
+.time-picker-popover[popover] .time-picker-segments>span{font-size:26px;color:#a2b1c7;font-weight:500}
+.time-picker-popover[popover] .time-picker-grid-label{display:block;margin-bottom:8px;font-size:11px;font-weight:550;color:#7c8da4}
+.time-picker-popover[popover] .time-picker-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:30px;align-content:start;gap:5px;height:140px;overflow-y:auto;padding:2px 4px 2px 2px;scrollbar-width:thin;scrollbar-color:#c4d2e6 transparent;overscroll-behavior:contain}
+.time-picker-popover[popover] .time-picker-grid>button{display:grid;place-items:center;min-height:30px;padding:0;border:1px solid transparent;border-radius:8px;background:#f5f7fb;color:#4b6386;font-size:12px;font-weight:550;font-variant-numeric:tabular-nums}
+.time-picker-popover[popover] .time-picker-grid>button:hover{background:#eaf1fd;color:#235ec6;border-color:#d7e4f9}
+.time-picker-popover[popover] .time-picker-grid>button[aria-pressed=true]{background:#285fcc;color:#fff;border-color:#285fcc;box-shadow:0 2px 5px #285fcc25}
+.time-picker-popover[popover] .time-picker-validation{display:block;min-height:16px;margin:8px 0;font-size:11px;color:#b77814}
+.time-picker-popover[popover] .time-picker-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #edf1f7}
+.time-picker-popover[popover] .time-picker-footer>button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:35px;padding:7px 13px;border:1px solid #dae3f0;border-radius:8px;background:#fff;color:#59708e;font-size:12px;font-weight:550}
+.time-picker-popover[popover] .time-picker-footer>.time-picker-apply{background:#285fcc;border-color:#285fcc;color:#fff}
+.time-picker-popover[popover] .time-picker-footer>.time-picker-apply:hover{background:#1d50b4}
+.time-picker-popover[popover] .time-picker-footer>button:disabled{opacity:.45;cursor:not-allowed}
+@keyframes time-picker-enter{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.time-picker-popover[popover]:popover-open{animation:none}}
+@media(max-width:440px){.date-time-24{grid-template-columns:minmax(0,1fr) 124px;gap:8px}.date-time-24>input[type=date]{padding-left:8px;padding-right:6px}.date-time-24 .time-picker-trigger{padding:10px 9px;gap:6px;font-size:13px}}
+
+.time-picker-popover[popover] .time-picker-validation:empty{display:none}

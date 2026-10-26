@@ -6,7 +6,7 @@ import type{
   CourseChapter,
   CourseCLO,
   QuestionItem,
-} from '../../../types';
+} from '@shared/types';
 import { AIGeneratorPage } from '../pages/AIGeneratorPage';
 
 interface AIGenerateModalProps {

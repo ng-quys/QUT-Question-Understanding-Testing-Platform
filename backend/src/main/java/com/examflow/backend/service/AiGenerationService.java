@@ -19,7 +19,7 @@ private final HttpClient http = HttpClient.newBuilder()
     .proxy(java.net.ProxySelector.of(null))
     .connectTimeout(Duration.ofSeconds(10))
     .build();
-    
+
     @Value("${ai.credits.max-questions-per-request:45}") private int maxQuestions;
     @Value("${ai.internal.key:}") private String internalKey;
     @Value("${ai.openai.key:}") private String openaiKey;

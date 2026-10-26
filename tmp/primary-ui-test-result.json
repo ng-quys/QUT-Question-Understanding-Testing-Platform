@@ -1,0 +1,79 @@
+{
+  "baseline_id": 8,
+  "username": "8000000004",
+  "armed_utc": "2026-10-21T18:58:42.583914+00:00",
+  "observer_writes": 0,
+  "job_id": 9,
+  "state": "succeeded",
+  "accepted": 1,
+  "charged": 1,
+  "execution_token": "b8c5ff5e-b153-4c20-9798-8ce88a5db9b8",
+  "registry": "ac285c5e-ca18-4650-8bcd-29ed3ea9a9a0",
+  "upstream": {
+    "http": 200,
+    "state": "succeeded",
+    "questions": 1
+  },
+  "questions": [
+    {
+      "bloom": "apply",
+      "cloId": 31,
+      "content": "Với mục tiêu có ý thức vận dụng hiểu biết công nghệ thông tin vào cải thiện điều kiện học tập, bạn nên áp dụng cách nào khi quản lý truy cập vào thư mục chia sẻ trong hệ thống Windows Server?",
+      "options": [
+        "A) Đặt quyền truy cập 'Full Control' cho tất cả người dùng",
+        "B) Gán quyền truy cập 'Full Control' cho từng người dùng riêng lẻ",
+        "C) Sử dụng nhóm Authenticated Users và loại bỏ nhóm Everyone từ danh sách quyền chia sẻ",
+        "D) Không quản lý truy cập vào thư mục chia sẻ"
+      ],
+      "explanation": "Đáp án C là phù hợp vì nó áp dụng cách hạn chế quyền truy cập, giúp quản lý an toàn và hiệu quả. Căn cứ từ tài liệu: 'Khi gán cho một nhóm quyền ‘Full Control’ phải cân nhắc kỹ'",
+      "correctIndex": 2,
+      "evidenceQuote": "Khi gán cho một nhóm quyền ‘Full Control’ phải cân nhắc kỹ"
+    }
+  ],
+  "selected_clos": [
+    25,
+    27,
+    26,
+    31
+  ],
+  "source_characters": 17951,
+  "machine_validation": true,
+  "ledger": [
+    {
+      "id": 23,
+      "event_type": "reserve",
+      "monthly_used_delta": 0,
+      "monthly_reserved_delta": 1,
+      "extra_balance_delta": 0,
+      "extra_reserved_delta": 0
+    },
+    {
+      "id": 24,
+      "event_type": "settle",
+      "monthly_used_delta": 1,
+      "monthly_reserved_delta": -1,
+      "extra_balance_delta": 0,
+      "extra_reserved_delta": 0
+    }
+  ],
+  "quota": {
+    "used": 3,
+    "reserved": 0,
+    "remaining": 197
+  },
+  "transport_logs": [
+    "2026-10-22T02:02:10.363+07:00  INFO 9104 --- [backend] [i-credit-poller] c.e.backend.service.AiCreditsWorker      : AI credit claim instance=9104/678018a7-68aa-451f-9cef-33a5a4f7cec3 job=9 token=b8c5ff5e-b153-4c20-9798-8ce88a5db9b8",
+    "INFO:     127.0.0.1:58592 - \"POST /credits/jobs/b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 HTTP/1.1\" 202 Accepted",
+    "INFO:     127.0.0.1:58595 - \"GET /credits/jobs/b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 HTTP/1.1\" 200 OK",
+    "INFO:     127.0.0.1:58592 - \"GET /credits/jobs/b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 HTTP/1.1\" 200 OK",
+    "INFO:     127.0.0.1:54165 - \"GET /credits/jobs/b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 HTTP/1.1\" 200 OK",
+    "INFO:     127.0.0.1:54201 - \"GET /credits/jobs/b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 HTTP/1.1\" 200 OK",
+    "INFO:     127.0.0.1:54204 - \"GET /credits/jobs/b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 HTTP/1.1\" 200 OK",
+    "INFO:     127.0.0.1:54208 - \"GET /credits/jobs/b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 HTTP/1.1\" 200 OK",
+    "INFO:     127.0.0.1:63880 - \"GET /credits/jobs/b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 HTTP/1.1\" 200 OK",
+    "2026-10-22T02:03:03.630+07:00  INFO 9104 --- [backend] [i-credit-poller] c.e.backend.service.AiCreditsWorker      : AI credit terminal response instance=9104/678018a7-68aa-451f-9cef-33a5a4f7cec3 job=9 token=b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 upstream=succeeded",
+    "INFO:     127.0.0.1:50163 - \"GET /credits/jobs/b8c5ff5e-b153-4c20-9798-8ce88a5db9b8 HTTP/1.1\" 200 OK"
+  ],
+  "success": true,
+  "finished_utc": "2026-10-21T19:03:10.697821+00:00"
+}

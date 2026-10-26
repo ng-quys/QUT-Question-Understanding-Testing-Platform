@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, X, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { SourceDocument } from '../../../../types';
+import { SourceDocument } from '@shared/types';
 
 interface FileQueueItemProps {
   document: SourceDocument;
@@ -98,6 +98,12 @@ export const FileQueueItem: React.FC<FileQueueItemProps> = ({
           </span>
         )}
 
+        {document.status === 'indexing' && (
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+            <Loader2 className="w-3 h-3 animate-spin text-amber-600" /> Đang indexing
+          </span>
+        )}
+
         {document.status === 'success' && (
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -109,6 +115,11 @@ export const FileQueueItem: React.FC<FileQueueItemProps> = ({
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
             <AlertCircle className="w-3 h-3 text-rose-600" />
             Lỗi xử lý
+          </span>
+        )}
+        {(document.status === 'failed' || document.status === 'stale') && (
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+            <AlertCircle className="w-3 h-3 text-rose-600" /> {document.status === 'stale' ? 'Cần reindex' : 'Index thất bại'}
           </span>
         )}
 

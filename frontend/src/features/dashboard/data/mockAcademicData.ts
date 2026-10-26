@@ -1,4 +1,4 @@
-import type{ Course, CourseChapter, CourseCLO, QuestionItem, Bloom3Level } from '../../../types';
+import type{ Course, CourseChapter, CourseCLO, QuestionItem, Bloom3Level } from '@shared/types';
 
 export const BLOOM_3_CONFIG: Record<
   Bloom3Level,

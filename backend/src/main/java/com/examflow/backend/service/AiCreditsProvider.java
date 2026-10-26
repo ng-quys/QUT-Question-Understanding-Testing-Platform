@@ -46,9 +46,18 @@ public class AiCreditsProvider {
         public String code(){return code;}
     }
     private JsonNode call(String method,String path,Object payload) throws Exception {
+        return call(method,path,payload,null,null);
+    }
+    private JsonNode call(String method,String path,Object payload,String registry) throws Exception {
+        return call(method,path,payload,registry,null);
+    }
+    private JsonNode call(String method,String path,Object payload,String registry,Long jobId) throws Exception {
         if(key.length()<32)throw new ProviderException(503,"BE_INTERNAL_KEY_MISSING");
         var request=HttpRequest.newBuilder(URI.create(url.replaceAll("/+$","")+path))
-            .timeout(Duration.ofSeconds(15)).header("X-AI-Internal-Key",key);
+            .timeout(path.startsWith("/documents/")?Duration.ofMinutes(15):Duration.ofSeconds(15)).header("X-AI-Internal-Key",key);
+        if(registry!=null)request.header("X-AI-Registry-Id",registry);
+        // Operational metadata only; never part of the generation payload or its idempotency hash.
+        if(jobId!=null)request.header("X-ExamFlow-Job-Id",Long.toString(jobId));
         if("GET".equals(method))request.GET();
         else request.header("Content-Type","application/json").POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(payload)));
         var response=http.send(request.build(),HttpResponse.BodyHandlers.ofString());
@@ -56,6 +65,12 @@ public class AiCreditsProvider {
             String code="UPSTREAM_HTTP_ERROR";
             if(response.statusCode()==403)code="INTERNAL_KEY_REJECTED";
             else if(response.statusCode()==404)code="UPSTREAM_JOB_NOT_FOUND";
+            else if(response.statusCode()==409&&registry!=null) {
+                try {
+                    if("AI execution registry mismatch".equals(json.readTree(response.body()).path("detail").asText()))
+                        code="UPSTREAM_REGISTRY_MISMATCH";
+                }catch(Exception ignored){}
+            }
             else if(response.statusCode()==503) {
                 code="UPSTREAM_UNAVAILABLE";
                 try {
@@ -73,6 +88,23 @@ public class AiCreditsProvider {
     public void start(UUID token,AiGenerateRequest request)throws Exception {call("POST","/credits/jobs/"+token,request);}
     public JsonNode status(UUID token)throws Exception {return call("GET","/credits/jobs/"+token,null);}
     public void cancel(UUID token)throws Exception {call("POST","/credits/jobs/"+token+"/cancel",Map.of());}
+    public String registryId()throws Exception {
+        String id=call("GET","/health",null).path("registryId").asText("");
+        try{return UUID.fromString(id).toString();}
+        catch(IllegalArgumentException e){throw new ProviderException(503,"UPSTREAM_REGISTRY_ID_MISSING");}
+    }
+    public void start(UUID token,AiGenerateRequest request,String registry)throws Exception {call("POST","/credits/jobs/"+token,request,registry);}
+    public void start(UUID token,AiGenerateRequest request,String registry,long jobId)throws Exception {call("POST","/credits/jobs/"+token,request,registry,jobId);}
+    public JsonNode status(UUID token,String registry)throws Exception {return call("GET","/credits/jobs/"+token,null,registry);}
+    public void cancel(UUID token,String registry)throws Exception {call("POST","/credits/jobs/"+token+"/cancel",Map.of(),registry);}
+    public void telemetryUnknown(long jobId,UUID token,int requested,int accepted,int checkpointBatch,String error){
+        try { call("POST","/telemetry/jobs/"+token+"/unknown",Map.of(
+            "jobId",jobId,"requested",requested,"accepted",accepted,"checkpointBatchSize",checkpointBatch,
+            "resumeCount",0,"error",Objects.toString(error,""))); }
+        catch(Exception failure){log.warn("AI telemetry snapshot deferred job={} token={} error={}",jobId,token,failure.getClass().getSimpleName());}
+    }
+    public JsonNode indexDocument(Map<String,Object> request)throws Exception {return call("POST","/documents/index",request);}
+    public JsonNode reindexDocument(Map<String,Object> request)throws Exception {return call("POST","/documents/reindex",request);}
     public List<AiQuestionDto> questions(JsonNode status)throws Exception {
         return Arrays.asList(json.treeToValue(status.path("questions"),AiQuestionDto[].class));
     }

@@ -1,7 +1,7 @@
-import type {AiQuota} from '../../ai-generator/services/aiCreditsService';
+import type {AiQuota} from '@shared/features/ai-generator/services/aiCreditsService';
 import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowLeft, FileText, Award } from 'lucide-react';
-import { Course, CourseChapter, CourseCLO, QuestionItem, SourceDocument } from '../../../types';
+import { Course, CourseChapter, CourseCLO, QuestionItem, SourceDocument } from '@shared/types';
 import { MatrixKnowledgeUnit, MatrixCustomConfig } from '../types';
 import {
   calculateMatrixSummary,

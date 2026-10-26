@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import type{ SlideData } from '../../types';
+import type{ SlideData } from '@shared/types';
 import { HeroSlide } from './HeroSlide';
 import { ChevronLeft, ChevronRight, Pause, Play, GraduationCap } from 'lucide-react';
 

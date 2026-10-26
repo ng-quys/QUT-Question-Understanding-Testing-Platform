@@ -1,4 +1,4 @@
-import { apiFetch } from '../../../services/api';
+import { apiFetch } from '@shared/services/api';
 export interface TeacherProfile {id:number;name:string;email:string;department:string|null;role:string;username:string}
 const profileListeners = new Set<(profile: TeacherProfile) => void>();
 

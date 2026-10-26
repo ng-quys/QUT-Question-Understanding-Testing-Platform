@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HelpCircle } from 'lucide-react';
-import { Course, CourseChapter, CourseCLO } from '../../../types';
+import { Course, CourseChapter, CourseCLO } from '@shared/types';
 import { MatrixKnowledgeUnit, MatrixSummaryStats, RowValidation } from '../types';
 import { MatrixChapterGroup } from './MatrixChapterGroup';
 import { MatrixSummary, MatrixSummaryBottomBar } from './MatrixSummary';

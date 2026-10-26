@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -20,6 +19,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig {
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174}")
+    private String frontendOrigins = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174";
 
     @Bean
     @Order(1)
@@ -50,7 +51,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            KeycloakJwtAuthenticationConverter converter
+            com.examflow.backend.auth.DatabaseAuthService databaseAuth
     ) throws Exception {
 
         http
@@ -74,11 +75,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
 
+                        .requestMatchers("/api/auth/register").denyAll()
+
                         // PUBLIC APIs
                         .requestMatchers(
                                 "/api/health",
-                                "/api/auth/login",
-                                "/api/auth/register",
+                                "/api/auth/login", "/api/auth/refresh", "/api/auth/logout",
                                 "/api/test/public",
                                 "/error"
                         )
@@ -89,6 +91,8 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
 
                         // TEACHER APIs
+                        .requestMatchers("/api/teacher/organization/**")
+                        .denyAll()
                         .requestMatchers("/api/teacher/**")
                         .hasAnyRole("TEACHER", "ADMIN")
 
@@ -104,12 +108,8 @@ public class SecurityConfig {
                         .authenticated()
                 )
 
-                // Keycloak JWT authentication
-                .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwt ->
-                                jwt.jwtAuthenticationConverter(converter)
-                        )
-                );
+                .exceptionHandling(errors->errors.authenticationEntryPoint((request,response,error)->response.setStatus(401)))
+                .addFilterBefore(new com.examflow.backend.auth.DatabaseAuthenticationFilter(databaseAuth),org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -121,8 +121,8 @@ public class SecurityConfig {
      * for locally stored passwords.
      */
     @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        return new com.examflow.backend.auth.DatabasePasswordEncoder();
     }
 
     /**
@@ -133,14 +133,9 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // React development servers
-        configuration.setAllowedOriginPatterns(
-                List.of(
-                        "http://localhost:5173",
-                        "http://127.0.0.1:5173",
-                        "http://localhost:5174"
-                )
-        );
+        // Explicit portal/admin origins; production overrides via APP_CORS_ALLOWED_ORIGINS.
+        configuration.setAllowedOrigins(java.util.Arrays.stream(frontendOrigins.split(","))
+                .map(String::trim).filter(value -> !value.isEmpty()).distinct().toList());
 
         configuration.setAllowedMethods(
                 List.of(
@@ -156,7 +151,8 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(
                 List.of(
                         "Authorization",
-                        "Content-Type"
+                        "Content-Type",
+                        "X-Account-Code-Reservation"
                 )
         );
 

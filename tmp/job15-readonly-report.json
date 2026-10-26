@@ -1,0 +1,340 @@
+{
+  "backend": [
+    {
+      "pid": 26452,
+      "started_utc": "2026-10-23T08:41:58.537394+00:00",
+      "cwd": "D:\\baitap\\KLTN\\v2\\QUT-Question-Understanding-Testing-Platform\\backend"
+    }
+  ],
+  "fastapi": [
+    {
+      "pid": 12936,
+      "started_utc": "2026-10-23T08:19:54.100201+00:00",
+      "cwd": "D:\\baitap\\KLTN\\v2\\QUT-Question-Understanding-Testing-Platform\\ai-service"
+    }
+  ],
+  "ollama": [
+    {
+      "pid": 2612,
+      "started_utc": "2026-10-23T07:55:31.110577+00:00",
+      "cwd": "C:\\Users\\Quys\\AppData\\Local\\Programs\\Ollama"
+    }
+  ],
+  "worker_flags": {
+    "AI_CREDITS_WORKER_ENABLED": "true",
+    "AI_CREDITS_WORKER_CLUSTER_READY": "true"
+  },
+  "job": {
+    "id": 15,
+    "requested_by": 35,
+    "course_id": 11,
+    "status": "completed",
+    "credit_state": "partial",
+    "execution_token": "496d1a3f-ae1c-4986-9be6-6ff0f0e2c0c7",
+    "requested_question_count": 10,
+    "accepted_count": 2,
+    "reserved_monthly": 10,
+    "reserved_extra": 0,
+    "charged_monthly": 2,
+    "charged_extra": 0,
+    "credit_created_at": "2026-10-23 07:41:47.317720+00:00",
+    "dispatched_at": "2026-10-23 07:41:52.464854+00:00",
+    "heartbeat_at": "2026-10-23 07:47:03.642886+00:00",
+    "lease_expires_at": null,
+    "cancel_requested_at": "2026-10-23 08:23:11.724737+00:00",
+    "credit_completed_at": "2026-10-23 08:48:54.753338+00:00",
+    "credit_error_code": "Theo ph\u00ea duy\u1ec7t c\u1ee7a gi\u1ea3ng vi\u00ean: k\u1ebft th\u00fac job #15, ch\u1ea5p nh\u1eadn 2 c\u00e2u checkpoint, t\u00ednh 2 credits v\u00e0 gi\u1ea3i ph\u00f3ng 8 credits c\u00f2n l\u1ea1i. \u0110\u00e3 x\u00e1c minh FastAPI c\u0169 d\u1eebng, registry m\u1edbi tr\u1ea3 404 cho execution c\u0169; checkpoint kh\u00f4ng thay \u0111\u1ed5i.",
+    "registry": "1ce90ec2-e57c-43ea-a845-b89a0cbf7870",
+    "provider": "qwen",
+    "checkpoint_count": 2
+  },
+  "ledger": [
+    {
+      "id": 37,
+      "event_type": "reserve",
+      "monthly_used_delta": 0,
+      "monthly_reserved_delta": 10,
+      "extra_balance_delta": 0,
+      "extra_reserved_delta": 0,
+      "created_at": "2026-10-23 07:41:47.317720+00:00"
+    },
+    {
+      "id": 38,
+      "event_type": "settle",
+      "monthly_used_delta": 2,
+      "monthly_reserved_delta": -10,
+      "extra_balance_delta": 0,
+      "extra_reserved_delta": 0,
+      "created_at": "2026-10-23 08:48:54.753338+00:00"
+    }
+  ],
+  "reservations": [
+    {
+      "user_id": 35,
+      "month_start": "2026-10-01",
+      "monthly_limit": 200,
+      "used": 8,
+      "reserved": 0
+    }
+  ],
+  "extra": [
+    {
+      "extra_balance": 0,
+      "extra_reserved": 0
+    }
+  ],
+  "checkpoints": [
+    {
+      "items": [
+        {
+          "bloom": "understand",
+          "cloId": 25,
+          "content": "Ch\u00ednh s\u00e1ch nh\u00f3m (Group Policy) l\u00e0 c\u00f4ng ngh\u1ec7 c\u1ee7a Microsoft h\u1ed7 tr\u1ee3 qu\u1ea3n l\u00fd ng\u01b0\u1eddi d\u00f9ng v\u00e0 m\u00e1y t\u00ednh theo quan h\u1ec7 m\u1ed9t-nhi\u1ec1u trong m\u00f4i tr\u01b0\u1eddng Active Directory.",
+          "options": [
+            "L\u00e0 m\u1ed9t c\u00f4ng c\u1ee5 qu\u1ea3n l\u00fd h\u1ec7 \u0111i\u1ec1u h\u00e0nh Linux.",
+            "\u0110\u01b0\u1ee3c s\u1eed d\u1ee5ng ch\u1ee7 y\u1ebfu \u0111\u1ec3 qu\u1ea3n l\u00fd truy c\u1eadp v\u00e0o th\u01b0 m\u1ee5c.",
+            "C\u00f4ng ngh\u1ec7 qu\u1ea3n l\u00fd ng\u01b0\u1eddi d\u00f9ng v\u00e0 m\u00e1y t\u00ednh m\u1ed9t-nhi\u1ec1u trong Active Directory.",
+            "Kh\u00f4ng ph\u1ea3i c\u00f4ng ngh\u1ec7 c\u1ee7a Microsoft."
+          ],
+          "explanation": "\u0110\u00e1p \u00e1n \u0111\u00fang: 'C\u00f4ng ngh\u1ec7 qu\u1ea3n l\u00fd ng\u01b0\u1eddi d\u00f9ng v\u00e0 m\u00e1y t\u00ednh m\u1ed9t-nhi\u1ec1u trong Active Directory.' V\u00ec ch\u00ednh x\u00e1c theo t\u00e0i li\u1ec7u: 'Ch\u00ednh s\u00e1ch nh\u00f3m (Group Policy) l\u00e0 m\u1ed9t c\u00f4ng ngh\u1ec7 c\u1ee7a Microsoft, h\u1ed7 tr\u1ee3 qu\u1ea3n l\u00fd ng\u01b0\u1eddi d\u00f9ng v\u00e0 m\u00e1y t\u00ednh theo quan h\u1ec7 m\u1ed9t-nhi\u1ec1u trong m\u00f4i tr\u01b0\u1eddng Active Directory.'",
+          "correctIndex": 2,
+          "evidenceQuote": "Ch\u00ednh s\u00e1ch nh\u00f3m (Group Policy) l\u00e0 m\u1ed9t c\u00f4ng ngh\u1ec7 c\u1ee7a Microsoft, h\u1ed7 tr\u1ee3 qu\u1ea3n l\u00fd ng\u01b0\u1eddi d\u00f9ng v\u00e0 m\u00e1y t\u00ednh theo quan h\u1ec7 m\u1ed9t-nhi\u1ec1u trong m\u00f4i tr\u01b0\u1eddng Active Directory."
+        },
+        {
+          "bloom": "remember",
+          "cloId": 26,
+          "content": "H\u1ec7 th\u1ed1ng Windows \u00e1p d\u1ee5ng th\u1eddi gian l\u00e0m m\u1edbi sau bao l\u00e2u cho c\u00e1c thi\u1ebft l\u1eadp ng\u01b0\u1eddi d\u00f9ng?",
+          "options": [
+            "120 ph\u00fat",
+            "90 ph\u00fat",
+            "180 ph\u00fat",
+            "30 ph\u00fat"
+          ],
+          "explanation": "The correct answer is 90 minutes. The evidence from the text is: 'Th\u1eddi gian l\u00e0m m\u1edbi: Sau m\u1ed7i 90 ph\u00fat'",
+          "correctIndex": 1,
+          "evidenceQuote": "Th\u1eddi gian l\u00e0m m\u1edbi: Sau m\u1ed7i 90 ph\u00fat"
+        }
+      ]
+    }
+  ],
+  "ai_runtime_settings": {
+    "OLLAMA_URL": "<default>",
+    "OLLAMA_MODEL": "<default>",
+    "OLLAMA_EMBED_MODEL": "<default>",
+    "AI_DUPLICATE_MAX_ATTEMPTS": "<default>"
+  },
+  "samples": [
+    {
+      "observed_utc": "2026-10-23T08:49:19.449610+00:00",
+      "health": {
+        "http": 200,
+        "status": "ok",
+        "registryId": "99464dd9-63cf-407f-8338-5af26d559aa9",
+        "model": "qwen2.5:7b",
+        "ollama_url": "http://127.0.0.1:11434"
+      },
+      "upstream": {
+        "http": 404,
+        "status": null,
+        "error": null,
+        "heartbeat": null,
+        "cancelRequested": null,
+        "questions_count": 0,
+        "questions_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "ollama_ps": {
+        "http": 200,
+        "models": []
+      },
+      "db": {
+        "credit_state": "partial",
+        "accepted_count": 2,
+        "heartbeat_at": "2026-10-23 07:47:03.642886+00:00",
+        "credit_error_code": "Theo ph\u00ea duy\u1ec7t c\u1ee7a gi\u1ea3ng vi\u00ean: k\u1ebft th\u00fac job #15, ch\u1ea5p nh\u1eadn 2 c\u00e2u checkpoint, t\u00ednh 2 credits v\u00e0 gi\u1ea3i ph\u00f3ng 8 credits c\u00f2n l\u1ea1i. \u0110\u00e3 x\u00e1c minh FastAPI c\u0169 d\u1eebng, registry m\u1edbi tr\u1ea3 404 cho execution c\u0169; checkpoint kh\u00f4ng thay \u0111\u1ed5i."
+      }
+    },
+    {
+      "observed_utc": "2026-10-23T08:49:28.384851+00:00",
+      "health": {
+        "http": 200,
+        "status": "ok",
+        "registryId": "99464dd9-63cf-407f-8338-5af26d559aa9",
+        "model": "qwen2.5:7b",
+        "ollama_url": "http://127.0.0.1:11434"
+      },
+      "upstream": {
+        "http": 404,
+        "status": null,
+        "error": null,
+        "heartbeat": null,
+        "cancelRequested": null,
+        "questions_count": 0,
+        "questions_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "ollama_ps": {
+        "http": 200,
+        "models": []
+      },
+      "db": {
+        "credit_state": "partial",
+        "accepted_count": 2,
+        "heartbeat_at": "2026-10-23 07:47:03.642886+00:00",
+        "credit_error_code": "Theo ph\u00ea duy\u1ec7t c\u1ee7a gi\u1ea3ng vi\u00ean: k\u1ebft th\u00fac job #15, ch\u1ea5p nh\u1eadn 2 c\u00e2u checkpoint, t\u00ednh 2 credits v\u00e0 gi\u1ea3i ph\u00f3ng 8 credits c\u00f2n l\u1ea1i. \u0110\u00e3 x\u00e1c minh FastAPI c\u0169 d\u1eebng, registry m\u1edbi tr\u1ea3 404 cho execution c\u0169; checkpoint kh\u00f4ng thay \u0111\u1ed5i."
+      }
+    },
+    {
+      "observed_utc": "2026-10-23T08:49:37.259549+00:00",
+      "health": {
+        "http": 200,
+        "status": "ok",
+        "registryId": "99464dd9-63cf-407f-8338-5af26d559aa9",
+        "model": "qwen2.5:7b",
+        "ollama_url": "http://127.0.0.1:11434"
+      },
+      "upstream": {
+        "http": 404,
+        "status": null,
+        "error": null,
+        "heartbeat": null,
+        "cancelRequested": null,
+        "questions_count": 0,
+        "questions_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "ollama_ps": {
+        "http": 200,
+        "models": []
+      },
+      "db": {
+        "credit_state": "partial",
+        "accepted_count": 2,
+        "heartbeat_at": "2026-10-23 07:47:03.642886+00:00",
+        "credit_error_code": "Theo ph\u00ea duy\u1ec7t c\u1ee7a gi\u1ea3ng vi\u00ean: k\u1ebft th\u00fac job #15, ch\u1ea5p nh\u1eadn 2 c\u00e2u checkpoint, t\u00ednh 2 credits v\u00e0 gi\u1ea3i ph\u00f3ng 8 credits c\u00f2n l\u1ea1i. \u0110\u00e3 x\u00e1c minh FastAPI c\u0169 d\u1eebng, registry m\u1edbi tr\u1ea3 404 cho execution c\u0169; checkpoint kh\u00f4ng thay \u0111\u1ed5i."
+      }
+    }
+  ],
+  "ollama_tags": [
+    "nomic-embed-text:latest",
+    "llama3.1:8b",
+    "qwen2.5:7b"
+  ],
+  "db_activity": [
+    {
+      "pid": 2451850,
+      "application_name": "ExamFlow-Main/ai-worker-v1",
+      "state": "idle",
+      "query_start": "2026-10-23 08:49:38.678440+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 2454265,
+      "application_name": "PostgREST 14.18",
+      "state": "idle",
+      "query_start": "2026-10-23 08:49:10.580969+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 2451899,
+      "application_name": "ExamFlow-Main/ai-worker-v1",
+      "state": "idle",
+      "query_start": "2026-10-23 08:49:35.133254+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 5021,
+      "application_name": "PostgREST 14.18",
+      "state": "idle",
+      "query_start": "2026-09-29 16:57:04.797371+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 98957,
+      "application_name": "",
+      "state": "idle",
+      "query_start": "2026-10-23 00:26:01.025648+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 2454267,
+      "application_name": "Supavisor (auth_query)",
+      "state": "idle",
+      "query_start": "2026-10-23 08:49:31.139381+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 5336,
+      "application_name": "postgres_exporter",
+      "state": "idle",
+      "query_start": "2026-10-23 08:48:45.639031+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 2451758,
+      "application_name": "",
+      "state": "idle",
+      "query_start": "2026-10-23 08:49:34.371516+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 2447832,
+      "application_name": "Supavisor (auth_query)",
+      "state": "idle",
+      "query_start": "2026-10-23 08:49:33.471104+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 2453451,
+      "application_name": "ExamFlow-Main/ai-worker-v1",
+      "state": "idle",
+      "query_start": "2026-10-23 08:49:32.677498+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 2451897,
+      "application_name": "ExamFlow-Main/ai-worker-v1",
+      "state": "idle",
+      "query_start": "2026-10-23 08:49:37.821432+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "ai_job_scan"
+    },
+    {
+      "pid": 2451898,
+      "application_name": "ExamFlow-Main/ai-worker-v1",
+      "state": "idle",
+      "query_start": "2026-10-23 08:49:29.452506+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    },
+    {
+      "pid": 2449520,
+      "application_name": "ExamFlow-Main/ai-worker-v1",
+      "state": "idle",
+      "query_start": "2026-10-23 08:36:50.992122+00:00",
+      "wait_event_type": "Client",
+      "wait_event": "ClientRead",
+      "query_kind": "other"
+    }
+  ],
+  "finished_utc": "2026-10-23T08:49:39.245596+00:00"
+}

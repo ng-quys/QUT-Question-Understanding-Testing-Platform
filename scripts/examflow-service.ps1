@@ -1,4 +1,6 @@
-param([Parameter(Mandatory=$true)][string]$Root,[Parameter(Mandatory=$true)][ValidateSet('Ollama','Backend','AIGenerator','AntiCheating','Frontend')][string]$Service)
+﻿param([Parameter(Mandatory=$true)][string]$Root,[Parameter(Mandatory=$true)][string]$Service)
+$ServiceNames=@('Ollama','Backend','AIGenerator','EmbeddingSync','AntiCheating','Frontend','AdminFrontend')
+if($Service -notin $ServiceNames){throw 'Unsupported service name.'}
 $ErrorActionPreference='Stop'
 # Every service wrapper owns one non-inheritable Job Object handle. Its children
 # inherit job membership, never the handle. Killing the wrapper closes that last
@@ -52,13 +54,21 @@ try {
             Set-Location -LiteralPath (Join-Path $Root 'ai-service')
             & (Join-Path $Root 'ai-service/start-ai-credits.ps1') -Port $ports.AIGenerator -BackendBaseUri ('http://127.0.0.1:'+$ports.Backend)
         }
+        'EmbeddingSync' {
+            Set-Location -LiteralPath $Root
+            & (Join-Path $Root 'ai-service/.venv/Scripts/python.exe') (Join-Path $Root 'ai-service/tools/sync_question_embeddings.py') --apply --watch --missing-only --batch-size 5 --interval 3 --health-port $ports.EmbeddingSync
+        }
         'AntiCheating' {
             Set-Location -LiteralPath (Join-Path $Root 'anticheating')
-            & (Join-Path $Root 'anticheating/.venv/Scripts/python.exe') (Join-Path $Root 'anticheating/app/run_service.py')
+            $python=Join-Path $Root 'anticheating/.venv/Scripts/python.exe'
+            if(-not(Test-Path -LiteralPath $python)){$python=Join-Path $Root 'anticheating/.venv-launcher/Scripts/python.exe'}
+            & $python (Join-Path $Root 'anticheating/app/run_service.py')
         }
-        'Frontend' {
-            Set-Location -LiteralPath (Join-Path $Root 'frontend')
-            & $env:EXAMFLOW_LAUNCH_NPM run dev -- --host 127.0.0.1 --port $ports.Frontend --strictPort
+        {$_ -in @('Frontend','AdminFrontend')} {
+            $folder=if($Service -eq 'AdminFrontend'){'frontend-admin'}else{'frontend'}
+            $port=if($Service -eq 'AdminFrontend'){$ports.AdminFrontend}else{$ports.Frontend}
+            Set-Location -LiteralPath (Join-Path $Root $folder)
+            & $env:EXAMFLOW_LAUNCH_NPM run dev -- --host 127.0.0.1 --port $port --strictPort
         }
     }
     if($LASTEXITCODE -ne 0){throw 'Service exited with an error.'}

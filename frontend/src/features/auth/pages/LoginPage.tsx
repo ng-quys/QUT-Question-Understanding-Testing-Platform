@@ -7,12 +7,12 @@ import {
 
 import { LoginForm } from '../components/LoginForm';
 
-import type { UserRole } from '../../../types';
-import { ROUTES } from '../../../app/routes';
+import type { UserRole } from '@shared/types';
+import { ROUTES } from '@shared/app/routes';
 import {
   getToken,
   saveAuthSession,
-} from '../services/authService';
+} from '@shared/features/auth/services/authService';
 
 export const LoginPage: React.FC = () => {
   const [lang, setLang] =
@@ -26,7 +26,8 @@ export const LoginPage: React.FC = () => {
    */
   const handleLoginSuccess = (
     role: UserRole,
-    email: string
+    email: string,
+    user?: {username:string;fullName:string}
   ) => {
     const token = getToken();
 
@@ -47,9 +48,9 @@ export const LoginPage: React.FC = () => {
     saveAuthSession(
       {
         token,
-        username: email,
+        username: user?.username || email,
         email,
-        fullName: email,
+        fullName: user?.fullName || email,
         role,
       },
       true
@@ -69,17 +70,17 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <main className="min-h-dvh bg-[#f4f6fa] text-slate-900">
+    <main className="min-h-dvh bg-[#f5f6f8] text-[#24364b]" style={{ '--primary': '#245bc4' } as React.CSSProperties}>
       {/* Minimal top bar */}
       <header className="border-b border-[var(--border-color)] bg-white">
         <div className="mx-auto flex h-14 w-full max-w-[1160px] items-center justify-between px-5 sm:px-8 lg:px-10">
 
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#233c60] text-white">
               <GraduationCap className="h-[17px] w-[17px]" />
             </div>
 
-            <span className="text-[15px] font-semibold tracking-tight text-slate-950">
+            <span className="text-[15px] font-semibold tracking-tight text-[#24364b]">
               ExamFlow
             </span>
           </div>
@@ -127,7 +128,7 @@ export const LoginPage: React.FC = () => {
       {/* Main login layout */}
       <div className="mx-auto w-full max-w-[1160px] px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
 
-        <div className="grid grid-cols-1 overflow-hidden rounded-[24px] border border-[#dce4ef] bg-[#f9fbff] shadow-[0_16px_45px_rgba(15,35,65,0.07)] lg:min-h-[540px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 overflow-hidden rounded-[24px] border border-[#dce4ef] bg-white shadow-[0_16px_45px_rgba(15,35,65,0.07)] lg:min-h-[540px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 
           {/* Minimal static banner — no slider or autoplay */}
           <section className="relative hidden overflow-hidden bg-[#0D1B2A] lg:flex lg:flex-col lg:justify-between p-8 xl:p-10">
@@ -150,7 +151,7 @@ export const LoginPage: React.FC = () => {
           </section>
 
           {/* Login */}
-          <section className="flex items-center justify-center bg-[#f9fbff] px-6 py-7 sm:px-8 lg:px-9 lg:py-6 xl:px-10">
+          <section className="flex items-center justify-center bg-white px-6 py-7 sm:px-8 lg:px-9 lg:py-6 xl:px-10">
 
             <div className="w-full max-w-[400px]">
 
@@ -160,7 +161,7 @@ export const LoginPage: React.FC = () => {
                   ExamFlow
                 </p>
 
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#24364b]">
                   Hệ thống khảo thí trực tuyến
                 </h1>
 

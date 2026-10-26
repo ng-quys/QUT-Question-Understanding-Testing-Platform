@@ -1,0 +1,334 @@
+PAGE 1
+ĐỀ CƯƠNG HỌC PHẦN THỨ 52: QUẢN TRỊ HỆ THỐNG MẠNG
+ĐỀ CƯƠNG CHI TIẾT
+HỌC PHẦN QUẢN TRỊ HỆ THỐNG MẠNG
+1. THÔNG TIN TỔNG QUÁT
+Tên học phần (tiếng Việt): Quản trị hệ thống mạng
+Tên học phần (tiếng Anh): Network and System Administration
+Trình độ : Đại học
+Mã học phần: 0101101973 Mã tự quản: 01200154
+Thuộc khối kiến thức: Cơ sở ngành Loại học phần: Bắt buộc
+Đơn vị phụ trách: Bộ môn Mạng máy tính và Truyền thông - Khoa Công nghệ thông
+tin
+Số tín chỉ: 3 (3,0)
+Phân bố thời gian:
+− Số tiết lý thuyết : 45 tiết
+− Số tiết thí nghiệm/thực hành (TN/TH) : 00 tiết
+− Số giờ tự học : 90 giờ
+Điều kiện tham gia học tập học phần:
+− Học phần tiên quyết: Không;
+− Học phần học trước: Không;
+− Học phần song hành: Không.
+2. THÔNG TIN GIẢNG VIÊN
+STT Họ và tên Email Đơn vị công tác
+1. Khoa CNTT – HUFI
+ThS. Đinh Huy Hoàng hoangdh@hufi.edu.vn
+2.
+TS. Vũ Đức Thịnh thinhvd@hufi.edu.vn Khoa CNTT – HUFI
+3. ThS. Phạm Nguyễn Huy Khoa CNTT – HUFI
+phuongpnh@hufi.edu.vn
+Phương
+4. Khoa CNTT – HUFI
+ThS. Phạm Tuấn Khiêm khiempt@hufi.edu.vn
+5. Khoa CNTT – HUFI
+ThS. Trần Đắc Tốt tottd@hufi.edu.vn
+6. Khoa CNTT – HUFI
+ThS. Trần Thị Bích Vân vanttb@hufi.edu.vn
+7. Khoa CNTT – HUFI
+ThS. Nguyễn Thị Hồng Thảo thaonth@hufi.edu.vn
+8. Khoa CNTT – HUFI
+ThS. Nguyễn Văn Tùng tungnv@hufi.edu.vn
+3. MÔ TẢ HỌC PHẦN
+PAGE 2
+Học phần Quản trị hệ thống mạng cung cấp các kiến thức và kỹ năng về hệ thống và
+mạng, bao gồm: Các thành phần hệ thống, Quản lý máy chủ, Quản lý người dùng, Cấu
+hình và duy trì hệ thống, Chẩn đoán và khắc phục sự cố hệ thống, Các dịch vụ ứng dụng,
+Các dịch vụ mạng.
+4. MỤC TIÊU HỌC PHẦN
+Chuẩn đầu ra
+Mục Trình độ
+Mô tả mục tiêu của Chương
+tiêu năng lực
+trình đào tạo
+Phân biệt được các khái niệm và thành phần cơ bản
+G1 PLO1.2, PLO1.3 3
+trong lĩnh vực quản trị hệ thống
+Triển khai, vận hành, quản trị, bảo trì hệ thống máy tính.
+PLO6.2
+G2 Đánh giá, cải tiến, phát triển các sản phẩm và giải pháp 3
+PLO6.3
+kỹ thuật trong lĩnh vực quản trị hệ thống
+Có ý thức vận dụng những hiểu biết công nghệ thông
+PLO12.1,
+tin vào trong các khoa học khác, vào đời sống nhằm cải
+G3 PLO12.2, 3
+thiện điều kiện sống, học tập, cũng như giữ gìn bảo
+PLO12.3
+quản thiết bị, ý thức tiết kiệm.
+5. CHUẨN ĐẦU RA HỌC PHẦN
+Chuẩn đầu ra (CĐR) chi tiết của học phần (*) như sau:
+Mục tiêu CĐR học Mô tả CĐR T r ì n h đ ộ
+học phần phần (Sau khi học xong học phần này, người học có thể) năng lực
+Trình bày và giải thích được các khái niệm cơ bản về hệ điều
+CLO1.1* 2
+hành.
+G1
+Phân tích được cấu trúc, nguyên lý hoạt động của một số
+CLO1.2* 3
+thành phần cơ bản của hệ thống.
+Làm chủ các hệ thống mạng máy tính cục bộ ở các trường
+CLO2.1* 3
+học, các công ty, xí nghiêp vừa và nhỏ
+G2
+Vận dụng kiến thức có được để sử dụng, khai thác và bảo trì
+CLO2.2* hệ thống mạng máy tính trên hai mô hình workgroup và 3
+domain một cách hiệu quả
+Có hứng thú học công nghệ thông tin, yêu thích và tìm tòi
+khoa học; trân trọng với những đóng góp của công nghệ
+CLO3.1* 3
+thông tin cho sự tiến bộ của xã hội và đối với công lao của
+G3
+các nhà khoa học.
+Có thái độ khách quan, trung thực; có tác phong tỉ mỉ, cẩn
+CLO3.2* 3
+thận, chính xác và có tinh thần hợp tác trong việc học tập môn
+PAGE 3
+Mục tiêu CĐR học Mô tả CĐR T r ì n h đ ộ
+học phần phần (Sau khi học xong học phần này, người học có thể) năng lực
+công nghệ thông tin, cũng như trong việc áp dụng các hiểu
+biết đã đạt được.
+Có ý thức vận dụng những hiểu biết công nghệ thông tin vào
+trong các khoa học khác, vào đời sống nhằm cải thiện điều
+CLO3.3* 3
+kiện sống, học tập, cũng như giữ gìn bảo quản thiết bị, ý thức
+tiết kiệm
+6. NỘI DUNG HỌC PHẦN
+6.1. Phân bố thời gian tổng quát
+Phân bố thời gian (tiết/giờ) [4]
+STT Tên chương/bài CĐR đáp ứng
+Lý thuyết TN/TH Tự học
+CLO1.1*, CLO1.2*,
+CLO2.1*, CLO2.2*,
+1. Giới thiệu 3 0 6
+CLO3.1*, CLO3.2*,
+CLO3.3*
+CLO1.1*, CLO1.2*,
+Các thành phần hệ CLO2.1*, CLO2.2*,
+2. 6 0 12
+thống CLO3.1*, CLO3.2*,
+CLO3.3*
+CLO1.1*, CLO1.2*,
+CLO2.1*, CLO2.2*,
+3. Quản trị máy chủ 6 0 12
+CLO3.1*, CLO3.2*,
+CLO3.3*
+CLO1.1*, CLO1.2*,
+CLO2.1*, CLO2.2*,
+4. Quản trị người dùng 6 0 12
+CLO3.1*, CLO3.2*,
+CLO3.3*
+CLO1.1*, CLO1.2*,
+Mô hình quản trị mạng CLO2.1*, CLO2.2*,
+5. 6 0 12
+và hệ thống CLO3.1*, CLO3.2*,
+CLO3.3*
+CLO1.1*, CLO1.2*,
+Cấu hình và duy trì hệ CLO2.1*, CLO2.2*,
+6. 6 0 12
+thống CLO3.1*, CLO3.2*,
+CLO3.3*
+PAGE 4
+Phân bố thời gian (tiết/giờ) [4]
+STT Tên chương/bài CĐR đáp ứng
+Lý thuyết TN/TH Tự học
+CLO1.1*, CLO1.2*,
+Các dịch vụ mức ứng CLO2.1*, CLO2.2*,
+7. 6 0 12
+dụng CLO3.1*, CLO3.2*,
+CLO3.3*
+CLO1.1*, CLO1.2*,
+CLO2.1*, CLO2.2*,
+8. Các dịch vụ mức mạng 6 0 12
+CLO3.1*, CLO3.2*,
+CLO3.3*
+Tổng 45 0 90
+6.2. Nội dung chi tiết
+Chương 1. Giới thiệu
+1.1. Các khái niệm về quản trị mạng và hệ thống
+1.2. Áp dụng công nghệ vào môi trường quản trị
+1.3. Vai trò của quản trị viên trong hệ thống
+1.4. Các vấn đề đạo đức liên quan
+1.5. Các chiến lược quản trị
+1.6. Các nguyên lý quản trị
+Chương 2. Các thành phần hệ thống
+2.1. Hệ thống là gì
+2.2. Phần cứng
+2.3. Hệ điều hành
+2.4. Hệ thống tập tin
+2.5. Điều khiển các tiến trình và công việc
+2.6. Mạng
+2.7. Mạng IPv4
+2.8. Mạng IPv6
+Chương 3. Quản trị máy chủ
+3.1. Tổng quan
+3.2. Các thành phần vật lý của phòng máy chủ
+3.3. Khởi động và tắt máy
+3.4. Cấu hình các máy trạm
+3.5. Cài đặt một đĩa Unix
+3.6. Cài đặt hệ điều hành
+3.7. Cài đặt phần mềm
+PAGE 5
+3.8. Tùy chỉnh nhân hệ điều hành
+Chương 4. Quản trị người dùng
+4.1. Thiết lập người dùng
+4.2. Chính sách tài khoản
+4.3. Môi trường đăng nhập
+4.4. Các dịch vụ hỗ trợ
+4.5. Điều khiển tài nguyên người dùng
+4.6. Các dịch vụ người dùng trực tuyến
+Chương 5. Mô hình quản trị mạng và hệ thống
+5.1. Mô hình thông tin và dịch vụ thư mục
+5.2. Kiến trúc hệ thống
+5.3. Mô hình quản trị mạng
+5.4. Công nghệ quản lý mạng
+5.5. Tạo cơ sở hạ tầng
+5.6. Tự động hóa chính sách và cấu hình
+Chương 6. Cấu hình và duy trì hệ thống
+6.1. Chính sách cấu hình hệ thống
+6.2. Thay đổi cách quản lý
+6. 3. Ngôn ngữ khai báo
+6.4. Cấu hình các chính sách
+6.5. Tự động hóa việc cấu hình
+6.6. Bảo trì máy chủ dự phòng
+6.7. Các công cụ SNMP
+6.8. Công cụ Cfengine
+6.9. Quản lý cấu hình cơ sở dữ liệu
+Chương 7. Các dịch vụ mức ứng dụng
+7.1. Proxy và các trạm
+7.2. Cài đặt dịch vụ
+7.3. Thiết lập dịch vụ DNS
+7.4. Thiết lập dịch vụ WWW
+7.5. Cấu hình E-mail
+7.6. Dịch vụ thư mục OpenLDAP
+7.7. NFS
+7.8. Samba
+7.9. Dịch vụ in
+Chương 8. Các dịch vụ mức mạng
+8.1. Internet
+PAGE 6
+8.2. Các khái niệm liên quan
+8.3. Các công nghệ truyền tải mạng
+8.4. Các công nghệ kết nối mạng
+8.5. Định tuyến và chuyển tiếp
+8.6. MPLS
+8.7. Chất lượng dịch vụ
+7. PHƯƠNG PHÁP DẠY VÀ HỌC
+Nhóm CĐR của học phần
+Kỹ năng
+Kỹ năng Năng lực
+Phương pháp giảng Kiến thức làm việc
+Phương pháp học tập cá nhân tự chủ
+dạy nhóm
+CLO1.1* CLO2.1* CLO3.1*
+CLO3.3*
+CLO1.2* CLO2.2* CLO3.2*
+Lắng nghe, ghi chép, ghi nhớ
+Thuyết trình x
+và đặt câu hỏi
+Quan sát, ghi chép, đặt câu
+Minh họa x
+hỏi
+Vấn đáp Vấn đáp x x x
+Bài tập tình huống Đọc tài liệu, thảo luận và
+x x x x
+(bài tập) giải quyết tình huống
+Tìm kiếm tài liệu, đọc tài
+Hướng dẫn người học
+liệu, tóm tắt, đặt câu hỏi
+tìm kiếm, đọc tài liệu x x
+làm rõ, và làm bài tập,
+và kiểm tra kiến thức
+kiểm tra
+8. ĐÁNH GIÁ HỌC PHẦN
+− Thang điểm đánh giá: 10/10
+− Kế hoạch đánh giá học phần cụ thể như sau:
+Tỉ lệ
+Nội dung đánh giá Thời điểm Chuẩn đầu ra Rubric
+(%)
+QUÁ TRÌNH 50
+Chuyên cần Suốt quá trình học Không đánh giá CĐR 10 I.1
+CLO1.1*, CLO1.2*,
+CLO2.1*, CLO2.2*,
+Hoạt động nhóm Suốt quá trình học 20 I.5
+CLO3.1*, CLO3.2*,
+CLO3.3*
+PAGE 7
+Tỉ lệ
+Nội dung đánh giá Thời điểm Chuẩn đầu ra Rubric
+(%)
+CLO1.1*, CLO1.2*,
+Bài tập Suốt quá trình học 20 II.6
+CLO2.1*, CLO2.2*
+THI CUỐI KỲ 50
+Nội dung bao quát tất cả Sau khi kết thúc
+các chương của học học phần
+phần:
+- Chương 1: 20% câu hỏi
+- Chương 2: 20% câu hỏi Theo thang
+CLO1.1*, CLO1.2*,
+- Chương 3: 10% câu hỏi điểm của đề
+CLO2.1*, CLO2.2*.
+- Chương 4: 10% câu hỏi thi
+- Chương 5: 10% câu hỏi
+- Chương 6: 1 0% câu hỏi
+- Chương 7: 10% câu hỏi
+- Chương 8: 10% câu hỏi
+9. NGUỒN HỌC LIỆU
+9.1. Sách, giáo trình chính:
+[1] Wale Soyinka, Linux Administration: A Beginner's Guide, Eighth Edition 8th Edition,
+2020
+9.2. Tài liệu tham khảo:
+[1] Evi Nemeth, Garth Snyder, Trent R. Hein, Ben Whaley, UNIX AND LINUX SYSTEM
+ADMINISTRATION HANDBOOK, Pearson Education, Inc., 2011.
+[2] Thomas A. Limoncelli, Strata R. Chalup, Christina J. Hogan, The Practice of Cloud
+System Administration, Thomas A. Limoncelli, Virtual.NET Inc., 2015.
+[3] Thomas A. Limoncelli, Strata R. Chalup, Christina J. Hogan, The Practice of System
+and Network Administration, Christine Hogan, Thomas A. Limoncelli, Virtual.NET Inc.,
+and Lumeta Corporation, 2007.
+9.3. Phần mềm
+[1] Windows Server
+[2] Unix/Linux
+[3] Vmware
+[4] Virtual Box
+10. QUY ĐỊNH CỦA HỌC PHẦN
+Người học có nhiệm vụ:
+− Tham dự trên 75% giờ học lý thuyết;
+− Chủ động lên kế hoạch học tập:
+PAGE 8
++ Tích cực khai thác các tài nguyên trong thư viện của trường và trên mạng để phục
+vụ cho việc tự học, tự nghiên cứu và các hoạt động thảo luận;
++ Đọc trước tài liệu do giảng viên cung cấp hoặc yêu cầu;
++ Ôn tập các nội dung đã học; tự kiểm tra kiến thức bằng cách làm các bài trắc nghiệm
+kiểm tra hoặc bài tập được giảng viên cung cấp.
+− Tích cực tham gia các hoạt động thảo luận, trình bày, vấn đáp trên lớp và hoạt động
+nhóm;
+− Hoàn thành đầy đủ, trung thực và sáng tạo các bài tập cá nhân, bài tập nhóm theo yêu
+cầu;
+− Dự kiểm tra trên lớp (nếu có) và thi cuối học phần.
+11. HƯỚNG DẪN THỰC HIỆN
+- Phạm vi áp dụng: Đề cương này được áp dụng cho chương trình đại học ngành An
+toàn thông tin, Công nghệ thông tin từ khóa 13 năm học 2022-2023;
+- Giảng viên: sử dụng đề cương này để làm cơ sở cho việc chuẩn bị bài giảng, lên kế
+hoạch giảng dạy và đánh giá kết quả học tập của người học;
+- Lưu ý: Trước khi giảng dạy, giảng viên cần nêu rõ các nội dung chính của đề cương
+học phần cho người học – bao gồm chuẩn đầu ra, nội dung, phương pháp dạy và học chủ
+yếu, phương pháp đánh giá và tài liệu tham khảo dùng cho học phần;
+- Người học: sử dụng đề cương này làm cơ sở để nắm được các thông tin chi tiết về
+học phần, từ đó xác định được phương pháp học tập phù hợp để đạt được kết quả mong
+đợi.
+12. PHÊ DUYỆT
+☒ Phê duyệt lần đầu ☐ Bản cập nhật lần thứ:
+Ngày phê duyệt: 28/05/2022 Ngày cập nhật:
+Trưởng khoa Trưởng bộ môn Chủ nhiệm học phần
+Đinh Huy Hoàng
+PAGE 9

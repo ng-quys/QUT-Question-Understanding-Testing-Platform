@@ -23,7 +23,7 @@ import {
   CourseChapter,
   CourseCLO,
   Bloom3Level,
-} from '../../../types';
+} from '@shared/types';
 import { BLOOM_3_CONFIG } from '../../dashboard/data/mockAcademicData';
 import { QuestionFormModal } from '../components/QuestionFormModal';
 import { QuestionBankCard } from '../components/QuestionBankCard';

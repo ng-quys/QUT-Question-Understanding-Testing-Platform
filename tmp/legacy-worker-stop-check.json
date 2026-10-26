@@ -1,0 +1,917 @@
+{
+  "started_utc": "2026-10-21T18:51:34.932929+00:00",
+  "finished_utc": "2026-10-21T18:52:22.858916+00:00",
+  "samples": [
+    {
+      "number": 1,
+      "observed_utc": "2026-10-21T18:51:36.037204+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:50:45.773718+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:34.367419+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285780,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:27.960770+00:00",
+          "query_start": "2026-10-21 18:51:28.062513+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": null,
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 2,
+      "observed_utc": "2026-10-21T18:51:39.156088+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:50:45.773718+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:34.367419+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285780,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:27.960770+00:00",
+          "query_start": "2026-10-21 18:51:28.062513+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": null,
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 3,
+      "observed_utc": "2026-10-21T18:51:42.262562+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:50:45.773718+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:34.367419+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285780,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:27.960770+00:00",
+          "query_start": "2026-10-21 18:51:28.062513+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": null,
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 4,
+      "observed_utc": "2026-10-21T18:51:45.373986+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:50:45.773718+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:34.367419+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285780,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:27.960770+00:00",
+          "query_start": "2026-10-21 18:51:28.062513+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": null,
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 5,
+      "observed_utc": "2026-10-21T18:51:48.484527+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:34.367419+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285780,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:27.960770+00:00",
+          "query_start": "2026-10-21 18:51:28.062513+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": null,
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 6,
+      "observed_utc": "2026-10-21T18:51:51.591843+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:49.370674+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285780,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:27.960770+00:00",
+          "query_start": "2026-10-21 18:51:28.062513+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": null,
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 7,
+      "observed_utc": "2026-10-21T18:51:54.697322+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:49.370674+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285780,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:27.960770+00:00",
+          "query_start": "2026-10-21 18:51:28.062513+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:51:51.681316+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 8,
+      "observed_utc": "2026-10-21T18:51:57.803538+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:49.370674+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285780,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:27.960770+00:00",
+          "query_start": "2026-10-21 18:51:28.062513+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:51:51.681316+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 9,
+      "observed_utc": "2026-10-21T18:52:00.912173+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:49.370674+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:51:51.681316+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285787,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:52:00.066162+00:00",
+          "query_start": "2026-10-21 18:52:00.103229+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 10,
+      "observed_utc": "2026-10-21T18:52:04.018814+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:51:49.370674+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:51:51.681316+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285787,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:52:00.066162+00:00",
+          "query_start": "2026-10-21 18:52:00.103229+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 11,
+      "observed_utc": "2026-10-21T18:52:07.135245+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:52:04.371855+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:52:06.989999+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285787,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:52:00.066162+00:00",
+          "query_start": "2026-10-21 18:52:00.103229+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 12,
+      "observed_utc": "2026-10-21T18:52:10.245273+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:52:04.371855+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:52:06.989999+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285787,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:52:00.066162+00:00",
+          "query_start": "2026-10-21 18:52:00.103229+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 13,
+      "observed_utc": "2026-10-21T18:52:13.352794+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:52:04.371855+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:52:06.989999+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285787,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:52:00.066162+00:00",
+          "query_start": "2026-10-21 18:52:00.103229+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 14,
+      "observed_utc": "2026-10-21T18:52:16.460434+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:52:04.371855+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:52:06.989999+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285787,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:52:00.066162+00:00",
+          "query_start": "2026-10-21 18:52:00.103229+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 15,
+      "observed_utc": "2026-10-21T18:52:19.655887+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:52:19.366977+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:52:06.989999+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285787,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:52:00.066162+00:00",
+          "query_start": "2026-10-21 18:52:00.103229+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    },
+    {
+      "number": 16,
+      "observed_utc": "2026-10-21T18:52:22.858307+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-21 18:51:45.915907+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-20 20:13:31.029171+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2281954,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:05:19.389910+00:00",
+          "query_start": "2026-10-21 18:52:19.366977+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285783,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:51:35.891001+00:00",
+          "query_start": "2026-10-21 18:52:22.787081+00:00",
+          "global_worker_poll": false
+        },
+        {
+          "pid": 2285787,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-21 18:52:00.066162+00:00",
+          "query_start": "2026-10-21 18:52:00.103229+00:00",
+          "global_worker_poll": false
+        }
+      ],
+      "legacy_polls": []
+    }
+  ],
+  "legacy_poll_advances": [],
+  "legacy_rows_observed": false,
+  "legacy_polling_confirmed": false,
+  "clear_for_activation": true,
+  "question_bank_connections": [
+    {
+      "application_name": "",
+      "state": "idle",
+      "count": 2
+    },
+    {
+      "application_name": "postgres_exporter",
+      "state": "idle",
+      "count": 1
+    },
+    {
+      "application_name": "PostgREST 14.18",
+      "state": "idle",
+      "count": 1
+    },
+    {
+      "application_name": "Supavisor",
+      "state": "active",
+      "count": 1
+    },
+    {
+      "application_name": "Supavisor (auth_query)",
+      "state": "idle",
+      "count": 1
+    }
+  ]
+}

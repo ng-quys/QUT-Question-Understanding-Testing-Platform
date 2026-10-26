@@ -1,6 +1,6 @@
 import React from 'react';
 import { Database, FileText, Clock, Users, ArrowUpRight, TrendingUp } from 'lucide-react';
-import type{ DashboardStat } from '../../../types';
+import type{ DashboardStat } from '@shared/types';
 
 interface StatCardProps {
   stat: DashboardStat;

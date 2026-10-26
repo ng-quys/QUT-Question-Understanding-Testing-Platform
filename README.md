@@ -1,10 +1,14 @@
+> **Cấu trúc frontend mới:** admin chạy riêng tại `http://localhost:5174`, giảng viên/sinh viên tại `http://localhost:5173`. Cài npm ở thư mục gốc và xem [FRONTEND_SPLIT.md](FRONTEND_SPLIT.md) để chạy, build và triển khai. Các hướng dẫn Keycloak bên dưới là tài liệu cũ; bản hiện tại dùng đăng nhập database, xem [DATABASE_AUTHENTICATION.md](DATABASE_AUTHENTICATION.md).
+
 # QUT — Question Understanding Testing Platform
 
 **Hệ thống quản lý thi trắc nghiệm trực tuyến tích hợp AI.**
 
 QUT hỗ trợ giảng viên quản lý ngân hàng câu hỏi, xây dựng đề và tổ chức ca thi; sinh viên tham gia thi, lưu đáp án, nộp bài và xem kết quả. AI được sử dụng để hỗ trợ sinh câu hỏi và thử nghiệm giám sát trong quá trình làm bài. Giao diện hiện sử dụng tên **ExamFlow**.
 
-> README này mô tả bản tích hợp trên nền Uyen, sử dụng Keycloak và mã tham gia theo từng ca thi. Chức năng có trong mã nguồn cần được kiểm thử với database, cấu hình và model thực tế trước khi xác nhận sẵn sàng sử dụng.
+Luồng web mở đề trước, giám sát AI đăng ký ở nền và chia nhóm tối đa 5 người dùng chung model. Xem cấu hình, giới hạn và cách test tại [AI_BATCH_MONITORING.md](AI_BATCH_MONITORING.md).
+
+> Hệ thống sử dụng Keycloak và danh sách sinh viên được phân vào phòng/ca thi. Xem hướng dẫn chuyển đổi, migration và kiểm thử tại [INSTITUTION_EXAMS.md](INSTITUTION_EXAMS.md). Chức năng cần được kiểm thử với database, cấu hình và model thực tế trước khi xác nhận sẵn sàng sử dụng.
 
 ## Mục lục
 
@@ -14,7 +18,7 @@ QUT hỗ trợ giảng viên quản lý ngân hàng câu hỏi, xây dựng đ�
 - [Yêu cầu môi trường](#yêu-cầu-môi-trường)
 - [Cài đặt và cấu hình](#cài-đặt-và-cấu-hình)
 - [Chạy hệ thống](#chạy-hệ-thống)
-- [Quy tắc mã thi](#quy-tắc-mã-thi)
+- [Phân công phòng và ca thi](#phân-công-phòng-và-ca-thi)
 - [Kiểm tra sau khi cài](#kiểm-tra-sau-khi-cài)
 - [Xử lý lỗi thường gặp](#xử-lý-lỗi-thường-gặp)
 - [Quy trình làm việc nhóm](#quy-trình-làm-việc-nhóm)
@@ -26,12 +30,12 @@ QUT hỗ trợ giảng viên quản lý ngân hàng câu hỏi, xây dựng đ�
 | --- | --- |
 | Admin | Quản trị người dùng và các chức năng quản lý được cấp quyền trong bản triển khai. |
 | Giảng viên | Quản lý môn học, ngân hàng câu hỏi, đề thi, ca thi và kết quả; xem xét câu hỏi do AI hỗ trợ tạo. |
-| Sinh viên | Đăng nhập, cập nhật hồ sơ/ảnh tham chiếu, tìm ca thi bằng mã, làm bài, nộp bài và xem kết quả. |
+| Sinh viên | Đăng nhập bằng mã sinh viên, cập nhật hồ sơ/ảnh tham chiếu, xem ca được phân khi đến giờ, làm bài, nộp bài và xem kết quả. |
 
 Các nhóm chức năng chính:
 
 - **Ngân hàng câu hỏi:** tổ chức câu hỏi theo môn học, chủ đề và các thông tin phân loại.
-- **Đề thi và ca thi:** cấu hình đề, thời lượng, lịch thi và mã tham gia.
+- **Đề thi và ca thi:** cấu hình đề, thời lượng, lịch thi; phân phòng, giảng viên phụ trách và công bố danh sách dự thi.
 - **Thi trực tuyến:** lưu lựa chọn, tiếp tục bài làm còn hạn, nộp bài và chấm điểm.
 - **Kết quả:** điểm số, số câu đúng và thông tin kết quả theo CLO trong các API hiện có.
 - **AI hỗ trợ sinh câu hỏi:** cấu hình nhà cung cấp và khóa truy cập theo module đang sử dụng; giảng viên kiểm tra trước khi đưa câu hỏi vào đề.
@@ -50,7 +54,7 @@ Keycloak quản lý đăng nhập và realm role. Backend tiếp tục kiểm tr
 | AI chống gian lận | Python, OpenCV, MediaPipe, ONNX Runtime, InsightFace, Ultralytics, SoundDevice, WebRTC VAD |
 | Công cụ phát triển | Git, VS Code/IntelliJ IDEA, Postman |
 
-Phiên bản dependency được khai báo tại `frontend/package.json`, `frontend/package-lock.json`, `backend/pom.xml` và `anticheating/requirements.txt`.
+Phiên bản dependency được khai báo tại `frontend/package.json`, `package-lock.json`, `backend/pom.xml` và `anticheating/requirements.txt`.
 
 ## Cấu trúc dự án
 
@@ -58,7 +62,9 @@ Phiên bản dependency được khai báo tại `frontend/package.json`, `front
 | --- | --- |
 | `frontend/src/app/` | Điểm tích hợp ứng dụng và route. |
 | `frontend/src/features/` | Các module giao diện, gồm auth, student, exams, sessions và ngân hàng câu hỏi. |
-| `frontend/src/services/` | API dùng chung và kết nối Keycloak. |
+| `frontend-shared/src/services/` | API và thông báo lỗi dùng chung. |
+| `frontend-admin/src/` | Ứng dụng quản trị độc lập trên cổng 5174. |
+| `frontend-shared/src/` | Thành phần, theme và phiên đăng nhập dùng chung. |
 | `backend/src/main/java/com/examflow/backend/` | Controller, service, DTO, entity, repository và cấu hình bảo mật. |
 | `backend/src/main/resources/application.properties` | Cấu hình backend theo môi trường. |
 | `anticheating/app/` | HTTP service, pipeline tích hợp và trạng thái runtime. |
@@ -126,7 +132,7 @@ Khởi động Keycloak của nhóm tại `http://localhost:8081`. Nếu sử d�
 | Backend client | `online-exam-backend` |
 | Realm roles | `ADMIN`, `TEACHER`, `STUDENT` |
 
-**Frontend client:** cấu hình client public, bật Direct Access Grants cho form email/password hiện tại; bật Standard Flow nếu dùng đăng nhập chuyển hướng. Redirect URI và Web Origins cần cho phép đúng địa chỉ frontend, ví dụ `http://localhost:5173/*` và `http://localhost:5173`.
+**Frontend client:** cấu hình client public, bật Direct Access Grants cho form tên đăng nhập/mật khẩu hiện tại. Redirect URI và Web Origins cần cho phép đúng địa chỉ frontend, ví dụ `http://localhost:5173/*` và `http://localhost:5173`.
 
 **Backend client:** bật Client authentication và Service accounts roles; lấy client secret từ tab Credentials. Cấp các quyền quản lý user/đọc realm cần thiết cho service account để API đồng bộ user và gán role hoạt động. Không dùng client secret của backend trong frontend.
 
@@ -138,7 +144,7 @@ keycloak.admin-client-id=online-exam-backend
 keycloak.admin-client-secret=YOUR_BACKEND_CLIENT_SECRET
 ```
 
-Khi tạo user, đặt mật khẩu, kiểm tra Enabled và gán role phù hợp. Nếu đăng nhập bằng email, bật Login with email. User có Required actions phải hoàn thành chúng qua luồng đăng nhập trình duyệt; mật khẩu tạm yêu cầu đổi ở lần đăng nhập đầu.
+Admin cấp tài khoản qua phân hệ quản trị; mã sinh viên là tên đăng nhập của sinh viên. Tắt tự đăng ký, đăng nhập bằng email và các nhà cung cấp đăng nhập ngoài theo [hướng dẫn cấu hình](INSTITUTION_EXAMS.md). Form hiện tại không xử lý Required actions của Keycloak; tài khoản phải hoàn tất chúng trước khi sử dụng form này.
 
 Nếu mỗi thành viên chạy Keycloak riêng, dữ liệu user không tự đồng bộ. Muốn dùng chung tài khoản, cả nhóm phải kết nối cùng một server/realm. Clone Git không sao chép database Keycloak.
 
@@ -243,17 +249,13 @@ npm run dev
 
 Mở URL Vite hiển thị. Nếu cổng đổi sang 5174, cấu hình Keycloak/CORS phải cho phép địa chỉ đó.
 
-## Quy tắc mã thi
+## Phân công phòng và ca thi
 
-| Trường database | Mục đích |
-| --- | --- |
-| `exams.code` | Nhận diện và quản lý đề thi. |
-| `exam_sessions.room_code` | Mã sinh viên dùng để tìm và tham gia đúng ca. |
-| `exam_sessions.access_code` | Mật khẩu ca thi nếu được cấu hình riêng. |
+Admin tạo phòng, thêm sinh viên và phân giảng viên phụ trách. Giảng viên tạo đề/ca bằng giao diện cũ; admin chọn đề, gán phòng, kiểm tra lịch ca rồi công bố. Khi công bố, backend chốt danh sách dự thi từ danh sách sinh viên trong phòng vào `exam_session_students`.
 
-Tìm thi, tham gia, bắt đầu thi và link/QR dùng **`room_code`**. Nếu `access_code` trống hoặc giống `room_code`, bản tích hợp chỉ yêu cầu một mã. Nếu khác, giao diện hỏi thêm mật khẩu và backend kiểm tra trước khi bắt đầu.
+Sinh viên chỉ thấy ca được phân đã công bố khi đến giờ. Backend kiểm tra danh sách và thời gian khi bắt đầu/tiếp tục bài; biết ID hoặc mã ca không cấp quyền dự thi. Luồng tìm/tham gia bằng mã đã ngừng sử dụng. Các cột mã cũ được giữ để bảo toàn dữ liệu lịch sử.
 
-Một đề có thể có nhiều ca, nên không dùng mã đề để chọn thay cho mã ca. Ca phải ở trạng thái nhận người tham gia và nằm trong thời gian cho phép. Nếu cần giới hạn theo lớp, phải kiểm tra/bổ sung quy tắc danh sách sinh viên; biết mã không tự chứng minh thuộc lớp được phép thi.
+Admin theo dõi toàn bộ ca đang hoạt động tại **Giám sát ca thi**. Xem migration, phạm vi quyền, cách xử lý ca cũ và bài thử trọn luồng tại [INSTITUTION_EXAMS.md](INSTITUTION_EXAMS.md).
 
 ## Kiểm tra sau khi cài
 
@@ -278,10 +280,10 @@ Các test runtime dùng tiến trình giả để kiểm tra handshake/trạng t
 
 **Luồng kiểm tra thực tế:**
 
-1. Đăng nhập giảng viên; xem môn học, ngân hàng câu hỏi, đề và ca thi.
-2. Đăng nhập sinh viên; mở dashboard và hồ sơ, upload ảnh tham chiếu.
-3. Tìm mã ca hợp lệ; thử mã sai và ca chưa tới giờ.
-4. Bắt đầu bài; API start trả 200, AI báo `ready`.
+1. Admin cấp tài khoản, tạo phòng, thêm sinh viên và phân giảng viên phụ trách; giảng viên tạo đề/ca như trước, admin gán phòng và công bố.
+2. Đăng nhập sinh viên bằng mã sinh viên; mở dashboard và hồ sơ, upload ảnh tham chiếu.
+3. Xác nhận ca chỉ xuất hiện khi đến giờ; sinh viên ngoài danh sách không thấy và không bắt đầu được qua API.
+4. Bắt đầu bài; API start trả đề ngay, đồng hồ chạy. Cấp quyền camera/micro; AI chuyển sang giám sát hoặc chờ lượt mà không chặn làm bài.
 5. Chọn đáp án, kiểm tra lưu; thử tiếp tục bài làm còn hạn.
 6. Chuyển tab/thoát fullscreen; xác nhận sự kiện lưu đúng `attempt_id`.
 7. Nộp bài, xem điểm và xác nhận AI dừng; bài đã nộp không được làm lại ca đó.
@@ -298,13 +300,13 @@ Thử trên ca test: frontend hiện có cơ chế tự nộp sau ba lần cản
 | `Invalid client or Invalid client credentials` | Backend client ID/secret, Client authentication và service account. |
 | API `/teacher/**` hoặc `/student/**` trả 403 | Role trong token, converter và tài khoản đang dùng; đăng xuất/đăng nhập lại sau đổi role. |
 | API `sync-user` trả 500 | Đọc log Java; kiểm tra database và quyền service account Keycloak. |
-| Không tìm thấy ca thi | Đúng `room_code`, đúng database, có ca ở trạng thái nhận người tham gia. |
+| Không thấy ca thi | Kiểm tra đúng tài khoản/database, ca đã công bố và đến giờ, sinh viên có trong danh sách chốt của ca. |
 | Start trả 502, không kết nối Python | Python chưa chạy, sai URL/cổng hoặc tiến trình đã dừng; kiểm tra `/health`. |
 | Thiếu ảnh/model, AI không ready | Thư mục ảnh đúng ID, bảy model, webcam/micro và log Python. |
 | Callback AI trả 401/403 | Secret hai bên và rule POST chính xác cho `/api/internal/anticheating/events`. |
 | Lỗi schema khi Java khởi động | Đối chiếu migration với schema; không đổi `ddl-auto` để xóa/tạo lại dữ liệu. |
 
-Form đăng nhập hiện có thể hiển thị thông báo sai email/mật khẩu cho lỗi xảy ra sau xác thực. Dùng Network và log backend để xác định API thực sự bị lỗi. Không chia sẻ password, client secret hoặc access token khi chụp log.
+Nếu đăng nhập thất bại, dùng Network và log backend để phân biệt lỗi Keycloak với lỗi liên kết định danh ở `/api/auth/me`. Không chia sẻ password, client secret hoặc access token khi chụp log.
 
 Đăng nhập các tài khoản khác nhau trong cùng profile trình duyệt có thể thay token dùng chung giữa các tab. Khi thử đồng thời giảng viên/sinh viên, dùng hai profile hoặc hai trình duyệt riêng.
 

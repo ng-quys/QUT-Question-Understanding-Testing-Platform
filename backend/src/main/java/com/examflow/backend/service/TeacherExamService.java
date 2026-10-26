@@ -55,7 +55,7 @@ public class TeacherExamService {
     @Transactional public void delete(Long id){ Exam e=examRepository.findById(id).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Không tìm thấy đề thi")); if(!"draft".equalsIgnoreCase(e.getStatus())) throw new ApiException(HttpStatus.CONFLICT,"Chỉ được xóa đề ở trạng thái nháp"); examQuestionRepository.deleteAll(examQuestionRepository.findByExamIdWithQuestion(id)); examRepository.delete(e); }
 
     @Transactional
-    public QuickExamResult createQuick(QuickExamRequest r) {
+    public QuickExamResult createQuick(QuickExamRequest r, Long actorId) {
         if (Math.abs(r.mediumPercent() + r.goodPercent() + r.excellentPercent() - 100.0) > 0.001)
             throw new ApiException(HttpStatus.BAD_REQUEST, "Tổng tỷ lệ độ khó phải bằng 100%.");
         if (examRepository.existsByCodeIgnoreCase(r.code()))
@@ -88,8 +88,8 @@ public class TeacherExamService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Không thể tạo đề thỏa giới hạn trùng " + r.maxOverlapPercent() + "%. Hãy tăng ngân hàng câu hỏi hoặc nới tỷ lệ trùng.");
         Collections.shuffle(selected);
 
-        Exam exam = new Exam(); exam.setCourse(course); exam.setCode(r.code().trim()); exam.setTitle(r.title().trim());
-        exam.setDurationMinutes(r.durationMinutes()); exam.setTotalQuestions(r.totalQuestions()); exam.setTotalPoints(BigDecimal.TEN);
+        Exam exam = new Exam(); exam.setCreatedBy(actorId); exam.setCourse(course); exam.setCode(r.code().trim()); exam.setTitle(r.title().trim());
+        exam.setTotalQuestions(r.totalQuestions()); exam.setTotalPoints(BigDecimal.TEN);
         exam.setStatus("draft"); exam.setShuffleQuestions(r.shuffleQuestions()); exam.setShuffleAnswers(r.shuffleAnswers()); exam.setAntiCheatMode(r.antiCheatMode());
         exam = examRepository.save(exam);
 
@@ -130,5 +130,5 @@ public class TeacherExamService {
         return base;
     }
     private String difficultyName(short d){ return difficultyLevelRepository.findById(d).map(DifficultyLevel::getName).orElse("#"+d); }
-    private ExamSummaryDto summary(Exam e){ return new ExamSummaryDto(e.getId(),e.getCode(),e.getTitle(),e.getCourse().getId(),e.getCourse().getCode(),e.getCourse().getName(),e.getDurationMinutes(),e.getTotalQuestions(),e.getStatus(),e.getExamDate(),Boolean.TRUE.equals(e.getShuffleQuestions()),Boolean.TRUE.equals(e.getShuffleAnswers()),Boolean.TRUE.equals(e.getAntiCheatMode())); }
+    private ExamSummaryDto summary(Exam e){ return new ExamSummaryDto(e.getId(),e.getCode(),e.getTitle(),e.getCourse().getId(),e.getCourse().getCode(),e.getCourse().getName(),e.getTotalQuestions(),e.getStatus(),e.getExamDate(),Boolean.TRUE.equals(e.getShuffleQuestions()),Boolean.TRUE.equals(e.getShuffleAnswers()),Boolean.TRUE.equals(e.getAntiCheatMode())); }
 }

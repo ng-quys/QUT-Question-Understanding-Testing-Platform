@@ -22,5 +22,7 @@ public record StudentSessionDto(
         String attemptStatus,
         BigDecimal score,
         boolean canStart,
-        boolean requiresAccessCode
+        boolean requiresAccessCode,
+        String sessionName,
+        String roomName
 ) {}

@@ -1,0 +1,13 @@
+Tài liệu synthetic: kiến thức mạng máy tính cơ bản.
+DNS chuyển đổi tên miền thành địa chỉ IP. Bản ghi A ánh xạ tên miền tới địa chỉ IPv4; bản ghi AAAA ánh xạ tới IPv6. Bộ nhớ đệm DNS lưu kết quả tra cứu trong thời gian TTL.
+DHCP tự động cấp cấu hình địa chỉ IP cho máy trạm. Quá trình nhận địa chỉ mới gồm Discover, Offer, Request và Acknowledge. DHCP còn cung cấp default gateway và máy chủ DNS.
+TCP cung cấp truyền dữ liệu tin cậy theo thứ tự. TCP dùng số thứ tự, xác nhận ACK và truyền lại khi mất dữ liệu. Bắt tay TCP gồm SYN, SYN-ACK và ACK.
+UDP truyền datagram không thiết lập kết nối và không bảo đảm giao hàng. Ứng dụng cần độ trễ thấp có thể chọn UDP và tự xử lý mất gói nếu cần.
+HTTP là giao thức trao đổi yêu cầu và phản hồi giữa client và server. GET dùng lấy tài nguyên. POST thường gửi dữ liệu để server xử lý. Mã 404 cho biết không tìm thấy tài nguyên.
+HTTPS bảo vệ nội dung HTTP bằng TLS. Chứng chỉ số hỗ trợ xác thực máy chủ; mã hóa giúp bảo vệ dữ liệu trong quá trình truyền.
+Subnet mask xác định phần mạng và phần host của địa chỉ IPv4. Mạng /24 có 256 địa chỉ, thông thường 254 địa chỉ dùng cho host vì dành địa chỉ mạng và broadcast.
+Switch Ethernet chuyển frame dựa trên địa chỉ MAC trong mạng cục bộ. Router chuyển gói giữa các mạng IP và dùng bảng định tuyến để chọn đường đi.
+ARP tìm địa chỉ MAC tương ứng với IPv4 trong cùng liên kết mạng. Khi chưa có ánh xạ, máy gửi ARP request dạng broadcast và nhận ARP reply từ máy có địa chỉ cần tìm.
+ICMP hỗ trợ báo lỗi và chẩn đoán mạng. Ping dùng ICMP echo request và echo reply để kiểm tra khả năng liên lạc và thời gian khứ hồi.
+NAT chuyển đổi địa chỉ mạng, thường giúp nhiều máy nội bộ chia sẻ một địa chỉ công cộng. PAT phân biệt các phiên bằng số cổng.
+Firewall lọc lưu lượng theo các quy tắc. Nguyên tắc tối thiểu quyền chỉ cho phép những kết nối cần thiết; cấu hình mặc định từ chối giảm các cổng được mở ngoài ý muốn.

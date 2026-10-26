@@ -1,5 +1,5 @@
-import { apiFetch } from '../../../services/api';
-import type { Bloom3Level, QuestionItem } from '../../../types';
+import { apiFetch } from '@shared/services/api';
+import type { Bloom3Level, QuestionItem } from '@shared/types';
 
 type AnswerResponse = { id: number; label: string; content: string; correct: boolean; position: number };
 type QuestionResponse = { id:number; courseId:number; chapterId:number|null; topicId:number|null; cloId:number|null; bloom:string; difficulty:string; content:string; explanation:string|null; status:'approved'|'pending'|'rejected'; source:'manual'|'ai'; defaultScore:number; createdAt:string|null; updatedAt:string|null; answers:AnswerResponse[] };
@@ -11,3 +11,9 @@ export async function createQuestion(q:QuestionItem){return mapQuestion(await ap
 export async function updateQuestion(q:QuestionItem){return mapQuestion(await apiFetch<QuestionResponse>(`/teacher/questions/${q.id}`,{method:'PUT',body:JSON.stringify(payload(q))}));}
 export async function setQuestionStatus(id:string,status:'approved'|'pending'|'rejected'){return mapQuestion(await apiFetch<QuestionResponse>(`/teacher/questions/${id}/status`,{method:'PATCH',body:JSON.stringify({status})}));}
 export async function deleteQuestion(id:string){await apiFetch<void>(`/teacher/questions/${id}`,{method:'DELETE'});}
+
+export type { QuestionResponse };
+export interface BankPreviewChoice { dimension: string; value: string; code: string; label: string }
+export interface BankPreviewPage { items: QuestionResponse[]; total: number; bankTotal: number; page: number; size: number; choices: BankPreviewChoice[] }
+export const getQuestionBankPreview = (courseId: string, filters: Record<string, string>, page: number, signal?: AbortSignal) =>
+  apiFetch<BankPreviewPage>(`/teacher/questions/preview?${new URLSearchParams({ courseId, ...filters, page: String(page), size: '20' })}`, { signal });

@@ -1,0 +1,532 @@
+{
+  "bound_registry": {
+    "http": 409,
+    "detail": "AI execution registry mismatch"
+  },
+  "current_registry": {
+    "http": 404,
+    "detail": "Unknown execution token; backend reconciliation required"
+  },
+  "backend_upstream_url": "default http://127.0.0.1:8002",
+  "ollama_job_window_calls": [
+    {
+      "time": "14:41:59",
+      "http": 200,
+      "duration": "4.2183056s",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1045
+    },
+    {
+      "time": "14:42:00",
+      "http": 200,
+      "duration": "32.1611ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1057
+    },
+    {
+      "time": "14:42:00",
+      "http": 200,
+      "duration": "36.5195ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1069
+    },
+    {
+      "time": "14:42:00",
+      "http": 200,
+      "duration": "63.8386ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1102
+    },
+    {
+      "time": "14:42:00",
+      "http": 200,
+      "duration": "34.5199ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1114
+    },
+    {
+      "time": "14:42:00",
+      "http": 200,
+      "duration": "29.4558ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1126
+    },
+    {
+      "time": "14:42:00",
+      "http": 200,
+      "duration": "75.7369ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1159
+    },
+    {
+      "time": "14:42:00",
+      "http": 200,
+      "duration": "28.4683ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1171
+    },
+    {
+      "time": "14:42:00",
+      "http": 200,
+      "duration": "28.7445ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1183
+    },
+    {
+      "time": "14:42:00",
+      "http": 200,
+      "duration": "67.9738ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1216
+    },
+    {
+      "time": "14:42:33",
+      "http": 200,
+      "duration": "33.0939965s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 1513
+    },
+    {
+      "time": "14:42:34",
+      "http": 200,
+      "duration": "960.6046ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1729
+    },
+    {
+      "time": "14:42:35",
+      "http": 200,
+      "duration": "115.6723ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1741
+    },
+    {
+      "time": "14:42:35",
+      "http": 200,
+      "duration": "38.3235ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1749
+    },
+    {
+      "time": "14:43:03",
+      "http": 200,
+      "duration": "27.2118261s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 1783
+    },
+    {
+      "time": "14:43:04",
+      "http": 200,
+      "duration": "217.6539ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1795
+    },
+    {
+      "time": "14:43:04",
+      "http": 200,
+      "duration": "34.0628ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1807
+    },
+    {
+      "time": "14:43:04",
+      "http": 200,
+      "duration": "39.543ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1815
+    },
+    {
+      "time": "14:43:31",
+      "http": 200,
+      "duration": "26.2354573s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 1850
+    },
+    {
+      "time": "14:43:31",
+      "http": 200,
+      "duration": "43.6509ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1862
+    },
+    {
+      "time": "14:43:31",
+      "http": 200,
+      "duration": "31.1953ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1874
+    },
+    {
+      "time": "14:43:32",
+      "http": 200,
+      "duration": "34.7438ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1882
+    },
+    {
+      "time": "14:43:52",
+      "http": 200,
+      "duration": "18.8686274s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 1916
+    },
+    {
+      "time": "14:43:52",
+      "http": 200,
+      "duration": "32.0093ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1928
+    },
+    {
+      "time": "14:43:52",
+      "http": 200,
+      "duration": "67.8867ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1940
+    },
+    {
+      "time": "14:43:52",
+      "http": 200,
+      "duration": "34.2332ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1948
+    },
+    {
+      "time": "14:44:17",
+      "http": 200,
+      "duration": "24.0541416s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 1987
+    },
+    {
+      "time": "14:44:17",
+      "http": 200,
+      "duration": "39.1084ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 1999
+    },
+    {
+      "time": "14:44:17",
+      "http": 200,
+      "duration": "34.7978ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2011
+    },
+    {
+      "time": "14:44:18",
+      "http": 200,
+      "duration": "33.9158ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2019
+    },
+    {
+      "time": "14:44:43",
+      "http": 200,
+      "duration": "24.2422422s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2059
+    },
+    {
+      "time": "14:44:43",
+      "http": 200,
+      "duration": "39.0206ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2071
+    },
+    {
+      "time": "14:44:43",
+      "http": 200,
+      "duration": "29.4599ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2083
+    },
+    {
+      "time": "14:45:09",
+      "http": 200,
+      "duration": "25.2294164s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2126
+    },
+    {
+      "time": "14:45:09",
+      "http": 200,
+      "duration": "49.2223ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2138
+    },
+    {
+      "time": "14:45:09",
+      "http": 200,
+      "duration": "27.3885ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2150
+    },
+    {
+      "time": "14:45:09",
+      "http": 200,
+      "duration": "58.8271ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2158
+    },
+    {
+      "time": "14:45:23",
+      "http": 200,
+      "duration": "12.5840212s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2199
+    },
+    {
+      "time": "14:45:23",
+      "http": 200,
+      "duration": "27.4142ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2211
+    },
+    {
+      "time": "14:45:23",
+      "http": 200,
+      "duration": "72.7134ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2223
+    },
+    {
+      "time": "14:45:23",
+      "http": 200,
+      "duration": "31.4883ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2231
+    },
+    {
+      "time": "14:45:37",
+      "http": 200,
+      "duration": "13.1199755s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2274
+    },
+    {
+      "time": "14:45:37",
+      "http": 200,
+      "duration": "45.3753ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2286
+    },
+    {
+      "time": "14:45:38",
+      "http": 200,
+      "duration": "33.9995ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2298
+    },
+    {
+      "time": "14:45:52",
+      "http": 200,
+      "duration": "14.5524828s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2344
+    },
+    {
+      "time": "14:45:52",
+      "http": 200,
+      "duration": "110.7942ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2356
+    },
+    {
+      "time": "14:45:52",
+      "http": 200,
+      "duration": "26.4987ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2368
+    },
+    {
+      "time": "14:46:04",
+      "http": 200,
+      "duration": "11.3026179s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2415
+    },
+    {
+      "time": "14:46:04",
+      "http": 200,
+      "duration": "29.9339ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2427
+    },
+    {
+      "time": "14:46:04",
+      "http": 200,
+      "duration": "28.3166ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2439
+    },
+    {
+      "time": "14:46:18",
+      "http": 200,
+      "duration": "14.6509165s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2489
+    },
+    {
+      "time": "14:46:18",
+      "http": 200,
+      "duration": "108.1661ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2501
+    },
+    {
+      "time": "14:46:18",
+      "http": 200,
+      "duration": "19.764ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2513
+    },
+    {
+      "time": "14:46:32",
+      "http": 200,
+      "duration": "13.6391416s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2565
+    },
+    {
+      "time": "14:46:32",
+      "http": 200,
+      "duration": "29.7565ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2577
+    },
+    {
+      "time": "14:46:32",
+      "http": 200,
+      "duration": "23.8334ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2589
+    },
+    {
+      "time": "14:46:46",
+      "http": 200,
+      "duration": "14.2770188s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2643
+    },
+    {
+      "time": "14:47:04",
+      "http": 200,
+      "duration": "17.9049221s",
+      "endpoint": "/api/generate",
+      "log": "server-1.log",
+      "line": 2698
+    },
+    {
+      "time": "14:47:04",
+      "http": 200,
+      "duration": "41.3186ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2710
+    },
+    {
+      "time": "14:47:04",
+      "http": 200,
+      "duration": "29.2302ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2722
+    },
+    {
+      "time": "14:47:05",
+      "http": 200,
+      "duration": "26.1609ms",
+      "endpoint": "/api/embed",
+      "log": "server-1.log",
+      "line": 2730
+    }
+  ],
+  "ollama_counts": {
+    "/api/generate": 15,
+    "/api/embed": 46
+  },
+  "ollama_errors_or_unload": [
+    {
+      "log": "server-1.log",
+      "line": 1,
+      "message": "time=2026-10-23T14:41:41.463+07:00 level=INFO source=routes.go:1951 msg=\"server config\" env=\"map[CUDA_VISIBLE_DEVICES: GGML_VK_VISIBLE_DEVICES: GPU_DEVICE_ORDINAL: HIP_VISIBLE_DEVICES: HSA_OVERRIDE_GFX_VERSION: HTTPS_PROXY: HTTP_PROXY: LLAMA_ARG_FIT: LLAMA_ARG_FIT_TARGET: NO_PROXY: OLLAMA_CONTEXT_LENGTH:65536 OLLAMA_DEBUG:INFO OLLAMA_DEBUG_LOG_REQUESTS:false OLLAMA_EDITOR: OLLAMA_FLASH_ATTENTION:f"
+    },
+    {
+      "log": "server-1.log",
+      "line": 25,
+      "message": "time=2026-10-23T14:41:56.141+07:00 level=INFO source=llama_server.go:1350 msg=\"waiting for llama-server to become available\" status=\"llm server error\""
+    },
+    {
+      "log": "server-1.log",
+      "line": 1226,
+      "message": "time=2026-10-23T14:42:02.441+07:00 level=INFO source=llama_server.go:1350 msg=\"waiting for llama-server to become available\" status=\"llm server error\""
+    },
+    {
+      "log": "server-1.log",
+      "line": 1528,
+      "message": "time=2026-10-23T14:42:33.996+07:00 level=INFO source=llama_server.go:1350 msg=\"waiting for llama-server to become available\" status=\"llm server error\""
+    },
+    {
+      "log": "server.log",
+      "line": 1,
+      "message": "time=2026-10-23T14:55:31.338+07:00 level=INFO source=routes.go:1951 msg=\"server config\" env=\"map[CUDA_VISIBLE_DEVICES: GGML_VK_VISIBLE_DEVICES: GPU_DEVICE_ORDINAL: HIP_VISIBLE_DEVICES: HSA_OVERRIDE_GFX_VERSION: HTTPS_PROXY: HTTP_PROXY: LLAMA_ARG_FIT: LLAMA_ARG_FIT_TARGET: NO_PROXY: OLLAMA_CONTEXT_LENGTH:65536 OLLAMA_DEBUG:INFO OLLAMA_DEBUG_LOG_REQUESTS:false OLLAMA_EDITOR: OLLAMA_FLASH_ATTENTION:f"
+    }
+  ]
+}

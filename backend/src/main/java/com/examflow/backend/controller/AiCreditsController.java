@@ -18,8 +18,10 @@ public class AiCreditsController {
     private final AiCreditsWorker worker;
     private final CurrentUserService users;
     private final AdminIdentityService admins;
-    public AiCreditsController(AiCreditsService credits,AiCreditsProvider provider,AiCreditsWorker worker,CurrentUserService users,AdminIdentityService admins){
+    private final AiWorkerCoordinator coordination;
+    public AiCreditsController(AiCreditsService credits,AiCreditsProvider provider,AiCreditsWorker worker,CurrentUserService users,AdminIdentityService admins,AiWorkerCoordinator coordination){
         this.credits=credits;this.provider=provider;this.worker=worker;this.users=users;this.admins=admins;
+        this.coordination=coordination;
     }
     private long teacher(Jwt jwt){
         var user=users.getCurrentUser(jwt);
@@ -32,7 +34,14 @@ public class AiCreditsController {
     @PostMapping("/api/teacher/ai-credits/jobs")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String,Object> create(@AuthenticationPrincipal Jwt jwt,@RequestParam UUID idempotencyKey,@Valid @RequestBody AiGenerateRequest request){
-        return credits.create(teacher(jwt),idempotencyKey,request);
+        long user=teacher(jwt);coordination.requireReady();
+        return credits.create(user,idempotencyKey,request);
+    }
+    @GetMapping("/api/teacher/ai-credits/readiness")
+    public Map<String,Object> readiness(@AuthenticationPrincipal Jwt jwt) {
+        teacher(jwt);
+        try{coordination.requireReady();return Map.of("ready",true);}
+        catch(ResponseStatusException e){return Map.of("ready",false,"reason",Objects.toString(e.getReason(),"AI worker unavailable"));}
     }
     @GetMapping("/api/teacher/ai-credits/jobs/{id}")
     public Map<String,Object> job(@AuthenticationPrincipal Jwt jwt,@PathVariable long id){return credits.job(teacher(jwt),id);}

@@ -10,7 +10,7 @@ import {
   Brain,
   FolderTree,
 } from 'lucide-react';
-import type{ QuestionItem, Course, CourseChapter, CourseCLO, Bloom3Level } from '../../../types';
+import type{ QuestionItem, Course, CourseChapter, CourseCLO, Bloom3Level } from '@shared/types';
 import { BLOOM_3_CONFIG } from '../../dashboard/data/mockAcademicData';
 
 interface QuestionFormModalProps {

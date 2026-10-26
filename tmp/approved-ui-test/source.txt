@@ -1,0 +1,4 @@
+Tài liệu mẫu kiểm thử AI Generator — Khái niệm hệ điều hành
+Hệ điều hành là phần mềm hệ thống quản lý phần cứng và cung cấp môi trường thực thi cho các chương trình. Hệ điều hành quản lý tiến trình, bộ nhớ, tệp và thiết bị vào/ra.
+Tiến trình là một chương trình đang thực thi. Trạng thái sẵn sàng nghĩa là tiến trình đã đủ điều kiện chạy nhưng đang chờ được cấp CPU. Trạng thái chờ nghĩa là tiến trình đang đợi một sự kiện, chẳng hạn hoàn thành thao tác vào/ra.
+Trong ví dụ minh họa, tiến trình Aster đã có đủ dữ liệu và được đưa vào hàng đợi sẵn sàng, nhưng CPU đang bận xử lý tiến trình Beryl. Aster ở trạng thái sẵn sàng, không chờ thao tác vào/ra. Khi bộ lập lịch cấp CPU cho Aster, Aster chuyển từ sẵn sàng sang đang chạy.

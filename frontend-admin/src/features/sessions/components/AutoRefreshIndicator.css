@@ -1,0 +1,2 @@
+.auto-refresh-indicator{display:inline-flex;align-items:center;gap:8px;color:#6b7d95;font-size:11px;font-weight:400;line-height:1.5;white-space:nowrap}
+.auto-refresh-indicator>i{display:block;flex:none;width:6px;height:6px;background:#46a17e;border-radius:50%}

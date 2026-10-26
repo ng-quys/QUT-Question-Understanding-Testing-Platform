@@ -35,6 +35,7 @@ import com.examflow.backend.exception.ApiException;
 @Service
 
 public class TeacherCourseContentService {
+    @org.springframework.beans.factory.annotation.Autowired private AutomaticExamService readAccess;
 
     private final JdbcTemplate jdbc;
     private final QuestionBankStatsService questionBankStats;
@@ -106,7 +107,7 @@ public class TeacherCourseContentService {
 
     public List<CourseChapterDto> getStructure(long courseId, Jwt jwt) {
 
-        requireCourseOwner(courseId, jwt);
+        readAccess.requireCourse(currentUserService.getCurrentUser(jwt),courseId);
 
         return jdbc.query(
 
@@ -284,7 +285,7 @@ public class TeacherCourseContentService {
 
     @Transactional(readOnly = true)
 public List<CourseCloDto> getClos(long courseId, Jwt jwt) {
-    requireCourseOwner(courseId, jwt);
+    readAccess.requireCourse(currentUserService.getCurrentUser(jwt),courseId);
 
     return jdbc.query(
         """

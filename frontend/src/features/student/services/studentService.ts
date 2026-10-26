@@ -1,4 +1,4 @@
-import { apiFetch } from '../../../services/api';
+import { apiFetch } from '@shared/services/api';
 
 export interface StudentSession {
   sessionId: number;
@@ -8,6 +8,8 @@ export interface StudentSession {
   courseCode: string;
   courseName: string;
   roomCode: string;
+  sessionName?: string;
+  roomName?: string;
   startTime: string;
   endTime: string;
   sessionStatus: string;
@@ -78,6 +80,7 @@ export interface ExamQuestion {
 
 
 export interface StudentProfile {
+  className?: string;
   studentId: number;
   username: string;
   email: string;
@@ -96,6 +99,7 @@ export interface ExamSearchResult {
   courseName: string;
   sessionName: string;
   roomCode: string;
+  roomName?: string;
   startTime: string;
   endTime: string;
   sessionStatus: string;
@@ -116,6 +120,8 @@ export interface JoinExamResult {
   courseCode: string;
   courseName: string;
   roomCode: string;
+  sessionName?: string;
+  roomName?: string;
   startTime: string;
   endTime: string;
   message: string;
@@ -149,7 +155,15 @@ export type BrowserViolation =
   | 'PASTE'
   | 'RIGHT_CLICK';
 
+export interface CameraHealth { cameraVerified:boolean;cameraReason:string;cameraMessage:string }
+export interface CameraCheck { required:boolean;verified:boolean;reason:string;message:string;verificationToken:string|null;expiresAt:number }
 export interface AiStatus {
+  cameraVerified?:boolean;
+  cameraMessage?:string;
+  cameraReason?:string;
+  frameIntervalMs?: number;
+  captureAllowed?: boolean;
+  lease?: number;
   required: boolean;
   ready: boolean;
   status: string;
@@ -157,8 +171,17 @@ export interface AiStatus {
 }
 
 export const studentApi = {
-  aiStatus: (id: number) => apiFetch<AiStatus>(`/student/attempts/${id}/ai-status`),
-  dashboard: () => apiFetch<StudentDashboard>('/student/dashboard'),
+  offlineGrant:(attempt:number)=>apiFetch<import('./offlineExam').OfflineGrant>(`/student/attempts/${attempt}/offline-grant`,{method:'POST',signal:AbortSignal.timeout(15000)}),
+  offlineSubmit:(attempt:number,submission:import('./offlineExam').FrozenSubmission)=>apiFetch<StudentResult>(`/student/attempts/${attempt}/offline-submit`,{method:'POST',body:JSON.stringify(submission),signal:AbortSignal.timeout(20000)}),
+  cameraRequirements:(session:number,signal?:AbortSignal)=>apiFetch<{required:boolean}>(`/student/sessions/${session}/camera-check`,{signal}),
+  checkCamera:(session:number,jpeg:string,signal?:AbortSignal)=>apiFetch<CameraCheck>(`/student/sessions/${session}/camera-check`,{method:'POST',body:JSON.stringify({jpeg}),signal}),
+  cameraHealth:(attempt:number,available:boolean,signal?:AbortSignal,reason='device_unavailable')=>apiFetch<CameraHealth>(`/student/attempts/${attempt}/camera-health`,{method:'POST',body:JSON.stringify({available,reason}),signal}),
+  restoreCamera:(attempt:number,verificationToken:string|null)=>apiFetch<CameraHealth>(`/student/attempts/${attempt}/camera-restore`,{method:'POST',body:JSON.stringify({verificationToken})}),
+  clock:()=>apiFetch<{serverTime:string}>('/student/clock',{signal:AbortSignal.timeout(10000)}),
+  aiStatus: (id: number,signal?:AbortSignal) => apiFetch<AiStatus>(`/student/attempts/${id}/ai-status`,{signal}),
+  aiFrame:(id:number,body:{lease:number;jpeg:string;audioPcm16:string},signal?:AbortSignal)=>apiFetch<{accepted:boolean}>(`/student/attempts/${id}/ai-frame`,{method:'POST',body:JSON.stringify(body),signal}),
+  reconnectAi:(id:number)=>apiFetch(`/student/attempts/${id}/ai-reconnect`,{method:'POST',signal:AbortSignal.timeout(6000)}),
+  dashboard: (signal?:AbortSignal) => apiFetch<StudentDashboard>('/student/dashboard',{signal}),
 
   sessions: () =>
     apiFetch<StudentSession[]>('/student/sessions'),
@@ -166,10 +189,10 @@ export const studentApi = {
   results: () =>
     apiFetch<StudentResult[]>('/student/results'),
 
-  result: (attemptId: number) =>
-    apiFetch<StudentResult>(`/student/results/${attemptId}`),
+  result: (attemptId: number,signal?:AbortSignal) =>
+    apiFetch<StudentResult>(`/student/results/${attemptId}`,{signal}),
 
-  startExam: (sessionId: number, roomCode: string, accessCode?: string) =>
+  startExam: (sessionId: number, roomCode?: string, accessCode?: string, verificationToken?: string|null) =>
     apiFetch<StudentAttempt>(
       `/student/sessions/${sessionId}/start`,
       {
@@ -177,6 +200,7 @@ export const studentApi = {
         body: JSON.stringify({
           roomCode,
           accessCode: accessCode || null,
+          verificationToken: verificationToken || null,
         }),
       },
     ),
@@ -195,6 +219,7 @@ export const studentApi = {
       `/student/attempts/${attemptId}/answer`,
       {
         method: 'PUT',
+        signal: AbortSignal.timeout(8000),
         body: JSON.stringify({
           questionId,
           answerId,
@@ -213,6 +238,7 @@ export const studentApi = {
       `/student/attempts/${attemptId}/submit`,
       {
         method: 'POST',
+        signal: AbortSignal.timeout(10000),
         body: JSON.stringify({ answers }),
       },
     ),
@@ -225,11 +251,13 @@ export const studentApi = {
     attemptId: number,
     event: BrowserViolation,
     active = true,
+    signal?: AbortSignal,
   ) =>
     apiFetch<{ message: string }>(
       `/student/attempts/${attemptId}/browser-events`,
       {
         method: 'POST',
+        signal,
         body: JSON.stringify({
           event,
           active,

@@ -1,0 +1,37 @@
+// In-memory synthetic UI data; never calls a real API, Keycloak, Supabase or the AI.
+import { useState } from 'react';
+import { AdminExamReviewDialog } from '../../frontend-admin/src/features/admin/components/AdminExamReviewDialog';
+import { adminWorkspaceApi, type ExamReview } from '../../frontend-admin/src/features/admin/services/adminWorkspaceApi';
+import { createRoot } from 'react-dom/client';
+import { DepartmentExamPanel } from '../../frontend-admin/src/features/sessions/components/DepartmentExamPanel';
+import '../../frontend-shared/src/features/sessions/components/organization.css';
+import '../../frontend-admin/src/features/admin/styles/admin.css';
+const students=Array.from({length:100},(_,n)=>({id:n+1,username:String(9000000001+n),name:`Sinh viên tổng hợp ${String(n+1).padStart(3,'0')}`,className:'DHTH01',department:'Công nghệ thông tin'}));
+const rooms=Array.from({length:4},(_,n)=>({id:n+1,code:`P00${n+1}`,name:`Phòng ${n+1}`,status:'active',capacity:40}));
+const teachers=Array.from({length:4},(_,n)=>({id:n+1,name:`Giảng viên tổng hợp ${n+1}`}));
+const exams=Array.from({length:4},(_,n)=>({id:n+1,code:`CSDL-${n+1}`,name:`Đề Cơ sở dữ liệu ${n+1}`,courseId:1,authorId:n+1}));
+type Group={id:number;number:number;roomId?:number;roomCode?:string;roomName?:string;teacherId?:number;teacherName?:string;examId?:number;examTitle?:string;sessionId?:number;publishedAt?:string;status:string;aiEnabled?:boolean;studentCount:number;students:typeof students;missing:string[];ready:boolean};
+type Sitting={id:number;name:string;courseId:number;department:string;courseCode:string;courseName:string;periodName:string;startTime:string;endTime:string;groups:Group[]};
+let sitting:Sitting|null=new URLSearchParams(location.search).has('ready')?{id:1,name:'Thi Cơ sở dữ liệu cuối kỳ',courseId:1,department:'Công nghệ thông tin',courseCode:'CSDL',courseName:'Cơ sở dữ liệu',periodName:'Cuối kỳ 2027',startTime:'2027-12-10T08:00:00',endTime:'2027-12-10T09:00:00',groups:Array.from({length:4},(_,n)=>({id:n+1,number:n+1,roomId:n===0?1:undefined,roomCode:n===0?'P001':undefined,roomName:n===0?'Phòng máy 1':undefined,teacherId:n===0?1:undefined,teacherName:n===0?'Giảng viên tổng hợp 1':undefined,examId:n===0?1:undefined,examTitle:n===0?'Đề Cơ sở dữ liệu 1':undefined,status:'scheduled',aiEnabled:true,studentCount:Math.min(30,100-n*30),students:students.slice(n*30,n*30+30),missing:n===0?[]:['phòng','giảng viên','đề thi'],ready:n===0}))}:null;
+async function request<T=unknown>(url:string,init:RequestInit={}):Promise<T>{
+ const parsed=new URL(url,'http://synthetic.invalid'),path=parsed.pathname,body=init.body?JSON.parse(String(init.body)):{};let result:unknown={};
+ const allocated=sitting?sitting.groups.filter(g=>g.status!=='cancelled').reduce((sum,g)=>sum+g.studentCount,0):0;
+ if(path.endsWith('/options'))result={courses:[{id:1,code:'CSDL',name:'Cơ sở dữ liệu'}],periods:[{id:1,code:'CK_2027',name:'Cuối kỳ 2027',status:'active'}],departments:[{name:'Công nghệ thông tin',studentCount:100}]};
+ else if(path.endsWith('/candidates'))result={total:100,assigned:allocated,remaining:100-allocated,students:allocated?[]:students};
+ else if(path.endsWith('/preview')){const groups=[];for(let n=0;n<100;n+=body.studentsPerGroup)groups.push({number:groups.length+1,startTime:body.startTime,endTime:body.endTime,students:students.slice(n,n+body.studentsPerGroup)});result={previewToken:'synthetic',total:100,assigned:0,remaining:100,groups};}
+ else if(path.endsWith('/department-exams')&&init.method==='POST'){const groups:Group[]=[];for(let n=0;n<100;n+=body.studentsPerGroup){const roster=students.slice(n,n+body.studentsPerGroup);groups.push({id:groups.length+1,number:groups.length+1,status:'scheduled',studentCount:roster.length,students:roster,missing:['phòng','giảng viên','đề thi'],ready:false});}sitting={id:1,...body,groups,courseCode:'CSDL',courseName:'Cơ sở dữ liệu',periodName:'Cuối kỳ 2027'};result=sitting;}
+ else if(path.endsWith('/department-exams/1/publish')){if(!sitting||sitting.groups.some(g=>g.status!=='cancelled'&&!g.ready))throw Error('Cần hoàn thiện tất cả nhóm');sitting.groups.filter(g=>g.status!=='cancelled').forEach(g=>{g.publishedAt=new Date().toISOString();g.sessionId=100+g.id;});result=sitting;}
+ else if(path.endsWith('/department-exams'))result={total:sitting?1:0,items:sitting?[{...sitting,groups:undefined,groupCount:sitting.groups.length,studentCount:100,status:sitting.groups.every(g=>g.publishedAt)?'published':sitting.groups.every(g=>g.ready)?'ready':'assignment',groupsWithExam:sitting.groups.filter(g=>g.examId).length,publishedGroups:sitting.groups.filter(g=>g.publishedAt&&g.status!=='cancelled').length}]:[]};
+ else if(path.includes('/groups/')){if(!sitting)throw Error('No synthetic sitting');const id=Number(path.split('/groups/')[1].split('/')[0]),group=sitting.groups.find(g=>g.id===id)!;
+  if(path.endsWith('/ai-policy'))group.aiEnabled=parsed.searchParams.get('enabled')==='true';
+  else if(path.endsWith('/publish')){if(!group.ready)throw Error('Cần đủ phòng, giảng viên và đề');group.publishedAt=new Date().toISOString();group.sessionId=100+id;}
+  else if(path.endsWith('/cancel'))group.status='cancelled';
+  else {const keptExam=group.teacherId===body.teacherId?group.examId:undefined;Object.assign(group,body,{examId:keptExam},{roomCode:rooms.find(r=>r.id===body.roomId)?.code,roomName:rooms.find(r=>r.id===body.roomId)?.name,teacherName:teachers.find(t=>t.id===body.teacherId)?.name,examTitle:exams.find(e=>e.id===body.examId)?.name});group.missing=[...(!body.roomId?['phòng']:[]),...(!body.teacherId?['giảng viên']:[]),...(!group.examId?['đề thi']:[])];group.ready=group.missing.length===0;}
+  result=sitting;
+ }else if(path.endsWith('/department-exams/1'))result=sitting;
+ else throw Error(`Unsupported synthetic fixture: ${path}`);
+ return structuredClone(result) as T;
+}
+let syntheticExam:ExamReview={id:1,code:'CSDL-1',title:'Đề Cơ sở dữ liệu 1',status:'upcoming',revisionToken:'synthetic-1',courseName:'Cơ sở dữ liệu',durationMinutes:60,totalPoints:10,canEdit:false,canClose:false,questions:[{id:1,position:1,content:'Khóa chính của một bảng dùng để làm gì?',points:10,answers:[{label:'A',content:'Xác định duy nhất mỗi bản ghi',correct:true},{label:'B',content:'Sắp xếp bảng theo tên',correct:false}]}]};
+function Fixture(){const [review,setReview]=useState<number|null>(null);return <div className="admin-workspace" style={{display:'block'}}><main className="exam-org org-admin" style={{maxWidth:1280,margin:'24px auto',padding:24}}><p>Dữ liệu kiểm thử tổng hợp · Không ghi database thật</p><DepartmentExamPanel view={new URLSearchParams(location.search).get('view')==='create'?'create':'combined'} rooms={rooms} teachers={teachers} exams={exams} request={request} onCreated={()=>{}} onOpenExam={setReview}/></main>{review!==null&&<AdminExamReviewDialog id={review} api={{...adminWorkspaceApi,examReview:async()=>structuredClone(syntheticExam),saveExamContent:async(_id,input,copy)=>{syntheticExam={...syntheticExam,id:copy?99:syntheticExam.id,code:copy?'DE-TEST-99':syntheticExam.code,status:'draft',canEdit:true,canClose:true,title:input.title,durationMinutes:input.durationMinutes,totalPoints:input.questions.reduce((n,q)=>n+q.points,0),questions:input.questions.map((q,n)=>({...q,id:100+n,position:n+1,answers:q.answers.map((a,m)=>({...a,label:String.fromCharCode(65+m)}))}))};return structuredClone(syntheticExam);}}} onClose={()=>setReview(null)} onChanged={()=>{}}/>}</div>;}
+createRoot(document.getElementById('root')!).render(<Fixture/>);

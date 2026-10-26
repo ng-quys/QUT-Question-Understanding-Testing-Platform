@@ -15,7 +15,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { RECENT_EXAMS_DATA } from '../data/mockDashboardData';
-import type{ ExamRecord, ExamStatus } from '../../../types';
+import type{ ExamRecord, ExamStatus } from '@shared/types';
 
 interface RecentExamsTableProps {
   onViewExamDetail?: (exam: ExamRecord) => void;
@@ -183,7 +183,7 @@ export const RecentExamsTable: React.FC<RecentExamsTableProps> = ({
                           {exam.title}
                         </div>
                         <div className="text-[11px] text-slate-400 font-normal">
-                          {exam.questionCount} câu • {exam.durationMinutes} phút
+                          {exam.questionCount} câu • Thời gian theo ca thi
                         </div>
                       </div>
                     </div>

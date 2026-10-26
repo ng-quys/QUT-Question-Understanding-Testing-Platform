@@ -1,0 +1,7 @@
+.sitting-candidate-status{margin-top:24px}
+.sitting-candidate-status>p{font-size:13px;color:#607491;margin:0 0 14px}
+.sitting-candidate-status .allocation-stats{margin:0 0 16px}
+.sitting-candidate-warning{border:1px solid #f0d89d;background:#fff8e8;border-radius:10px;padding:16px 18px;color:#8b611a}
+.sitting-candidate-warning strong{font-size:14px;font-weight:650;line-height:1.5}
+.sitting-candidate-warning p{font-size:13px;line-height:1.65;margin:6px 0 0;color:#8b611a}
+.sitting-candidate-status .org-error p{margin:0 0 10px}

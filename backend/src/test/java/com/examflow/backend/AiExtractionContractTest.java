@@ -98,7 +98,7 @@ class AiExtractionContractTest {
         var files=new MockMultipartFile[]{new MockMultipartFile("files","doc.txt","text/plain",new byte[]{1})};
         when(provider.extract(files)).thenReturn(new HashMap<>(Map.of("documents",List.of(Map.of("extractedText","test")))));
         when(credits.documentProof(1,"test")).thenReturn("proof");
-        var controller=new AiCreditsController(credits,provider,mock(AiCreditsWorker.class),users,mock(AdminIdentityService.class));
+        var controller=new AiCreditsController(credits,provider,mock(AiCreditsWorker.class),users,mock(AdminIdentityService.class),mock(AiWorkerCoordinator.class));
         assertEquals("proof",controller.extract(jwt,files).get("sourceProof"));
         verify(credits).documentProof(1,"test");verifyNoMoreInteractions(credits);
     }
@@ -108,7 +108,7 @@ class AiExtractionContractTest {
         var teacher=new com.examflow.backend.entity.UserEntity();teacher.setId(1L);teacher.setRole("teacher");
         when(users.getCurrentUser(null)).thenReturn(teacher);
         when(provider.extract(any())).thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.valueOf(422),"PDF cần OCR"));
-        var controller=new AiCreditsController(credits,provider,mock(AiCreditsWorker.class),users,mock(AdminIdentityService.class));
+        var controller=new AiCreditsController(credits,provider,mock(AiCreditsWorker.class),users,mock(AdminIdentityService.class),mock(AiWorkerCoordinator.class));
         var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(controller)
             .setCustomArgumentResolvers(new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
             .setControllerAdvice(new com.examflow.backend.exception.GlobalExceptionHandler(),new com.examflow.backend.controller.AiCreditsErrors()).build();

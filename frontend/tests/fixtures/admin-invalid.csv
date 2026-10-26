@@ -1,0 +1,2 @@
+username,email,fullName,password,role,department
+invalid_demo,invalid@example.com,Tài khoản không hợp lệ,,ADMIN,Khoa thử nghiệm

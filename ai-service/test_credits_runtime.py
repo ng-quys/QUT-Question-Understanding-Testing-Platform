@@ -4,16 +4,107 @@ import ast
 import hmac
 import json
 import re
+import tempfile
 from types import SimpleNamespace
 from pathlib import Path
 from fastapi import Header, HTTPException
 from fastapi import FastAPI, Depends
 from fastapi.testclient import TestClient
 from uuid import UUID
+from pydantic import BaseModel, Field, field_validator
+from unittest.mock import AsyncMock
 from credits_runtime import GenerationRegistry
 
 
 class CreditsRuntimeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_registry_identity_rejects_wrong_instance_before_token_lookup(self):
+        tree = ast.parse(Path('main.py').read_text(encoding='utf-8'))
+        names = {'require_internal', 'require_registry', 'credit_job_status', 'cancel_credit_job', 'health'}
+        nodes = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in names]
+        owner = GenerationRegistry()
+        ns = dict(app=FastAPI(), Header=Header, HTTPException=HTTPException, Depends=Depends,
+                  hmac=hmac, UUID=UUID, INTERNAL_KEY='fixture-only-key-at-least-32-characters',
+                  registry=owner, OLLAMA_URL='fixture', MODEL='fixture')
+        exec(compile(ast.Module(body=nodes, type_ignores=[]), 'registry_routes', 'exec'), ns)
+        with TestClient(ns['app']) as client:
+            self.assertEqual(owner.registry_id, client.get('/health').json()['registryId'])
+            headers = {'X-AI-Internal-Key': ns['INTERNAL_KEY'], 'X-AI-Registry-Id': GenerationRegistry().registry_id}
+            url = '/credits/jobs/00000000-0000-0000-0000-000000000001'
+            self.assertEqual(409, client.get(url, headers=headers).status_code)
+            self.assertEqual(409, client.post(url+'/cancel', headers=headers).status_code)
+            headers['X-AI-Registry-Id'] = owner.registry_id
+            self.assertEqual(404, client.get(url, headers=headers).status_code)
+            self.assertFalse(owner.jobs)
+
+    async def test_other_registry_404_does_not_erase_owners_completed_result(self):
+        owner, other = GenerationRegistry(), GenerationRegistry()
+        calls = []
+        async def generate(progress, cancelled):
+            calls.append(1)
+            return [{'content': 'retained fixture result'}]
+        await owner.start('fixture-token', {'count': 1}, generate)
+        await owner.jobs['fixture-token'].task
+        with self.assertRaises(KeyError):
+            other.status('fixture-token')
+        self.assertEqual('succeeded', owner.status('fixture-token')['status'])
+        self.assertEqual(1, len(owner.status('fixture-token')['questions']))
+        await owner.start('fixture-token', {'count': 1}, generate)
+        self.assertEqual(1, len(calls))
+
+    async def test_in_memory_registry_marks_interrupted_job_paused(self):
+        old = GenerationRegistry()
+        ready = asyncio.Event()
+        async def generate(progress, cancelled):
+            progress([{'content': 'checkpoint fixture'}])
+            ready.set()
+            await asyncio.Event().wait()
+        await old.start('fixture-token', {}, generate)
+        await ready.wait()
+        replacement = GenerationRegistry()
+        with self.assertRaises(KeyError):
+            replacement.status('fixture-token')
+        old.jobs['fixture-token'].task.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await old.jobs['fixture-token'].task
+        self.assertEqual('paused', old.status('fixture-token')['status'])
+        self.assertEqual(1, len(old.status('fixture-token')['questions']))
+        self.assertFalse(replacement.jobs)
+
+    async def test_clo_start_accepts_jackson_null_instruction_without_model_io(self):
+        tree = ast.parse(Path('main.py').read_text(encoding='utf-8'))
+        names = {'Unit', 'GenerationRequest', 'SelectedClo', 'requested_count',
+                 'require_internal', 'require_registry', 'start_credit_job'}
+        nodes = [n for n in tree.body if isinstance(n, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+                 and n.name in names]
+        registry = SimpleNamespace(start=AsyncMock(return_value={'status': 'running', 'questions': []}))
+        ns = dict(app=FastAPI(), BaseModel=BaseModel, Field=Field, field_validator=field_validator,
+                  Header=Header, HTTPException=HTTPException, Depends=Depends, hmac=hmac,
+                  UUID=UUID, MAX_QUESTIONS=45, INTERNAL_KEY='test-only-key-at-least-32-characters',
+                  registry=registry, _generate=AsyncMock())
+        exec(compile(ast.Module(body=nodes, type_ignores=[]), 'actual_clo_start', 'exec'), ns)
+        ns['GenerationRequest'].model_rebuild(_types_namespace=ns)
+        payload = dict(courseId=11, provider='qwen', instruction=None, units=None,
+                       sourceText='Synthetic DNS document. ' * 10, questionCount=10,
+                       cloIds=[25], selectedClos=[dict(id=25, code='CLO1', description='Explain DNS')],
+                       sourceProof='synthetic-proof', defaultScore=0.5)
+        with TestClient(ns['app']) as client:
+            url = '/credits/jobs/00000000-0000-0000-0000-000000000001'
+            headers = {'X-AI-Internal-Key': ns['INTERNAL_KEY'], 'X-ExamFlow-Job-Id': '77'}
+            for instruction in (None, '', 'Additional guidance'):
+                response = client.post(url, json=payload | dict(instruction=instruction,inferenceBatchSize=3), headers=headers)
+                self.assertEqual(202, response.status_code, response.text)
+                forwarded = registry.start.call_args.args[1]
+                self.assertEqual(instruction or '', forwarded['instruction'])
+                self.assertEqual(10, forwarded['questionCount'])
+                self.assertEqual([25], forwarded['cloIds'])
+                self.assertEqual(77, forwarded['_jobId'])
+                self.assertEqual(3, forwarded['inferenceBatchSize'])
+            for invalid in (dict(instruction=42), dict(questionCount=46), dict(cloIds=[26])):
+                before = registry.start.call_count
+                self.assertIn(client.post(url, json=payload | invalid, headers=headers).status_code, (400, 422))
+                self.assertEqual(before, registry.start.call_count)
+        ns['_generate'].assert_not_called()
+
     def pipeline(self, valid_limit=None):
         """Execute the actual generation loop with all external I/O substituted."""
         module = ast.parse(Path("main.py").read_text(encoding="utf-8"))
@@ -78,7 +169,7 @@ class CreditsRuntimeTests(unittest.IsolatedAsyncioTestCase):
         checkpoints = []
         questions = await generate(request(5), lambda accepted: checkpoints.append(len(accepted)))
         self.assertEqual(len(questions), 3)
-        self.assertEqual(checkpoints, [1, 2, 3])
+        self.assertEqual(checkpoints, [3])
         self.assertEqual(len(calls), 9)
 
     async def test_duplicate_token_starts_model_only_once(self):
@@ -110,6 +201,20 @@ class CreditsRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["status"], "failed")
         self.assertEqual(len(result["questions"]), 1)
 
+    async def test_provider_timeout_keeps_checkpoint_and_does_not_replay(self):
+        registry = GenerationRegistry()
+        calls = []
+        async def generate(progress, cancelled):
+            calls.append(True)
+            progress([{'content': 'accepted before timeout'}])
+            raise TimeoutError('synthetic upstream timeout')
+        await registry.start('timeout', {'questionCount': 10}, generate)
+        await registry.jobs['timeout'].task
+        again = await registry.start('timeout', {'questionCount': 10}, generate)
+        self.assertEqual('failed', again['status'])
+        self.assertEqual(1, len(again['questions']))
+        self.assertEqual(1, len(calls))
+
     async def test_cancel_waits_for_current_call_and_preserves_checkpoints(self):
         registry = GenerationRegistry()
         waiting = asyncio.Event()
@@ -136,6 +241,57 @@ class CreditsRuntimeTests(unittest.IsolatedAsyncioTestCase):
             registry.cancel("missing")
         self.assertFalse(registry.jobs)
 
+    async def test_durable_registry_resumes_from_last_batch_with_same_registry_id(self):
+        with tempfile.TemporaryDirectory() as folder:
+            state = Path(folder) / 'registry.json'
+            first = GenerationRegistry(state)
+            self.assertEqual(first.registry_id, GenerationRegistry(state).registry_id)
+            checkpointed = asyncio.Event()
+            async def first_run(progress, cancelled):
+                progress([{'content': f'q{i}'} for i in range(5)])
+                checkpointed.set()
+                await asyncio.Event().wait()
+            await first.start('token', {'questionCount': 10, 'batchSize': 5}, first_run)
+            await checkpointed.wait()
+            first.jobs['token'].task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await first.jobs['token'].task
+            replacement = GenerationRegistry(state)
+            self.assertEqual(first.registry_id, replacement.registry_id)
+            self.assertEqual(5, len(replacement.status('token')['questions']))
+            async def resumed(progress, cancelled):
+                result = list(replacement.jobs['token'].questions)
+                result.extend({'content': f'q{i}'} for i in range(5, 10))
+                progress(result)
+                return result
+            await replacement.resume_all(lambda payload, initial: resumed)
+            await replacement.jobs['token'].task
+            self.assertEqual('succeeded', replacement.status('token')['status'])
+            self.assertEqual(10, len(replacement.status('token')['questions']))
+            self.assertEqual(2, replacement.status('token')['completedBatches'])
+            persisted = json.loads(state.read_text(encoding='utf-8'))
+            self.assertEqual({}, persisted['jobs']['token']['payload'])
+
+    async def test_queue_allows_only_one_active_generation(self):
+        registry = GenerationRegistry(max_concurrent=1)
+        first_started, release = asyncio.Event(), asyncio.Event()
+        active = 0
+        maximum = 0
+        async def generate(progress, cancelled):
+            nonlocal active, maximum
+            active += 1; maximum = max(maximum, active); first_started.set()
+            await release.wait(); active -= 1
+            return [{'content': 'done'}]
+        await registry.start('one', {'questionCount': 1, 'batchSize': 5}, generate)
+        await first_started.wait()
+        await registry.start('two', {'questionCount': 1, 'batchSize': 5}, generate)
+        await asyncio.sleep(0)
+        self.assertEqual('queued', registry.status('two')['status'])
+        self.assertEqual(1, registry.status('two')['queuePosition'])
+        release.set()
+        await asyncio.gather(registry.jobs['one'].task, registry.jobs['two'].task)
+        self.assertEqual(1, maximum)
+
     async def test_internal_key_is_required_without_loading_model(self):
         module = ast.parse(Path("main.py").read_text(encoding="utf-8"))
         guard = next(node for node in module.body if isinstance(node, ast.FunctionDef) and node.name == "require_internal")
@@ -153,7 +309,7 @@ class CreditsRuntimeTests(unittest.IsolatedAsyncioTestCase):
     async def test_job_http_auth_503_403_and_restart_404(self):
         tree = ast.parse(Path('main.py').read_text(encoding='utf-8'))
         nodes = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
-                 and n.name in ('require_internal', 'credit_job_status', 'cancel_credit_job')]
+                 and n.name in ('require_internal', 'require_registry', 'credit_job_status', 'cancel_credit_job')]
         namespace = dict(app=FastAPI(), Header=Header, HTTPException=HTTPException,
             Depends=Depends, hmac=hmac, UUID=UUID, INTERNAL_KEY='', registry=GenerationRegistry())
         exec(compile(ast.Module(body=nodes, type_ignores=[]), 'actual_job_routes', 'exec'), namespace)

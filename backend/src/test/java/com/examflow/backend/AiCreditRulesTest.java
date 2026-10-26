@@ -13,6 +13,28 @@ import static org.mockito.Mockito.*;
 
 /** Unit tests only: no Spring context, datasource connection or live model. */
 class AiCreditRulesTest {
+    private AiGenerateRequest automatic(int count,List<Long> ids) {
+        return new AiGenerateRequest(1L,"qwen","","x".repeat(100),null,"proof",0.5,ids,count,null);
+    }
+    @Test void automaticRequestsRequireSelectedClosAndHardLimit45() {
+        for(int count:List.of(1,10,45)) assertEquals(count,AiCreditRules.count(automatic(count,List.of(3L,4L)),100));
+        for(int count:List.of(0,46)) assertThrows(IllegalArgumentException.class,()->AiCreditRules.count(automatic(count,List.of(3L)),100));
+        assertThrows(IllegalArgumentException.class,()->AiCreditRules.count(automatic(10,List.of()),45));
+        assertThrows(IllegalArgumentException.class,()->AiCreditRules.count(automatic(10,List.of(3L,3L)),45));
+    }
+    @Test void oldPayloadSerializationDoesNotGainNewNullFields() throws Exception {
+        String json=new ObjectMapper().writeValueAsString(request(1));
+        assertFalse(json.contains("cloIds"));assertFalse(json.contains("questionCount"));assertFalse(json.contains("selectedClos"));assertFalse(json.contains("batchSize"));assertFalse(json.contains("inferenceBatchSize"));
+        assertEquals(1,AiCreditRules.count(new ObjectMapper().readValue(json,AiGenerateRequest.class),45));
+        String auto=new ObjectMapper().writeValueAsString(automatic(10,List.of(3L)));
+        assertThrows(com.fasterxml.jackson.core.JsonProcessingException.class,()->new ObjectMapper().readValue(auto.replace("\"questionCount\":10","\"questionCount\":10.9"),AiGenerateRequest.class));
+        assertEquals(5,automatic(10,List.of(3L)).effectiveBatchSize());
+        var batch10=new AiGenerateRequest(1L,"qwen","","x".repeat(100),null,"proof",0.5,List.of(3L),10,null,10);
+        assertEquals(10,new ObjectMapper().readValue(new ObjectMapper().writeValueAsString(batch10),AiGenerateRequest.class).effectiveBatchSize());
+        assertEquals(1,automatic(10,List.of(3L)).effectiveInferenceBatchSize());
+        var inference3=new AiGenerateRequest(1L,"qwen","","x".repeat(100),null,"proof",0.5,List.of(3L),10,null,5,null,3);
+        assertEquals(3,new ObjectMapper().readValue(new ObjectMapper().writeValueAsString(inference3),AiGenerateRequest.class).effectiveInferenceBatchSize());
+    }
     private AiGenerateRequest request(int count) {
         return new AiGenerateRequest(1L,"qwen","","x".repeat(100),
             List.of(new AiGenerateRequest.AiUnitDto("Unit",2L,3L,count,0,0)),"proof",0.5);
@@ -47,14 +69,25 @@ class AiCreditRulesTest {
     }
     @Test void disabledFeatureNeverOpensDatabase() {
         DataSource datasource=mock(DataSource.class);
-        var service=new AiCreditsService(datasource,new ObjectMapper());
+        var service=new AiCreditsService(datasource,new ObjectMapper(),mock(com.examflow.backend.service.AiWorkerCoordinator.class));
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.quota(1));
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.create(1,UUID.randomUUID(),request(1)));
         verifyNoInteractions(datasource);
     }
+    @Test void inferenceModeAcceptsOnlyOneOrThreeBeforeDatabaseWork() {
+        DataSource datasource=mock(DataSource.class);
+        var service=new AiCreditsService(datasource,new ObjectMapper(),mock(com.examflow.backend.service.AiWorkerCoordinator.class));
+        ReflectionTestUtils.setField(service,"enabled",true);
+        ReflectionTestUtils.setField(service,"maximum",45);
+        var invalid=new AiGenerateRequest(1L,"qwen","","x".repeat(100),null,"proof",0.5,
+            List.of(3L),1,null,5,null,2);
+        var error=assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.create(1,UUID.randomUUID(),invalid));
+        assertEquals(400,error.getStatusCode().value());
+        verifyNoInteractions(datasource);
+    }
     @Test void acceptsOnlyValidQuestionsWithinCloBloomBudget() throws Exception {
         var mapper=new ObjectMapper();
-        var service=new AiCreditsService(mock(DataSource.class),mapper);
+        var service=new AiCreditsService(mock(DataSource.class),mapper,mock(com.examflow.backend.service.AiWorkerCoordinator.class));
         Map<String,Object> row=Map.of("credit_payload",mapper.writeValueAsString(request(1)));
         var valid=new AiQuestionDto("Question",List.of("a","b","c","d"),0,"","remember",2L,3L);
         var wrongClo=new AiQuestionDto("Other",List.of("a","b","c","d"),0,"","remember",2L,99L);
@@ -62,7 +95,7 @@ class AiCreditRulesTest {
         assertEquals(List.of(valid),service.validate(row,List.of(valid,valid,wrongClo,blank)));
     }
     @Test void documentProofIsBoundToUserAndContent() {
-        var service=new AiCreditsService(mock(DataSource.class),new ObjectMapper());
+        var service=new AiCreditsService(mock(DataSource.class),new ObjectMapper(),mock(com.examflow.backend.service.AiWorkerCoordinator.class));
         ReflectionTestUtils.setField(service,"secret","test-only-key-with-at-least-32-characters");
         var body=request(1);
         String proof=service.documentProof(1,body.sourceText());
@@ -82,7 +115,7 @@ class AiCreditRulesTest {
         when(admins.requireAdmin(jwt)).thenThrow(new org.springframework.web.server.ResponseStatusException(
             org.springframework.http.HttpStatus.FORBIDDEN,"Admin only"));
         var controller=new com.examflow.backend.controller.AiCreditsController(
-            credits,mock(AiCreditsProvider.class),mock(AiCreditsWorker.class),users,admins);
+            credits,mock(AiCreditsProvider.class),mock(AiCreditsWorker.class),users,admins,mock(com.examflow.backend.service.AiWorkerCoordinator.class));
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->
             controller.grant(jwt,1,new com.examflow.backend.controller.AiCreditsController.Grant(UUID.randomUUID(),10,"test")));
         verifyNoInteractions(credits);
@@ -95,7 +128,7 @@ class AiCreditRulesTest {
         student.setId(1L);student.setRole("student");
         when(users.getCurrentUser(jwt)).thenReturn(student);
         var controller=new com.examflow.backend.controller.AiCreditsController(
-            credits,mock(AiCreditsProvider.class),mock(AiCreditsWorker.class),users,mock(AdminIdentityService.class));
+            credits,mock(AiCreditsProvider.class),mock(AiCreditsWorker.class),users,mock(AdminIdentityService.class),mock(com.examflow.backend.service.AiWorkerCoordinator.class));
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->controller.quota(jwt));
         verifyNoInteractions(credits);
     }

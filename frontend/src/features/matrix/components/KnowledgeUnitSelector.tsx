@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check, Search, Plus, Trash2 } from 'lucide-react';
-import { CourseChapter, CourseTopic } from '../../../types';
+import { CourseChapter, CourseTopic } from '@shared/types';
 
 interface KnowledgeUnitSelectorProps {
   chapter: CourseChapter;

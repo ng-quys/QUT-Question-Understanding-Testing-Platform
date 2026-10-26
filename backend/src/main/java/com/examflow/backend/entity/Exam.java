@@ -36,9 +36,6 @@ public class Exam {
     @Column(nullable = false)
     private String title;
 
-    @Column(name = "duration_minutes", nullable = false)
-    private Integer durationMinutes;
-
     @Column(name = "total_questions", nullable = false)
     private Integer totalQuestions;
 
@@ -59,6 +56,9 @@ public class Exam {
 
     @Column(name = "anti_cheat_mode", nullable = false)
     private Boolean antiCheatMode;
+
+    @Column(name = "created_by")
+    private Long createdBy;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

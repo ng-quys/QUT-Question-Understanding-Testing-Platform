@@ -1,15 +1,23 @@
 {
   "Environment": {
     "AI_INTERNAL_KEY": "",
+    "AI_CREDITS_WORKER_ENABLED": "true",
+    "AI_CREDITS_WORKER_CLUSTER_READY": "false",
     "ANTICHEAT_INTERNAL_SECRET": "",
-    "QUESTION_BANK_DB_PASSWORD": ""
+    "QUESTION_BANK_DB_PASSWORD": "",
+    "EXAMFLOW_QUESTIONBANK_DSN": ""
   },
   "MavenPath": "",
+  "EmbeddingSync": {
+    "Enabled": false
+  },
   "Ports": {
     "Ollama": 11434,
     "Backend": 8080,
     "AIGenerator": 8002,
+    "EmbeddingSync": 8004,
     "AntiCheating": 8000,
-    "Frontend": 5173
+    "Frontend": 5173,
+    "AdminFrontend": 5174
   }
 }

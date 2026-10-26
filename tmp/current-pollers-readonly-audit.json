@@ -1,0 +1,2267 @@
+{
+  "started_utc": "2026-10-23T08:52:50.851384+00:00",
+  "local_java": [
+    {
+      "pid": 20600,
+      "name": "java.exe",
+      "started": "2026-10-23T07:50:21.785776+00:00",
+      "backend": false,
+      "main_class": null
+    },
+    {
+      "pid": 26452,
+      "name": "java.exe",
+      "started": "2026-10-23T08:41:58.537394+00:00",
+      "backend": true,
+      "main_class": "com.examflow.backend.BackendApplication"
+    }
+  ],
+  "primary_pid": 26452,
+  "flags": {
+    "AI_CREDITS_WORKER_ENABLED": "true",
+    "AI_CREDITS_WORKER_CLUSTER_READY": "true"
+  },
+  "samples": [
+    {
+      "number": 1,
+      "utc": "2026-10-23T08:52:51.835557+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:52:44.404991+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:52:49.368458+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:52:51.512995+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:52:45.320041+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454941,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:23.286876+00:00",
+          "query_start": "2026-10-23 08:52:23.327546+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": null,
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "utc": "2026-10-23T08:52:54.954294+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:52:44.404991+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:52:49.368458+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:52:51.856031+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:52:45.320041+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454941,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:23.286876+00:00",
+          "query_start": "2026-10-23 08:52:23.327546+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": null,
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "utc": "2026-10-23T08:52:58.069656+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:52:44.404991+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:52:49.368458+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:52:56.626843+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:52:57.388406+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": null,
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "utc": "2026-10-23T08:53:01.184467+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:00.277016+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:52:49.368458+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:52:58.741872+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:52:57.388406+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": null,
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "utc": "2026-10-23T08:53:04.299095+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:00.277016+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:52:49.368458+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:02.182343+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:02.629380+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": null,
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "utc": "2026-10-23T08:53:07.414550+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:00.277016+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:04.372275+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:05.634762+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:02.629380+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": null,
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "utc": "2026-10-23T08:53:10.532164+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:00.277016+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:04.372275+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:08.969756+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:02.629380+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:07.735244+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "utc": "2026-10-23T08:53:13.646610+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:00.277016+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:04.372275+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle in transaction",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:13.304152+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:02.629380+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:07.735244+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "utc": "2026-10-23T08:53:16.774792+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:15.440130+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:04.372275+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:16.001485+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:14.677932+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:07.735244+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "utc": "2026-10-23T08:53:19.922035+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:15.440130+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:19.369796+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:52:33.308463+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:19.453014+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:14.677932+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:07.735244+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "utc": "2026-10-23T08:53:23.039642+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:15.440130+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:19.369796+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:53:22.664233+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:22.790997+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:20.630321+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:07.735244+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "utc": "2026-10-23T08:53:26.154038+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:15.440130+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:19.369796+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:53:25.723098+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:22.901194+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:20.630321+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:24.080846+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454949,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:55.330491+00:00",
+          "query_start": "2026-10-23 08:52:55.366910+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "utc": "2026-10-23T08:53:29.271798+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:15.440130+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:19.369796+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:53:27.404203+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:26.344522+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:26.640252+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:50:44.909895+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:24.080846+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454952,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:53:27.370273+00:00",
+          "query_start": "2026-10-23 08:53:27.415966+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "utc": "2026-10-23T08:53:32.388378+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:31.575056+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:19.369796+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:53:31.557524+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:32.059058+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:26.640252+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:53:30.526383+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:24.080846+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454952,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:53:27.370273+00:00",
+          "query_start": "2026-10-23 08:53:27.415966+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "utc": "2026-10-23T08:53:35.502240+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:31.575056+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:36:50.992122+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:34.372741+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:53:31.557524+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:33.116298+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:26.640252+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:53:30.526383+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:24.080846+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454952,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:53:27.370273+00:00",
+          "query_start": "2026-10-23 08:53:27.415966+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "utc": "2026-10-23T08:53:38.616965+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:31.575056+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:53:35.880513+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:34.372741+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:53:37.188045+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle in transaction",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:38.295663+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:26.640252+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:53:30.526383+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:24.080846+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454952,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:53:27.370273+00:00",
+          "query_start": "2026-10-23 08:53:27.415966+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "utc": "2026-10-23T08:53:41.731240+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:31.575056+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:53:35.880513+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:34.372741+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:53:37.188045+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:40.019253+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:26.640252+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:53:30.526383+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:40.564825+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454952,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:53:27.370273+00:00",
+          "query_start": "2026-10-23 08:53:27.415966+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "utc": "2026-10-23T08:53:44.844696+00:00",
+      "connections": [
+        {
+          "pid": 5021,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:04.726071+00:00",
+          "query_start": "2026-09-29 16:57:04.797371+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 5336,
+          "application_name": "postgres_exporter",
+          "state": "idle",
+          "backend_start": "2026-09-29 16:57:45.746499+00:00",
+          "query_start": "2026-10-23 08:52:45.644021+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 98957,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-09-30 14:47:47.038890+00:00",
+          "query_start": "2026-10-23 00:26:01.025648+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2447832,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:24:53.896555+00:00",
+          "query_start": "2026-10-23 08:53:31.575056+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2449520,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 07:52:31.728454+00:00",
+          "query_start": "2026-10-23 08:53:35.880513+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451758,
+          "application_name": "",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:14:24.669574+00:00",
+          "query_start": "2026-10-23 08:53:34.372741+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451850,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:19:23.550661+00:00",
+          "query_start": "2026-10-23 08:53:42.657921+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451897,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:30.260989+00:00",
+          "query_start": "2026-10-23 08:53:43.512256+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "global_ai_poll"
+        },
+        {
+          "pid": 2451898,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle in transaction",
+          "backend_start": "2026-10-23 08:21:31.708252+00:00",
+          "query_start": "2026-10-23 08:53:44.507821+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2451899,
+          "application_name": "Supavisor",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:21:32.632975+00:00",
+          "query_start": "2026-10-23 08:50:09.797770+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2453451,
+          "application_name": "ExamFlow-Main/ai-worker-v1",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:38:31.147348+00:00",
+          "query_start": "2026-10-23 08:53:30.526383+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454947,
+          "application_name": "Supavisor (auth_query)",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:52:51.359834+00:00",
+          "query_start": "2026-10-23 08:53:40.564825+00:00",
+          "client_addr": "2406:da14:271:9902:56bb:1ef9:9329:dbff/128",
+          "query_kind": "other"
+        },
+        {
+          "pid": 2454952,
+          "application_name": "PostgREST 14.18",
+          "state": "idle",
+          "backend_start": "2026-10-23 08:53:27.370273+00:00",
+          "query_start": "2026-10-23 08:53:27.415966+00:00",
+          "client_addr": "::1/128",
+          "query_kind": "other"
+        }
+      ]
+    }
+  ],
+  "advisory_locks_at_end": 0,
+  "groups": [
+    {
+      "application": "ExamFlow-Main/ai-worker-v1",
+      "kind": "global_ai_poll",
+      "pids": [
+        2451897
+      ],
+      "query_starts": [
+        "2026-10-23 08:52:51.856031+00:00",
+        "2026-10-23 08:52:58.741872+00:00",
+        "2026-10-23 08:53:02.182343+00:00",
+        "2026-10-23 08:53:05.634762+00:00",
+        "2026-10-23 08:53:08.969756+00:00",
+        "2026-10-23 08:53:16.001485+00:00",
+        "2026-10-23 08:53:19.453014+00:00",
+        "2026-10-23 08:53:22.901194+00:00",
+        "2026-10-23 08:53:26.344522+00:00",
+        "2026-10-23 08:53:33.116298+00:00",
+        "2026-10-23 08:53:40.019253+00:00",
+        "2026-10-23 08:53:43.512256+00:00"
+      ],
+      "first_seen": "2026-10-23T08:52:54.954294+00:00",
+      "last_seen": "2026-10-23T08:53:44.844696+00:00"
+    }
+  ],
+  "finished_utc": "2026-10-23T08:53:44.960721+00:00"
+}

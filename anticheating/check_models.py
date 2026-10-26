@@ -1,12 +1,19 @@
 from pathlib import Path
 import sys
-root = Path(__file__).resolve().parent
-models = ["identity/buffalo_l/det_10g.onnx", "identity/buffalo_l/1k3d68.onnx", "identity/buffalo_l/w600k_r50.onnx", "liveness/MiniFASNetV2.onnx", "person/yolo11s.pt", "hands/hand_landmarker.task", "objects/best.pt"]
-missing = []
-for name in models:
-    path = root / "models" / name
-    ok = path.is_file() and path.stat().st_size > 0
-    print(("OK: " if ok else "MISSING/EMPTY: ") + name)
-    if not ok: missing.append(name)
-print("File presence check only; actual models are loaded when an exam starts.")
-sys.exit(1 if missing else 0)
+from app.model_config import prepare_models
+
+
+def main():
+    root = Path(__file__).resolve().parent
+    try:
+        for path in prepare_models(root / 'models'):
+            print('OK: ' + str(path.relative_to(root)))
+    except (OSError, ValueError) as exc:
+        print(str(exc))
+        return 1
+    print('Model files found. Actual loading and camera checks occur when entering an exam.')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

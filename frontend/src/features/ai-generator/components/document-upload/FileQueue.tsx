@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layers } from 'lucide-react';
-import { SourceDocument } from '../../../../types';
+import { SourceDocument } from '@shared/types';
 import { FileQueueItem } from './FileQueueItem';
 import { MAX_FILES } from '../../../../shared/utils/fileValidation';
 

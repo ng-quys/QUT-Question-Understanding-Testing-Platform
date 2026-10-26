@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Check, X } from 'lucide-react';
-import { CourseCLO, CourseChapter } from '../../../types';
+import { CourseCLO, CourseChapter } from '@shared/types';
 import { MatrixKnowledgeUnit, RowValidation } from '../types';
 import { MatrixKnowledgeRow } from './MatrixKnowledgeRow';
 import { ChapterSelector } from './ChapterSelector';

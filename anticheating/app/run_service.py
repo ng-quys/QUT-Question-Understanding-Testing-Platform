@@ -14,14 +14,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "app") not in sys.path:
     sys.path.insert(0, str(ROOT / "app"))
-from env_config import load_env_file
+from env_config import load_env_file, resolve_internal_secret
+from model_config import prepare_models
+from reference_photo import cache_reference_photo
 load_env_file(ROOT / ".env")
+load_env_file(ROOT.parent / ".env.storage")
 HOST = os.environ.get("ANTICHEAT_SERVICE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("ANTICHEAT_SERVICE_PORT", "8000"))
-PROFILE_DIR = Path(os.environ.get("ANTICHEAT_PROFILE_DIR", str(ROOT / "student-profiles"))).resolve()
+configured_profiles = Path(os.environ.get("ANTICHEAT_PROFILE_DIR", "student-profiles"))
+PROFILE_DIR = (configured_profiles if configured_profiles.is_absolute() else ROOT / configured_profiles).resolve()
 PIPELINE = ROOT / "app" / "anticheating_pipeline.py"
 BACKEND_CALLBACK = os.environ.get("ANTICHEAT_BACKEND_CALLBACK_URL", "http://127.0.0.1:8080/api/internal/anticheating/events")
-SECRET = os.environ.get("ANTICHEAT_INTERNAL_SECRET", "change-me")
+SECRET, SECRET_SOURCE = resolve_internal_secret(ROOT)
 
 lock = threading.Lock()
 process = None
@@ -29,6 +33,16 @@ active_attempt = None
 state_file = None
 last_error = ""
 active_deadline = None
+
+# One shared model worker across ALL rooms, not five workers per room.
+from batch_monitor import BatchMonitor
+def shared_models():
+    from shared_inference import SharedInference
+    return SharedInference()
+batch_monitor = BatchMonitor(shared_models,
+    group_size=int(os.environ.get("ANTICHEAT_BATCH_SIZE", "5")),
+    slice_seconds=int(os.environ.get("ANTICHEAT_BATCH_SECONDS", "10")),
+    capacity=int(os.environ.get("ANTICHEAT_MAX_SESSIONS", "300")))
 
 
 def json_response(handler, status, payload):
@@ -44,6 +58,8 @@ def json_response(handler, status, payload):
 
 def read_json(handler):
     length = int(handler.headers.get("Content-Length", "0"))
+    if length < 0 or length > 8 * 1024 * 1024:
+        raise ValueError("Yêu cầu vượt giới hạn dung lượng")
     raw = handler.rfile.read(length)
     return json.loads(raw.decode("utf-8") or "{}")
 
@@ -68,7 +84,8 @@ def state():
     if last_error:
         status, message = "error", last_error
     return {"ok": True, "running": running, "ready": running and status == "ready",
-            "status": status, "message": message, "attemptId": active_attempt}
+            "status": status, "message": message, "attemptId": active_attempt,
+            "serviceVersion": "qut-local-entry-v3"}
 
 
 def stop_process():
@@ -81,7 +98,7 @@ def stop_process():
             process.wait(timeout=2)
 
 
-def start_attempt(attempt_id, student_id, remaining_seconds=None, session_end=None, clock_starts_on_ready=False):
+def start_attempt(attempt_id, student_id, remaining_seconds=None, session_end=None, clock_starts_on_ready=False, reference_image=None, reference_photo_base64=None):
     global process, active_attempt, state_file, last_error, active_deadline
     with lock:
         if process and process.poll() is None:
@@ -95,21 +112,18 @@ def start_attempt(attempt_id, student_id, remaining_seconds=None, session_end=No
                 return state()
             stop_process()
         last_error = ""
-        reference = PROFILE_DIR / f"{student_id}.jpg"
-        if not reference.exists():
-            raise FileNotFoundError(f"Chưa có ảnh khuôn mặt sinh viên: {reference}. Hãy tải ảnh ở Hồ sơ.")
-        required_models = [
-            ROOT / "models" / "identity" / "buffalo_l" / name
-            for name in ("det_10g.onnx", "1k3d68.onnx", "w600k_r50.onnx")
-        ] + [
-            ROOT / "models" / "liveness" / "MiniFASNetV2.onnx",
-            ROOT / "models" / "person" / "yolo11s.pt",
-            ROOT / "models" / "hands" / "hand_landmarker.task",
-            ROOT / "models" / "objects" / "best.pt",
-        ]
-        missing = [str(path) for path in required_models if not path.is_file() or path.stat().st_size == 0]
-        if missing:
-            raise FileNotFoundError("Thiếu model hoặc file rỗng: " + ", ".join(missing))
+        # Use the exact student photo supplied by the authenticated backend.
+        if reference_photo_base64 is not None:
+            reference = cache_reference_photo(PROFILE_DIR, student_id, reference_photo_base64)
+        else:
+            # Backward compatibility for older backend callers and local-only tests.
+            reference = Path(reference_image).resolve() if reference_image else PROFILE_DIR / f"{student_id}.jpg"
+        if reference.name != f"{student_id}.jpg":
+            raise ValueError("Ảnh tham chiếu không khớp ID sinh viên")
+        if not reference.is_file():
+            print(f"Missing student reference photo: {reference}", flush=True)
+            raise FileNotFoundError(f"Chưa có ảnh khuôn mặt cho sinh viên ID {student_id}. Hãy tải ảnh ở Hồ sơ.")
+        prepare_models(ROOT / "models")
         # InsightFace resolves <root>/models/buffalo_l, whereas release files live at identity/buffalo_l.
         source = ROOT / "models" / "identity" / "buffalo_l"
         destination = ROOT / "models" / "identity" / "models" / "buffalo_l"
@@ -203,8 +217,26 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             data = read_json(self)
+            if self.path.startswith("/monitoring/"):
+                if self.path == "/monitoring/offline-analysis":
+                    result = batch_monitor.offline_analysis(data)
+                elif self.path == "/monitoring/verify-identity":
+                    result = batch_monitor.preflight(data)
+                elif self.path == "/monitoring/register":
+                    result = batch_monitor.register(data)
+                elif self.path == "/monitoring/status":
+                    result = batch_monitor.status(int(data["attemptId"]) if data.get("attemptId") else None)
+                elif self.path == "/monitoring/frame":
+                    result = batch_monitor.frame(data)
+                elif self.path == "/monitoring/stop":
+                    result = batch_monitor.stop(int(data["attemptId"]))
+                else:
+                    json_response(self, 404, {"ok": False, "message": "Not found"})
+                    return
+                json_response(self, 200, result)
+                return
             if self.path == "/session/start":
-                result = start_attempt(int(data["attemptId"]), int(data["studentId"]), data.get("remainingSeconds"), data.get("sessionEnd"), data.get("clockStartsOnReady", False))
+                result = start_attempt(int(data["attemptId"]), int(data["studentId"]), data.get("remainingSeconds"), data.get("sessionEnd"), data.get("clockStartsOnReady", False), data.get("referenceImage"), data.get("referencePhotoBase64"))
                 json_response(self, 200, result)
                 return
             if self.path == "/session/stop":
@@ -248,10 +280,43 @@ def deadline_worker():
                 last_error = "Đã dừng AI vì hết thời gian bài thi"
 
 
+class BoundedHTTPServer(ThreadingHTTPServer):
+    daemon_threads = True
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.slots = threading.BoundedSemaphore(24)
+    def process_request(self, request, address):
+        request.settimeout(5)
+        if not self.slots.acquire(blocking=False):
+            try:
+                request.sendall(b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            finally:
+                self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, address)
+        except Exception:
+            self.slots.release()
+            raise
+    def process_request_thread(self, request, address):
+        try:
+            super().process_request_thread(request, address)
+        finally:
+            self.slots.release()
+
+
 if __name__ == "__main__":
+    from evidence_delivery import EvidenceDelivery
+    evidence_delivery = EvidenceDelivery(BACKEND_CALLBACK, SECRET)
+    evidence_delivery.start()
+    atexit.register(evidence_delivery.stop_event.set)
     atexit.register(stop_process)
+    batch_monitor.start()
+    atexit.register(batch_monitor.stop_event.set)
     threading.Thread(target=deadline_worker, daemon=True).start()
     PROFILE_DIR.mkdir(parents=True, exist_ok=True)
-    server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print(f"Anti-Cheating service ready at http://{HOST}:{PORT}")
+    server = BoundedHTTPServer((HOST, PORT), Handler)
+    print(f"Anti-Cheating secret source: {SECRET_SOURCE}", flush=True)
+    print(f"Student profile directory: {PROFILE_DIR}", flush=True)
+    print(f"Anti-Cheating service ready at http://{HOST}:{PORT}", flush=True)
     server.serve_forever()

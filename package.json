@@ -1,5 +1,33 @@
 {
   "dependencies": {
-    "keycloak-js": "^26.2.4"
+    "keycloak-js": "^26.2.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "name": "qut-platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "frontend-admin",
+    "frontend-shared"
+  ],
+  "scripts": {
+    "dev:portal": "npm run dev --workspace frontend",
+    "dev:admin": "npm run dev --workspace frontend-admin",
+    "build": "npm run build --workspace frontend && npm run build --workspace frontend-admin",
+    "build:portal": "npm run build --workspace frontend",
+    "build:admin": "npm run build --workspace frontend-admin",
+    "test:frontend": "npm run test --workspace frontend && npm run test --workspace frontend-admin"
+  },
+  "overrides": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-router": "7.18.4",
+    "react-router-dom": "7.18.4",
+    "vite": "8.2.1",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "vite": "8.2.1"
   }
 }

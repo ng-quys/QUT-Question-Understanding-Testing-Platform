@@ -1,4 +1,4 @@
-$taskRepo=Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+﻿$taskRepo=Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 . (Join-Path $taskRepo 'scripts/examflow-launcher.ps1')
 
 Describe 'ExamFlow orchestration without real services or DB' {
@@ -12,12 +12,12 @@ Describe 'ExamFlow orchestration without real services or DB' {
         $env:QUESTION_BANK_DB_PASSWORD='fixture-only-db-password'
         $env:SPRING_JPA_HIBERNATE_DDL_AUTO='validate'
         $script:taskRoot=Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
-        foreach($dir in @('backend/src/main/resources','backend/.mvn/wrapper','ai-service/.venv/Scripts','anticheating/.venv/Scripts','anticheating/app','frontend/node_modules/vite/bin')){
+        foreach($dir in @('backend/src/main/resources','backend/.mvn/wrapper','ai-service/.venv/Scripts','anticheating/.venv/Scripts','anticheating/app','node_modules/vite/bin','frontend-admin')){
             New-Item -ItemType Directory -Path (Join-Path $taskRoot $dir) -Force | Out-Null
         }
         @('server.port=8080','ai.rag.url=http://127.0.0.1:8002','app.anticheat.url=http://127.0.0.1:8000','ai.ollama.url=http://localhost:11434','ai.ollama.model=qwen2.5:7b','spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8081/realms/fixture') |
             Set-Content (Join-Path $taskRoot 'backend/src/main/resources/application.properties')
-        foreach($file in @('ai-service/.venv/Scripts/python.exe','anticheating/.venv/Scripts/python.exe','anticheating/app/run_service.py','frontend/node_modules/vite/bin/vite.js')){New-Item -ItemType File -Path (Join-Path $taskRoot $file) | Out-Null}
+        foreach($file in @('ai-service/.venv/Scripts/python.exe','anticheating/.venv/Scripts/python.exe','anticheating/app/run_service.py','node_modules/vite/bin/vite.js','frontend-admin/package.json')){New-Item -ItemType File -Path (Join-Path $taskRoot $file) | Out-Null}
         Copy-Item (Join-Path $taskRepo 'ai-service/start-ai-credits.ps1') (Join-Path $taskRoot 'ai-service/start-ai-credits.ps1')
         $script:taskOrder=New-Object 'Collections.Generic.List[string]'
         Mock Get-ExamFlowMaven {return 'fixture-maven.cmd'}
@@ -41,18 +41,18 @@ Describe 'ExamFlow orchestration without real services or DB' {
     }
     It 'first launch follows dependency order and records no secrets' {
         Start-ExamFlow $taskRoot '' 10
-        ($taskOrder -join ',') | Should Be 'Ollama,Backend,AIGenerator,AntiCheating,Frontend'
+        ($taskOrder -join ',') | Should Be 'Ollama,Backend,AIGenerator,AntiCheating,Frontend,AdminFrontend'
         $state=Get-Content (Join-Path (Get-ExamFlowRuntimeDir $taskRoot) 'state.json') -Raw
         $state.Contains($env:AI_INTERNAL_KEY) | Should Be $false
         $state.Contains($env:QUESTION_BANK_DB_PASSWORD) | Should Be $false
-        @(Read-ExamFlowState $taskRoot).Count | Should Be 5
+        @(Read-ExamFlowState $taskRoot).Count | Should Be 6
     }
     It 'second launch reuses healthy listeners without duplicate workers' {
         Start-ExamFlow $taskRoot '' 10
         Mock Get-ExamFlowListener {return @(12345)}
         Mock Get-ExamFlowListener {return @(12345)} -ParameterFilter {$Port -eq 8080}
         Start-ExamFlow $taskRoot '' 10
-        $taskOrder.Count | Should Be 5
+        $taskOrder.Count | Should Be 6
     }
     It 'missing internal key fails before starting anything' {
         $env:AI_INTERNAL_KEY=''

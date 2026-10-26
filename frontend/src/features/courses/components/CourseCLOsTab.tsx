@@ -9,7 +9,7 @@ import {
   Sparkles,
   HelpCircle,
 } from 'lucide-react';
-import type{ CourseCLO, Bloom3Level } from '../../../types';
+import type{ CourseCLO, Bloom3Level } from '@shared/types';
 import { BLOOM_3_CONFIG } from '../../dashboard/data/mockAcademicData';
 import { createClo, deleteClo, updateClo } from '../services/courseContentService';
 

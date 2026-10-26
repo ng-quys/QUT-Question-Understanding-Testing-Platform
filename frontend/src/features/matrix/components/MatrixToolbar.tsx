@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus, Settings } from 'lucide-react';
-import { Course } from '../../../types';
+import { Course } from '@shared/types';
 import { CourseSelector } from './CourseSelector';
 
 interface MatrixToolbarProps {

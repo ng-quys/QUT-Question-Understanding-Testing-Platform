@@ -16,7 +16,7 @@ import type{
   CourseChapter,
   CourseCLO,
   Bloom3Level,
-} from '../../../types';
+} from '@shared/types';
 import { BLOOM_3_CONFIG } from '../../dashboard/data/mockAcademicData';
 
 const questionDateFormatter = new Intl.DateTimeFormat('en-GB', {

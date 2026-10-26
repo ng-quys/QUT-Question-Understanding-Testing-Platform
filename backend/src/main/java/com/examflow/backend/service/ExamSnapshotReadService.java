@@ -10,9 +10,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Read-only snapshot access layer for the future ID-only exam runtime.
- * Uses Main DB exclusively; never fetches questions/answers from legacy tables.
- * Not yet wired into StudentService: existing production flows remain unchanged.
+ * Main DB exam snapshots. Legacy exams without snapshots retain their existing local content.
+ * Question Bank content is frozen at exam creation; runtime never joins to the remote bank.
  */
 @Service
 public class ExamSnapshotReadService {
@@ -29,6 +28,7 @@ public class ExamSnapshotReadService {
 
     private final JdbcTemplate main;
     private final ObjectMapper mapper;
+    private volatile Boolean snapshotTable;
 
     public ExamSnapshotReadService(JdbcTemplate main, ObjectMapper mapper) {
         this.main = main;
@@ -36,6 +36,46 @@ public class ExamSnapshotReadService {
     }
 
     public Optional<Snapshot> find(long examQuestionId) {
+        if (!hasSnapshotTable()) return legacy(examQuestionId);
+        Optional<Snapshot> found = frozen(examQuestionId);
+        return found.isPresent()?found:legacy(examQuestionId);
+    }
+
+    /** Result reports only need CLO IDs, not question text, options or answer keys. */
+    public java.util.Map<Long, Long> findCloIds(List<Long> linkIds) {
+        var result = new java.util.HashMap<Long, Long>();
+        if (linkIds.isEmpty()) return result;
+        var remaining = new java.util.HashSet<>(linkIds);
+        if (hasSnapshotTable()) {
+            String placeholders = String.join(",", java.util.Collections.nCopies(linkIds.size(), "?"));
+            main.query("select exam_question_id,clo_id from public.exam_question_snapshots where exam_question_id in (" + placeholders + ")",
+                (org.springframework.jdbc.core.RowCallbackHandler) rs -> {
+                    long id = rs.getLong(1);
+                    remaining.remove(id); // A frozen null CLO must not fall back to a changed live question.
+                    Long clo = (Long) rs.getObject(2);
+                    if (clo != null) result.put(id, clo);
+                }, linkIds.toArray());
+        }
+        if (!remaining.isEmpty() && Boolean.TRUE.equals(main.queryForObject("select to_regclass('public.questions') is not null and to_regclass('public.answers') is not null", Boolean.class))) {
+            String placeholders = String.join(",", java.util.Collections.nCopies(remaining.size(), "?"));
+            main.query("select eq.id,q.clo_id from exam_questions eq join questions q on q.id=eq.question_id where eq.id in (" + placeholders + ")",
+                (org.springframework.jdbc.core.RowCallbackHandler) rs -> {
+                    Long clo = (Long) rs.getObject(2);
+                    if (clo != null) result.put(rs.getLong(1), clo);
+                }, remaining.toArray());
+        }
+        return result;
+    }
+
+    public boolean hasSnapshotTable() {
+        if(snapshotTable==null)snapshotTable=Boolean.TRUE.equals(main.queryForObject("select to_regclass('public.exam_question_snapshots') is not null",Boolean.class));
+        return snapshotTable;
+    }
+    public boolean usesSnapshots(long examId) {
+        return hasSnapshotTable() && main.queryForObject("select count(*) from public.exam_question_snapshots where exam_id=?",Long.class,examId)>0;
+    }
+
+    private Optional<Snapshot> frozen(long examQuestionId) {
         return main.query("""
             select exam_question_id, question_id, clo_id, question_content,
                    coalesce(question_explanation, ''), correct_answer_id, options::text
@@ -44,8 +84,8 @@ public class ExamSnapshotReadService {
             if (!rs.next()) return Optional.empty();
             try {
                 JsonNode array = mapper.readTree(rs.getString(7));
-                if (!array.isArray() || array.size() != 4) {
-                    throw new IllegalStateException("Snapshot must contain exactly 4 options");
+                if (!array.isArray() || array.size()<2 || array.size()>10) {
+                    throw new IllegalStateException("Snapshot must contain 2–10 options");
                 }
                 List<Option> options = new ArrayList<>();
                 for (JsonNode node : array) {
@@ -65,5 +105,52 @@ public class ExamSnapshotReadService {
                 throw new IllegalStateException("Invalid snapshot JSON", ex);
             }
         }, examQuestionId);
+    }
+
+    private Optional<Snapshot> legacy(long examQuestionId) {
+        // Existing Main DB exams remain usable while databases are migrated separately.
+        if(!Boolean.TRUE.equals(main.queryForObject("select to_regclass('public.questions') is not null and to_regclass('public.answers') is not null",Boolean.class)))return Optional.empty();
+        return main.query("""
+            select eq.id,q.id,q.clo_id,q.content,coalesce(q.explanation,'')
+            from exam_questions eq join questions q on q.id=eq.question_id where eq.id=?
+            """,rs->{
+                if(!rs.next())return Optional.empty();
+                long question=rs.getLong(2);Long clo=(Long)rs.getObject(3);
+                var options=new ArrayList<Option>();var correct=new ArrayList<Long>();
+                main.query("select id,label,content,is_correct from answers where question_id=? order by position,id",(org.springframework.jdbc.core.RowCallbackHandler)row->{
+                    long id=row.getLong(1);options.add(new Option(id,row.getString(2).trim(),row.getString(3)));if(row.getBoolean(4))correct.add(id);
+                },question);
+                if(options.size()<2||correct.size()!=1)throw new IllegalStateException("Legacy exam question has invalid answers");
+                return Optional.of(new Snapshot(rs.getLong(1),question,clo,rs.getString(4),rs.getString(5),correct.get(0),List.copyOf(options)));
+            },examQuestionId);
+    }
+
+    public void freezeLegacy(long linkId,long examId,long courseId) {
+        if(frozen(linkId).isPresent())return;
+        var snapshot=legacy(linkId).orElseThrow(()->new IllegalStateException("Đề thiếu nội dung câu hỏi"));
+        var options=new ArrayList<java.util.Map<String,Object>>();
+        for(int i=0;i<snapshot.options().size();i++) {
+            var option=snapshot.options().get(i);
+            options.add(java.util.Map.of("id",option.id(),"label",option.label(),"content",option.content(),"position",i+1,"is_correct",option.id()==snapshot.correctAnswerId()));
+        }
+        try {
+            main.update("insert into exam_question_snapshots(exam_question_id,exam_id,question_id,course_id,clo_id,question_content,question_explanation,options,correct_answer_id) values(?,?,?,?,?,?,?,cast(? as jsonb),?) ON CONFLICT(exam_question_id) DO NOTHING",
+                linkId,examId,snapshot.questionId(),courseId,snapshot.cloId(),snapshot.content(),snapshot.explanation(),mapper.writeValueAsString(options),snapshot.correctAnswerId());
+        }catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Không thể lưu nội dung đề thi",e);}
+    }
+
+    public void saveAdminSnapshot(long linkId,long examId,long courseId,Snapshot source,String content,List<AdminExamContentService.AnswerInput> answers) {
+        var options=new ArrayList<java.util.Map<String,Object>>();long correct=0;
+        for(int i=0;i<answers.size();i++){
+            var answer=answers.get(i);long answerId=i+1;
+            options.add(java.util.Map.of("id",answerId,"label",String.valueOf((char)('A'+i)),"content",answer.content().trim(),"position",i+1,"is_correct",answer.correct()));
+            if(answer.correct())correct=answerId;
+        }
+        try{
+            // Negative question IDs belong exclusively to admin-authored exam snapshots, so they
+            // cannot collide with positive Question Bank IDs. Main runtime stores scalar IDs only.
+            main.update("insert into exam_question_snapshots(exam_question_id,exam_id,question_id,course_id,clo_id,question_content,question_explanation,options,correct_answer_id) values(?,?,?,?,?,?,?,cast(? as jsonb),?)",
+                linkId,examId,-linkId,courseId,source==null?null:source.cloId(),content.trim(),source==null?"":source.explanation(),mapper.writeValueAsString(options),correct);
+        }catch(com.fasterxml.jackson.core.JsonProcessingException failure){throw new IllegalStateException("Cannot save exam snapshot",failure);}
     }
 }

@@ -1,4 +1,4 @@
-import type{ CLOItem, UploadedDocFile } from '../../../types';
+import type{ CLOItem, UploadedDocFile } from '@shared/types';
 
 export interface SubjectOption {
   id: string;

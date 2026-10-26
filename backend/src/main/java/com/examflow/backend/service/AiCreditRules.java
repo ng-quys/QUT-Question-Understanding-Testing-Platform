@@ -8,6 +8,15 @@ public final class AiCreditRules {
     private AiCreditRules() {}
     public record Split(int monthly, int extra) {}
     public static int count(AiGenerateRequest request, int maximum) {
+        if (request!=null && request.automatic()) {
+            if (request.units()!=null && !request.units().isEmpty()) throw new IllegalArgumentException("Không gửi ma trận cùng yêu cầu CLO.");
+            if (request.cloIds()==null || request.cloIds().isEmpty() || request.cloIds().stream().anyMatch(id->id==null||id<=0)
+                || new java.util.HashSet<>(request.cloIds()).size()!=request.cloIds().size())
+                throw new IllegalArgumentException("Chọn ít nhất một CLO hợp lệ, không trùng.");
+            if (request.questionCount()==null || request.questionCount()<1 || request.questionCount()>Math.min(45,maximum))
+                throw new IllegalArgumentException("Số câu phải từ 1 đến "+Math.min(45,maximum)+".");
+            return request.questionCount();
+        }
         if (request == null || request.units() == null || request.units().isEmpty())
             throw new IllegalArgumentException("Ma trận không được để trống.");
         long count = 0;
@@ -16,7 +25,7 @@ public final class AiCreditRules {
                 throw new IllegalArgumentException("Số câu theo Bloom phải không âm.");
             count += (long) unit.nb() + unit.th() + unit.vd();
         }
-        if (count < 1 || count > maximum)
+        if (count < 1 || count > Math.min(45,maximum))
             throw new IllegalArgumentException("Mỗi lần chỉ được sinh tối đa " + maximum +
                 " câu hỏi. Vui lòng giảm số lượng hoặc chia thành nhiều lượt.");
         return (int) count;

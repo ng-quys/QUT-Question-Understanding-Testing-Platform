@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check, Plus, Trash2, BookOpen } from 'lucide-react';
-import { CourseChapter } from '../../../types';
+import { CourseChapter } from '@shared/types';
 
 interface ChapterSelectorProps {
   currentChapter: CourseChapter;

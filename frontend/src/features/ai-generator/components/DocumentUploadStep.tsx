@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FileText,
   AlertCircle,
@@ -8,13 +8,13 @@ import {
   RotateCcw,
   Sparkles,
 } from 'lucide-react';
-import { SourceDocument, DocumentExtractionSummary } from '../../../types';
+import { Course, SourceDocument, DocumentExtractionSummary } from '@shared/types';
 import {
   validateDocumentFiles,
   createSourceDocument,
   MAX_FILES,
 } from '../../../shared/utils/fileValidation';
-import { uploadAndExtractDocuments } from '../../../services/documentService';
+import { deleteSavedDocument, listSavedDocuments, reindexSavedDocument, uploadAndExtractDocuments, uploadSavedDocuments } from '../../../services/documentService';
 import { DocumentDropzone } from './document-upload/DocumentDropzone';
 import { FileQueue } from './document-upload/FileQueue';
 
@@ -23,7 +23,10 @@ interface DocumentUploadStepProps {
   onUpdateDocuments: (docs: SourceDocument[]) => void;
   onUploadSuccess: (extractionResult: DocumentExtractionSummary) => void;
   onShowToast?: (msg: string) => void;
-  onSkipToMatrix?: () => void;
+  courses: Course[];
+  courseId: string;
+  onCourseChange: (id:string) => void;
+  savedDocumentsEnabled?: boolean;
 }
 
 export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
@@ -31,38 +34,22 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
   onUpdateDocuments,
   onUploadSuccess,
   onShowToast,
-  onSkipToMatrix,
+  courses,courseId,onCourseChange,savedDocumentsEnabled=false,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processPhase, setProcessPhase] = useState<'uploading' | 'extracting'>('uploading');
   const [formatError, setFormatError] = useState<string | null>(null);
   const [quantityError, setQuantityError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
-
-  // Quick sample document helper
-  const handleUseSampleDocument = () => {
-    const sampleDoc: SourceDocument = {
-      id: `doc_sample_${Date.now()}`,
-      name: 'GiaoTrinh_TriTueNhanTao_TI01_2026.pdf',
-      size: 2450000,
-      sizeFormatted: '2.45 MB',
-      extension: 'pdf',
-      uploadedAt: 'Vừa xong',
-      status: 'success',
-      wordCount: 15400,
-      extractedText: 'Tài liệu giáo trình học phần Trí tuệ nhân tạo TI01...',
-      topicsDetected: ['Tổng quan AI', 'Không gian trạng thái', 'Giải thuật tìm kiếm BFS/DFS', 'Mạng nơ-ron học sâu'],
-    };
-    onUpdateDocuments([sampleDoc]);
-    onUploadSuccess({
-      documents: [sampleDoc],
-      totalWords: 15400,
-      totalDocuments: 1,
-      summary: 'Giáo trình cốt lõi học phần Trí tuệ nhân tạo (TI01)',
-      keyConcepts: ['Tổng quan AI', 'Không gian trạng thái', 'Giải thuật tìm kiếm BFS/DFS', 'Mạng nơ-ron học sâu'],
-    });
-    onShowToast?.('Đã nạp tài liệu mẫu "Trí tuệ nhân tạo TI01" và chuyển sang Ma trận câu hỏi!');
-  };
+  const [tab,setTab]=useState<'upload'|'saved'>('upload');
+  const [library,setLibrary]=useState<SourceDocument[]>([]);
+  const [libraryLoading,setLibraryLoading]=useState(false);
+  useEffect(()=>{
+    if(!savedDocumentsEnabled||!courseId){setLibrary([]);return;}
+    let active=true;setLibraryLoading(true);
+    void listSavedDocuments(courseId).then(rows=>{if(active)setLibrary(rows);}).catch(e=>{if(active)setServerError(e instanceof Error?e.message:'Không tải được thư viện tài liệu');}).finally(()=>{if(active)setLibraryLoading(false);});
+    return()=>{active=false;};
+  },[courseId,savedDocumentsEnabled]);
 
   // Handle incoming files from drop or picker
   const handleFilesSelected = (selectedFiles: File[]) => {
@@ -107,6 +94,15 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
     setProcessPhase('uploading');
 
     try {
+      if(savedDocumentsEnabled){
+        if(!courseId)throw new Error('Vui lòng chọn học phần.');
+        const pending=documents.filter(d=>d.file);
+        const uploaded=pending.length?await uploadSavedDocuments(courseId,pending):[];
+        const selected=[...documents.filter(d=>d.saved&&!d.file),...uploaded].slice(0,MAX_FILES);
+        if(!selected.length||selected.some(d=>d.indexStatus!=='ready'))throw new Error('Tài liệu đang indexing hoặc cần reindex.');
+        onUpdateDocuments(selected);setLibrary(prev=>[...uploaded,...prev.filter(x=>!uploaded.some(u=>u.id===x.id))]);setIsProcessing(false);
+        onUploadSuccess({documents:selected,totalDocuments:selected.length,totalWords:0,summary:'Tài liệu đã sẵn sàng từ cache Question Bank.',keyConcepts:[]});return;
+      }
       const result = await uploadAndExtractDocuments(documents, (phase, currentDocId) => {
         setProcessPhase(phase);
         if (currentDocId) {
@@ -126,7 +122,7 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
       onUploadSuccess(result);
     } catch (err: any) {
       setIsProcessing(false);
-      setServerError('Không thể xử lý tài liệu. Vui lòng thử lại.');
+      setServerError(err instanceof Error?err.message:'Không thể xử lý tài liệu. Vui lòng thử lại.');
       // Keep documents in the list, set status to error
       onUpdateDocuments(
         documents.map((d) => ({ ...d, status: 'error' }))
@@ -151,6 +147,17 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
           <strong className="text-slate-700 font-semibold">PDF, DOCX, TXT</strong> (tối đa 5 file).
         </p>
       </div>
+
+      <label className="block text-xs font-semibold text-slate-700">Học phần
+        <select value={courseId} onChange={e=>{onCourseChange(e.target.value);onUpdateDocuments([]);}} className="mt-1 block w-full rounded-lg border border-slate-200 p-2 text-sm">
+          <option value="">Chọn học phần trước khi chọn tài liệu</option>{courses.map(c=><option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
+        </select>
+      </label>
+
+      {savedDocumentsEnabled&&<div className="flex gap-1 rounded-lg bg-slate-100 p-1" role="tablist">
+        <button type="button" role="tab" aria-selected={tab==='upload'} onClick={()=>setTab('upload')} className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold ${tab==='upload'?'bg-white text-slate-900 shadow-xs':'text-slate-500'}`}>Tải tài liệu mới</button>
+        <button type="button" role="tab" aria-selected={tab==='saved'} onClick={()=>setTab('saved')} className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold ${tab==='saved'?'bg-white text-slate-900 shadow-xs':'text-slate-500'}`}>Tài liệu đã lưu</button>
+      </div>}
 
       {/* Validation Error Banner: Format Error */}
       {formatError && (
@@ -205,11 +212,23 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
       )}
 
       {/* Dropzone Area */}
-      <DocumentDropzone
+      {(!savedDocumentsEnabled||tab==='upload')&&<DocumentDropzone
         currentCount={documents.length}
         onFilesSelected={handleFilesSelected}
-        disabled={isProcessing}
-      />
+        disabled={isProcessing||!courseId}
+      />}
+
+      {savedDocumentsEnabled&&tab==='saved'&&<div className="space-y-2" aria-live="polite">
+        {libraryLoading?<p className="text-xs text-slate-500">Đang tải thư viện…</p>:!library.length?<p className="rounded-lg border border-dashed border-slate-200 p-4 text-xs text-slate-500">Học phần chưa có tài liệu đã lưu.</p>:library.map(doc=>{
+          const checked=documents.some(x=>x.id===doc.id);const ready=doc.indexStatus==='ready';
+          return <div key={doc.id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-xs">
+            <input type="checkbox" checked={checked} disabled={!ready&&doc.indexStatus!=='stale'||(!checked&&documents.length>=MAX_FILES)} onChange={e=>onUpdateDocuments(e.target.checked?[...documents,doc]:documents.filter(x=>x.id!==doc.id))}/>
+            <div className="min-w-0 flex-1"><p className="truncate font-semibold text-slate-800">{doc.name}</p><p className="text-slate-500">{doc.sizeFormatted} · {doc.indexStatus}{doc.cacheHit?' · cache hit':''}</p></div>
+            {(doc.indexStatus==='stale'||doc.indexStatus==='failed')&&<button type="button" className="text-[#172b4d] underline" onClick={async()=>{try{const next=await reindexSavedDocument(courseId,doc.id);setLibrary(rows=>rows.map(x=>x.id===doc.id?next:x));}catch(e){setServerError(e instanceof Error?e.message:'Reindex thất bại');}}}>Reindex</button>}
+            <button type="button" className="text-slate-500 underline hover:text-rose-700" onClick={async()=>{if(!window.confirm(`Ẩn tài liệu ${doc.name} khỏi thư viện?`))return;try{await deleteSavedDocument(courseId,doc.id);setLibrary(rows=>rows.filter(x=>x.id!==doc.id));onUpdateDocuments(documents.filter(x=>x.id!==doc.id));}catch(e){setServerError(e instanceof Error?e.message:'Không xóa được tài liệu');}}}>Xóa</button>
+          </div>;
+        })}
+      </div>}
 
       {/* File Queue List */}
       <FileQueue
@@ -217,32 +236,6 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
         onRemoveDocument={handleRemoveDocument}
         disabled={isProcessing}
       />
-
-      {/* Quick Sample Document / Skip helper */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs">
-        <div className="flex items-center gap-2 text-slate-600">
-          <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
-          <span>Chưa có sẵn file? Bạn có thể nạp nhanh tài liệu mẫu học phần Trí tuệ nhân tạo (TI01).</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleUseSampleDocument}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-indigo-700 hover:bg-indigo-50 transition-colors cursor-pointer shrink-0"
-          >
-            Nạp giáo trình mẫu TI01
-          </button>
-          {onSkipToMatrix && (
-            <button
-              type="button"
-              onClick={onSkipToMatrix}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-800 underline cursor-pointer shrink-0"
-            >
-              Sang Bước 2 Ma trận ngay &rarr;
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* Footer Actions */}
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">

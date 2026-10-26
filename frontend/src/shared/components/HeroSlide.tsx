@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import type { SlideData } from '../../types';
+import type { SlideData } from '@shared/types';
 import { QuestionBankVisual } from '../visuals/QuestionBankVisual';
 import { AIGenerationVisual } from '../visuals/AIGenerationVisual';
 import { ExamAnalyticsVisual } from '../visuals/ExamAnalyticsVisual';

@@ -1,5 +1,5 @@
-import { apiFetch } from '../../../services/api';
-import type { Course } from '../../../types';
+import { apiFetch } from '@shared/services/api';
+import type { Course } from '@shared/types';
 
 interface TeacherCourseResponse {
   id: number;
@@ -8,6 +8,7 @@ interface TeacherCourseResponse {
   credits: number;
   department: string | null;
   chaptersCount: number;
+  chapterCount?: number;
   cloCount: number;
   questionCount: number;
   status: 'active' | 'draft' | 'inactive';
@@ -27,7 +28,7 @@ function mapCourse(data: TeacherCourseResponse): Course {
     name: data.name,
     credits: data.credits,
     department: data.department ?? '',
-    chaptersCount: data.chaptersCount,
+    chaptersCount: data.chapterCount ?? data.chaptersCount ?? 0,
     cloCount: data.cloCount,
     questionCount: data.questionCount,
 

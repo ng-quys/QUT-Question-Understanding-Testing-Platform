@@ -3,7 +3,7 @@ import {  DashboardTabs, type AcademicSubTab } from '../components/DashboardTabs
 import { OverviewTabContent } from '../components/OverviewTabContent';
 import { RecentResultsTabContent } from '../components/RecentResultsTabContent';
 import { CreateTypeSelector } from '../components/CreateTypeSelector';
-import type { DashboardNavTab } from '../../../types';
+import type { DashboardNavTab } from '@shared/types';
 
 interface ActiveDashboardProps {
   onNavigateTab: (tab: DashboardNavTab) => void;

@@ -109,7 +109,7 @@ public class TeacherQuestionBankService {
         long uid = userId(jwt);
         List<Long> owned = jdbc.query(
             "select distinct c.id from courses c left join course_faculties cf on cf.course_id=c.id " +
-            "where c.created_by=? or cf.faculty_id=?", (rs,n) -> rs.getLong(1), uid, uid);
+            "where c.created_by=? or cf.faculty_id=? or exists(select 1 from exam_sitting_groups g join exam_sittings s on s.id=g.sitting_id where s.course_id=c.id and g.teacher_id=? and g.status<>'cancelled')", (rs,n) -> rs.getLong(1), uid, uid, uid);
         if (owned.isEmpty()) return List.of();
         if (courseId != null) {
             if (!owned.contains(courseId)) throw new ApiException(HttpStatus.FORBIDDEN, "Không có quyền quản lý học phần");
@@ -126,6 +126,53 @@ public class TeacherQuestionBankService {
         }
         sql.append(" order by id desc");
         return bank.query(sql.toString(), (rs,n) -> mapBankRow(rs), args.toArray());
+    }
+
+    public record PreviewFilter(String search, String difficulty, String chapter, String topic, String clo, String status) {}
+    public record PreviewChoice(String dimension, String value, String code, String label) {}
+    public record PreviewPage(List<QuestionResponse> items, long total, long bankTotal, int page, int size,
+                              List<PreviewChoice> choices) {}
+
+    // Read-only view of the same Question Bank datasource and question/answer mapping used above.
+    // Caller must check course access (including teachers assigned to exam sittings).
+    public PreviewPage preview(long courseId, PreviewFilter filter, int page, int size) {
+        if(page<0 || size<1 || size>50)throw new ApiException(HttpStatus.BAD_REQUEST,"Phân trang không hợp lệ.");
+        var where=new StringBuilder(" from questions where course_id=?");
+        List<Object> args=new java.util.ArrayList<>();args.add(courseId);
+        if(filter.search()!=null && !filter.search().isBlank()) {
+            where.append(" and (cast(id as text)=? or lower(content) like ? escape '!')");
+            String search=filter.search().trim();
+            args.add(search.startsWith("#")?search.substring(1):search);
+            args.add("%"+search.toLowerCase(Locale.ROOT).replace("!","!!").replace("%","!%").replace("_","!_")+"%");
+        }
+        String[] values={filter.difficulty(),filter.chapter(),filter.topic(),filter.clo()};
+        String[] columns={"difficulty_level_id","chapter_id","topic_id","clo_id"};
+        for(int i=0;i<values.length;i++)if(values[i]!=null&&!values[i].isBlank()) {
+            if("none".equals(values[i]))where.append(" and ").append(columns[i]).append(" is null");
+            else {
+                long value;
+                try{value=Long.parseLong(values[i]);if(value<1)throw new NumberFormatException();}
+                catch(NumberFormatException e){throw new ApiException(HttpStatus.BAD_REQUEST,"Bộ lọc không hợp lệ.");}
+                where.append(" and ").append(columns[i]).append("=?");args.add(value);
+            }
+        }
+        if(filter.status()!=null&&!filter.status().isBlank()) {
+            if(!List.of("approved","pending","rejected").contains(filter.status()))throw new ApiException(HttpStatus.BAD_REQUEST,"Trạng thái không hợp lệ.");
+            where.append(" and status=?");args.add(filter.status());
+        }
+        Long count=bank.queryForObject("select count(*)"+where,Long.class,args.toArray());
+        Long total=bank.queryForObject("select count(*) from questions where course_id=?",Long.class,courseId);
+        args.add(size);args.add((long)page*size);
+        var items=bank.query("select *"+where+" order by id desc limit ? offset ?",(rs,n)->mapBankRow(rs),args.toArray());
+        List<PreviewChoice> choices=new java.util.ArrayList<>();
+        choices.addAll(jdbc.query("select id,code,name from difficulty_levels order by level_order",(rs,n)->
+            new PreviewChoice("difficulty",rs.getString("id"),rs.getString("code"),rs.getString("name"))));
+        for(String table:List.of("chapters","topics","clos")) {
+            String dimension=switch(table){case "chapters"->"chapter";case "topics"->"topic";default->"clo";};
+            choices.addAll(jdbc.query("select id,code,name from "+table+" where course_id=? order by id",(rs,n)->
+                new PreviewChoice(dimension,rs.getString("id"),rs.getString("code"),rs.getString("code")+" · "+rs.getString("name")),courseId));
+        }
+        return new PreviewPage(items,count==null?0:count,total==null?0:total,page,size,choices);
     }
 
     private String lookupCode(String table, short id) {

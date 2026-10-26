@@ -13,7 +13,6 @@ import {
   Radio as RadioIcon,
   Copy,
   Check,
-  Clock,
   Layers,
   ShieldCheck,
   Shuffle,
@@ -29,7 +28,7 @@ import {
   QuestionItem,
   Bloom3Level,
   ExamRecord,
-} from '../../../types';
+} from '@shared/types';
 import { BLOOM_3_CONFIG } from '../../dashboard/data/mockAcademicData';
 
 interface ObeExamBuilderProps {
@@ -90,7 +89,6 @@ export const ObeExamBuilder: React.FC<ObeExamBuilderProps> = ({
   const [selectedCourseId, setSelectedCourseId] = useState<string>(
     courses[0]?.id || 'course-ti01'
   );
-  const [durationMinutes, setDurationMinutes] = useState<number>(45);
 
   // SCORING STRATEGY
   // 'equal' = Chia đều toàn đề (Thang 10 / Tổng số câu)
@@ -552,7 +550,7 @@ export const ObeExamBuilder: React.FC<ObeExamBuilderProps> = ({
     content += `ĐỀ THI KẾT THÚC HỌC PHẦN (CHUẨN MA TRẬN OBE)\n`;
     content += `Tên bài thi: ${examTitle}\n`;
     content += `Học phần: ${currentCourse.code} - ${currentCourse.name}\n`;
-    content += `Thời gian làm bài: ${durationMinutes} phút (Không kể thời gian phát đề)\n`;
+    content += `Thời gian làm bài: theo lịch ca thi\n`;
     content += `Mã đề thi: 101\n\n`;
     content += `Họ và tên thí sinh: ....................................................\n`;
     content += `Mã số sinh viên (MSSV): .................................................\n`;
@@ -603,7 +601,6 @@ export const ObeExamBuilder: React.FC<ObeExamBuilderProps> = ({
       avgScore: null,
       status: 'completed',
       examDate: new Date().toLocaleDateString('vi-VN'),
-      durationMinutes,
       questionCount: pickedQuestions.length,
       roomCode: generatedRoomCode,
     };
@@ -722,25 +719,7 @@ export const ObeExamBuilder: React.FC<ObeExamBuilderProps> = ({
               </div>
 
               {/* Thời gian làm bài */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Thời gian làm bài (phút) <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <Clock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <select
-                    value={durationMinutes}
-                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 font-medium text-slate-900"
-                  >
-                    <option value={30}>30 phút</option>
-                    <option value={45}>45 phút (Tiêu chuẩn)</option>
-                    <option value={60}>60 phút</option>
-                    <option value={90}>90 phút (Học kỳ)</option>
-                    <option value={120}>120 phút</option>
-                  </select>
-                </div>
-              </div>
+              <p className="text-xs text-slate-500">Thời gian làm bài theo lịch ca thi.</p>
 
               {/* Cơ chế tính điểm đề thi */}
               <div className="sm:col-span-2">
@@ -1541,7 +1520,7 @@ export const ObeExamBuilder: React.FC<ObeExamBuilderProps> = ({
                   {examTitle}
                 </h2>
                 <p className="text-xs text-slate-300 mt-1">
-                  Học phần: {currentCourse.code} - {currentCourse.name} • Thời lượng: {durationMinutes} phút
+                  Học phần: {currentCourse.code} - {currentCourse.name} • Thời gian: theo ca thi
                 </p>
               </div>
 
@@ -1638,7 +1617,7 @@ export const ObeExamBuilder: React.FC<ObeExamBuilderProps> = ({
                   </div>
                   <div className="flex items-center gap-1.5 text-indigo-700 font-semibold">
                     <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                    <span>Đồng hồ đếm ngược {durationMinutes} phút, tự động nộp bài khi hết giờ</span>
+                    <span>Đếm ngược đến giờ kết thúc ca, tự động nộp bài khi hết giờ</span>
                   </div>
                 </div>
               </div>
