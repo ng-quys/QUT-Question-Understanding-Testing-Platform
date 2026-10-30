@@ -16,6 +16,11 @@ export function QuestionReviewStep({questions,clos,saving,onUpdateQuestion,onDel
      {q.options.map((option,i)=><label key={i} className="flex gap-3 items-center text-sm"><input type="radio" name={`correct-${q.id}`} aria-label={`Đáp án đúng ${i+1}`} checked={q.correctIndex===i} onChange={()=>onUpdateQuestion(q.id,{correctIndex:i})}/><input aria-label={`Phương án ${i+1} câu ${index+1}`} value={option} onChange={e=>onUpdateQuestion(q.id,{options:q.options.map((o,j)=>j===i?e.target.value:o)})} className="border border-slate-200 rounded-lg p-2 flex-1"/></label>)}
      <label className="block text-sm">Giải thích<textarea value={q.explanation||''} onChange={e=>onUpdateQuestion(q.id,{explanation:e.target.value})} className="block w-full border border-slate-200 rounded-lg p-2 mt-1"/></label>
      {q.evidenceQuote&&<blockquote className="text-sm text-slate-600 border-l-2 border-slate-300 pl-3">Căn cứ từ tài liệu: {q.evidenceQuote}</blockquote>}
+     {q.duplicateWarning&&<div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 space-y-1">
+       <p className="font-semibold">Câu hỏi nghi trùng {q.duplicateWarning.questionId?`với Question #${q.duplicateWarning.questionId}`:'trong lượt sinh này'} · {(q.duplicateWarning.similarity*100).toFixed(1)}%</p>
+       <p>{q.duplicateWarning.content}</p>
+       <p className="text-xs text-amber-800">Bạn có thể giữ nguyên, chỉnh sửa các trường phía trên hoặc loại bỏ câu này.</p>
+     </div>}
      <button onClick={()=>onDeleteQuestion(q.id)} className="text-sm text-red-700 underline">Loại bỏ câu này</button>
    </fieldset>)}
    <div className="flex flex-wrap gap-4 text-sm"><button disabled={saving||!questions.length} onClick={()=>onSaveAll('pending')} className="border border-slate-200 rounded-lg px-4 py-2">Lưu chờ duyệt</button><button disabled={saving||!questions.length} onClick={()=>onSaveAll('approved')} className="bg-[#172b4d] text-white rounded-lg px-4 py-2">{saving?'Đang lưu…':'Duyệt và lưu ngân hàng'}</button><button disabled={saving} onClick={onGenerateMore} className="underline">Sinh lượt tiếp theo</button><button disabled={saving} onClick={onNewDocuments} className="underline">Tài liệu mới</button></div>

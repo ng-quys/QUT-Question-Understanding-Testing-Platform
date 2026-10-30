@@ -16,6 +16,39 @@ import static org.mockito.Mockito.*;
 
 /** Real TransactionTemplate, entirely mocked JDBC: never opens a network connection. */
 class AiCreditsSettlementTest {
+    void orphanCheckpoint() throws Exception {
+        enableForUnitTest();useAutomaticRequest();
+        row.put("credit_state","cancel_requested");row.put("cancel_requested_at",java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(600)));
+        row.put("lease_expires_at",java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(300)));
+        row.put("credit_result",new ObjectMapper().writeValueAsString(automaticQuestions(2)));row.put("accepted_count",2);
+        row.put("charged_monthly",0);row.put("charged_extra",0);row.put("reserved_monthly",10);row.put("reserved_extra",0);
+    }
+    @Test void orphanRecoveryChargesTwoReleasesEightUsingExistingFinalOperation() throws Exception {
+        orphanCheckpoint();service.recoverCancelledCheckpoint(52,7,service.recoveryFingerprint(row),"approved recovery");
+        verify(jdbc).update(contains("INSERT INTO public.ai_credit_transactions"),eq(1L),eq(originalMonth),eq(7L),eq(52L),any(UUID.class),eq("settle"),eq(0),eq(2),eq(-10),eq(0L),eq(0L),eq("approved recovery"));
+        verify(connection).commit();
+    }
+    @Test void changedCheckpointCannotBeCharged() throws Exception {
+        orphanCheckpoint();String proof=service.recoveryFingerprint(row);row.put("accepted_count",3);
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.recoverCancelledCheckpoint(52,7,proof,"approved"));
+        verify(jdbc,never()).update(startsWith("UPDATE public.ai_credit_months SET used"),any(Object[].class));
+        verify(jdbc,never()).update(contains("INSERT INTO public.ai_credit_transactions"),any(Object[].class));verify(connection).rollback();
+    }
+    @Test void freshLeaseMissingCancellationOrChargedJobCannotBeRecovered() throws Exception {
+        orphanCheckpoint();row.put("lease_expires_at",java.sql.Timestamp.from(java.time.Instant.now().plusSeconds(60)));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.requireOrphanCancellation(row));
+        orphanCheckpoint();row.put("cancel_requested_at",null);
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.requireOrphanCancellation(row));
+        orphanCheckpoint();row.put("charged_monthly",1);
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.requireOrphanCancellation(row));
+    }
+    @Test void repeatedOrphanRecoveryCannotSettleTwice() throws Exception {
+        orphanCheckpoint();String proof=service.recoveryFingerprint(row);
+        doAnswer(i->{row.put("credit_state","partial");return 1;}).when(jdbc).update(contains("SET credit_state=?,status=?,credit_result="),any(Object[].class));
+        service.recoverCancelledCheckpoint(52,7,proof,"approved");
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.recoverCancelledCheckpoint(52,7,proof,"approved"));
+        verify(jdbc,times(1)).update(contains("INSERT INTO public.ai_credit_transactions"),any(Object[].class));
+    }
     void useAutomaticRequest() throws Exception {
         var request=new AiGenerateRequest(1L,"qwen","","Evidence: synthetic document supports this question. ".repeat(5),null,"proof",0.5,
             List.of(3L,4L),10,List.of(new AiGenerateRequest.AiCloDto(3L,"CLO1","DB description"),new AiGenerateRequest.AiCloDto(4L,"CLO2","DB description 2")));

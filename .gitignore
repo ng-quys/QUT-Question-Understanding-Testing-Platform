@@ -45,6 +45,11 @@ backend/auto/
 !.env.storage.example
 anticheating/evidence/
 anticheating/runtime/
+ai-service/.runtime/
+ai-service/.test-tmp/
+ai-service/benchmarks/*.xlsx
+ai-service/benchmarks/*.lock
+ai-service/benchmarks/.telemetry-pending/
 
 # Local one-click launcher: process IDs, runners and logs
 .qut-run/

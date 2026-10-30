@@ -9,6 +9,7 @@ import java.time.Clock;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.*;
+import com.examflow.backend.dto.AiGenerateRequest;
 import com.examflow.backend.dto.AiQuestionDto;
 
 @Service
@@ -69,6 +70,7 @@ public class AiCreditsWorker {
     private void process(Map<String,Object> row,long id,UUID token,String registry) {
                 var poll=polling.compute(id,(ignored,old)->old==null||!old.token.equals(token)?new PollState(token):old);
                 if(poll.stopped||clock.instant().isBefore(poll.next))return;
+                AiGenerateRequest request=null;
                 try{
                     var dispatched=(Timestamp)row.get("dispatched_at");
                     if(dispatched!=null && dispatched.toInstant().isBefore(Instant.now().minusSeconds(Math.max(1,timeoutMinutes)*60))
@@ -76,17 +78,18 @@ public class AiCreditsWorker {
                         credits.cancel(((Number)row.get("requested_by")).longValue(),id);
                         row=credits.raw(id);
                     }
-                    var request=credits.payload(row);
+                    request=credits.payload(row);
+                    var activeRequest=request;
                     if("reserved".equals(row.get("credit_state"))){
                         if(!credits.claim(id))return;
                         log.info("AI credit claim instance={} job={} token={}",instance,id,token);
-                        if("qwen".equals(request.provider()))provider.start(token,request,registry);
+                        if("qwen".equals(activeRequest.provider()))provider.start(token,activeRequest,registry,id);
                         else {
                             // Retain the result in the Future until the poller owns the DB lock.
                             // A callback must not lose a completed result merely because a tick holds it.
-                            local.put(id,openai.submit(()->legacy.generate(request,()->{var current=credits.raw(id);return current.get("cancel_requested_at")!=null||AiCreditsService.terminal(current);})));
+                            local.put(id,openai.submit(()->legacy.generate(activeRequest,()->{var current=credits.raw(id);return current.get("cancel_requested_at")!=null||AiCreditsService.terminal(current);})));
                         }
-                    } else if("qwen".equals(request.provider())){
+                    } else if("qwen".equals(activeRequest.provider())){
                         var remote=provider.status(token,registry);
                         var questions=provider.questions(remote);
                         if(List.of("succeeded","failed","cancelled").contains(remote.path("status").asText())){
@@ -125,6 +128,12 @@ public class AiCreditsWorker {
                         poll.stopped=true;
                         log.warn("AI credit unknown requested instance={} job={} token={} previousState={} failures={}",instance,id,token,row.get("credit_state"),poll.failures);
                         credits.unknownOwned(id,token,"Không xác minh được tác vụ AI; giữ chỗ để đối soát.");
+                        int requested=request!=null&&request.questionCount()!=null?request.questionCount():
+                            request!=null&&request.units()!=null?request.units().stream().mapToInt(unit->unit.nb()+unit.th()+unit.vd()).sum():
+                            row.get("requested_question_count") instanceof Number count?count.intValue():0;
+                        int checkpoint=request==null?5:request.effectiveBatchSize();
+                        provider.telemetryUnknown(id,token,requested,credits.results(row).size(),checkpoint,
+                            "Không xác minh được tác vụ AI; giữ chỗ để đối soát.");
                     }
                     if(e instanceof AiCreditsProvider.ProviderException upstream)
                         log.warn("AI credit job {} transport/checkpoint failed: instance={} token={} status={} code={}; reservation retained, no replay",id,instance,token,upstream.status(),upstream.code());

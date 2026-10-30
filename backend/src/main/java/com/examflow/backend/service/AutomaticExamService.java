@@ -82,12 +82,34 @@ public class AutomaticExamService {
         }
         if(r.variants()>1 && 2L*r.questions()-pool.size()>HybridExamOptimizer.maximumOverlap(r))
             errors.add("Ngân hàng quá ít câu để hai mã đề giữ giới hạn trùng đã chọn.");
-        for(int k=0;k<r.variants();k++)if(exams.existsByCodeIgnoreCase(code(r,k)))errors.add("Mã đề "+code(r,k)+" đã tồn tại.");
         warnings.add("Kiểm tra sơ bộ chỉ phát hiện điều kiện cần. Khả năng thỏa đồng thời các nhóm chồng lấn sẽ được xác định khi tạo đề.");
         return new Check(errors.isEmpty(),pool.size(),HybridExamOptimizer.maximumOverlap(r),List.copyOf(groups),List.copyOf(errors),List.copyOf(warnings));
     }
     private String dimensionName(String d){return switch(d){case "difficulty"->"độ khó";case "chapter"->"chương";case "topic"->"chủ đề";default->"CLO";};}
-    private String code(Request r,int k){return r.code().trim()+"-"+String.format("%03d",k+1);}
+    List<String> availableCodes(Request r) {
+        return availableCodes(r,Collections.nCopies(r.variants(),null));
+    }
+    List<String> availableCodes(Request r,List<String> preferred) {
+        List<String> result=new ArrayList<>(Collections.nCopies(r.variants(),null));
+        Set<String> reserved=new HashSet<>();
+        for(int i=0;i<r.variants();i++) {
+            String value=preferred.get(i);
+            if(value!=null&&!exams.existsByCodeIgnoreCase(value)&&reserved.add(value.toLowerCase(Locale.ROOT)))result.set(i,value);
+        }
+        long number=1;
+        for(int i=0;i<result.size();i++)if(result.get(i)==null) {
+            while(true) {
+                String candidate=r.code().trim()+"-"+String.format(Locale.ROOT,"%03d",number++);
+                if(!reserved.contains(candidate.toLowerCase(Locale.ROOT))&&!exams.existsByCodeIgnoreCase(candidate)) {
+                    result.set(i,candidate);reserved.add(candidate.toLowerCase(Locale.ROOT));break;
+                }
+            }
+        }
+        return List.copyOf(result);
+    }
+    public List<String> savedCodes(List<Long> ids) {
+        return ids.stream().map(id->exams.findById(id).orElseThrow().getCode()).toList();
+    }
 
     public Preview generate(long actor,Request r) {
         if(!activeActors.add(actor))throw new ApiException(HttpStatus.TOO_MANY_REQUESTS,"Bạn đang có một yêu cầu tạo đề được xử lý.");
@@ -97,21 +119,23 @@ public class AutomaticExamService {
             long start=System.nanoTime();var pool=bank.automaticPool(r.courseId());var check=check(r,pool);
             if(!check.valid())throw new ApiException(HttpStatus.BAD_REQUEST,String.join(" ",check.errors()));
             var solution=optimizer.optimize(pool,r);List<Variant> variants=new ArrayList<>();
+            var codes=availableCodes(r);
             for(int k=0;k<r.variants();k++) {
                 List<Item> selected=new ArrayList<>();for(int i=0;i<pool.size();i++)if(solution.selected()[k][i])selected.add(pool.get(i));
                 if(r.shuffleQuestions())Collections.shuffle(selected);
-                variants.add(new Variant(code(r,k),List.copyOf(selected)));
+                variants.add(new Variant(codes.get(k),List.copyOf(selected)));
             }
             List<Pair> pairs=new ArrayList<>();double maximum=0;
             for(int k=0;k<variants.size();k++)for(int l=k+1;l<variants.size();l++) {
                 var ids=variants.get(k).questions().stream().map(Item::id).collect(java.util.stream.Collectors.toSet());
                 int overlap=(int)variants.get(l).questions().stream().filter(q->ids.contains(q.id())).count();
                 double percent=100.0*overlap/r.questions();maximum=Math.max(maximum,percent);
-                pairs.add(new Pair(code(r,k),code(r,l),overlap,percent));
+                pairs.add(new Pair(codes.get(k),codes.get(l),overlap,percent));
             }
             String id=UUID.randomUUID().toString();List<String> warnings=new ArrayList<>();
             if(!solution.provenOptimal())warnings.add("Đã tìm được bộ đề hợp lệ trong thời gian cho phép; chưa chứng minh mức trùng là tối ưu toàn cục.");
             warnings.add("Bản xem trước có hiệu lực 15 phút. Chỉ lưu sau khi bạn xác nhận.");
+            warnings.add("Mã đề dự kiến được kiểm tra lại khi lưu và tự chuyển sang số còn trống nếu có người khác sử dụng trước.");
             var preview=new Preview(id,List.copyOf(variants),List.copyOf(pairs),solution.objective(),maximum,
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-start),solution.status(),solution.provenOptimal(),check.groups(),List.copyOf(warnings));
             drafts.entrySet().removeIf(e->System.currentTimeMillis()-e.getValue().created>TTL || (e.getValue().actor==actor&&!e.getValue().saving.get()));
@@ -138,12 +162,17 @@ public class AutomaticExamService {
         Request r=d.request;var course=courses.findById(r.courseId()).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Học phần không còn tồn tại."));
         var fresh=bank.automaticPool(r.courseId()).stream().collect(java.util.stream.Collectors.toMap(Item::id,q->q));
         for(var variant:d.preview.variants()) {
-            if(exams.existsByCodeIgnoreCase(variant.code()))throw new ApiException(HttpStatus.CONFLICT,"Mã đề "+variant.code()+" đã tồn tại. Hãy tạo bản xem trước mới.");
             for(var q:variant.questions())if(!q.equals(fresh.get(q.id())))throw new ApiException(HttpStatus.CONFLICT,"Ngân hàng đã thay đổi sau khi xem trước. Hãy tạo lại để kiểm tra câu hỏi và ma trận.");
         }
         List<Long> ids=new ArrayList<>();
+        // PostgreSQL transaction lock also excludes INSERT/UPDATE from other writers and
+        // other application instances. The existing UNIQUE(exams.code) remains the final guard.
+        // Acquire only after validating snapshots, and hold until this transaction commits.
+        jdbc.execute("LOCK TABLE public.exams IN SHARE ROW EXCLUSIVE MODE");
+        var codes=availableCodes(r,d.preview.variants().stream().map(Variant::code).toList());
+        int variantIndex=0;
         for(var variant:d.preview.variants()) {
-            Exam e=new Exam();e.setCourse(course);e.setCreatedBy(actor);e.setCode(variant.code());e.setTitle(r.title().trim());
+            Exam e=new Exam();e.setCourse(course);e.setCreatedBy(actor);e.setCode(codes.get(variantIndex++));e.setTitle(r.title().trim());
             e.setTotalQuestions(r.questions());e.setTotalPoints(BigDecimal.TEN);e.setStatus("draft");
             e.setShuffleQuestions(r.shuffleQuestions());e.setShuffleAnswers(r.shuffleAnswers());e.setAntiCheatMode(r.antiCheatMode());
             e=exams.saveAndFlush(e);ids.add(e.getId());

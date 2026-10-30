@@ -137,5 +137,13 @@ class EmbeddingSyncTests(unittest.TestCase):
             with self.assertRaises(SystemExit):sync.main()
         connect.assert_not_called()
 
+    def test_queue_metrics_reports_pending_failed_and_lag_read_only(self):
+        conn,cur=self.connection((17,17,2,42.5))
+        with patch.object(sync.psycopg2,'connect',return_value=conn):
+            report=sync.queue_metrics('host=synthetic')
+        self.assertEqual({'pendingCount':17,'dueCount':17,'failedCount':2,'oldestQueueLagSeconds':42.5},report)
+        conn.set_session.assert_called_once_with(readonly=True)
+        self.assertTrue(cur.execute.call_args.args[0].strip().upper().startswith('SELECT'))
+
 
 if __name__=='__main__':unittest.main()

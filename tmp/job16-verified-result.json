@@ -1,0 +1,59 @@
+{
+  "job_id": 16,
+  "state": "succeeded",
+  "requested": 1,
+  "accepted": 1,
+  "charged": 1,
+  "error": null,
+  "created_at": "2026-10-23 08:58:38.918640+00:00",
+  "completed_at": "2026-10-23 09:00:36.245857+00:00",
+  "elapsed_seconds": 117.327217,
+  "validation": [
+    {
+      "content": "Khi tạo thư mục chia sẻ, người dùng nên làm gì để đảm bảo quyền truy cập được hạn chế nhất?",
+      "options_count": 4,
+      "correct_index": 1,
+      "explanation_present": true,
+      "clo_id": 26,
+      "clo_selected": true,
+      "bloom": "understand",
+      "evidence_present": true,
+      "full_clo_validation": true
+    }
+  ],
+  "upstream_matches_database": false,
+  "ledger": [
+    {
+      "id": 39,
+      "event_type": "reserve",
+      "monthly_used_delta": 0,
+      "monthly_reserved_delta": 1,
+      "extra_balance_delta": 0,
+      "extra_reserved_delta": 0
+    },
+    {
+      "id": 40,
+      "event_type": "settle",
+      "monthly_used_delta": 1,
+      "monthly_reserved_delta": -1,
+      "extra_balance_delta": 0,
+      "extra_reserved_delta": 0
+    }
+  ],
+  "quota": {
+    "monthly_limit": 200,
+    "used": 9,
+    "reserved": 0,
+    "extra_balance": 0,
+    "extra_reserved": 0,
+    "remaining": 191
+  },
+  "unresolved_jobs": [],
+  "comparison": {
+    "canonical_question_fields_identical": true,
+    "upstream_only_fields": [
+      "chapterId"
+    ],
+    "stored_only_fields": []
+  }
+}

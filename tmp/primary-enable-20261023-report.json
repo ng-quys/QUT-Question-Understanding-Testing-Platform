@@ -1,0 +1,88 @@
+{
+  "before": {
+    "job8_hash": "03acedf7355afa08bf134b670435519510f92553c76cc965fd6ca08f35403544",
+    "ledger_hash": "fb524810731e3e1b86f999eef11f39bdc3e99674075f026636d7eea2f2776d1e",
+    "job8_state": "succeeded",
+    "job8_accepted": 1,
+    "job8_charged": 1,
+    "ledger_events": [
+      "reserve",
+      "settle"
+    ],
+    "monthly_reserved": 0,
+    "extra_reserved": "0",
+    "unresolved": []
+  },
+  "lock_check": {
+    "first": true,
+    "second_blocked": true,
+    "released": true,
+    "handover": true
+  },
+  "models": [
+    "nomic-embed-text:latest",
+    "llama3.1:8b",
+    "qwen2.5:7b"
+  ],
+  "old_pid": 10080,
+  "pid": 21304,
+  "log": "D:\\baitap\\KLTN\\v2\\QUT-Question-Understanding-Testing-Platform\\.env.examflow.runtime\\logs\\Backend-primary-20261023-003019.log",
+  "ai_pid": 26568,
+  "ollama_pid": 31376,
+  "health_http": 200,
+  "internal_key_http": 204,
+  "unauthenticated_readiness_http": 401,
+  "primary_poll_samples": [
+    {
+      "pid": 2384180,
+      "query_start": "2026-10-22 17:30:38.793460+00:00"
+    },
+    {
+      "pid": 2384180,
+      "query_start": "2026-10-22 17:30:42.254908+00:00"
+    },
+    {
+      "pid": 2384180,
+      "query_start": "2026-10-22 17:30:45.707915+00:00"
+    },
+    {
+      "pid": 2384180,
+      "query_start": "2026-10-22 17:30:52.629520+00:00"
+    },
+    {
+      "pid": 2384180,
+      "query_start": "2026-10-22 17:30:56.165755+00:00"
+    },
+    {
+      "pid": 2384180,
+      "query_start": "2026-10-22 17:30:59.618115+00:00"
+    },
+    {
+      "pid": 2384180,
+      "query_start": "2026-10-22 17:31:13.460213+00:00"
+    },
+    {
+      "pid": 2384180,
+      "query_start": "2026-10-22 17:31:16.918375+00:00"
+    }
+  ],
+  "after": {
+    "job8_hash": "03acedf7355afa08bf134b670435519510f92553c76cc965fd6ca08f35403544",
+    "ledger_hash": "fb524810731e3e1b86f999eef11f39bdc3e99674075f026636d7eea2f2776d1e",
+    "job8_state": "succeeded",
+    "job8_accepted": 1,
+    "job8_charged": 1,
+    "ledger_events": [
+      "reserve",
+      "settle"
+    ],
+    "monthly_reserved": 0,
+    "extra_reserved": "0",
+    "unresolved": []
+  },
+  "startup_flags_verified": true,
+  "server_checks_passed": true,
+  "authenticated_readiness_pending": true,
+  "fastapi_ollama_unchanged": true,
+  "finished_utc": "2026-10-22T17:31:24.765180+00:00"
+}

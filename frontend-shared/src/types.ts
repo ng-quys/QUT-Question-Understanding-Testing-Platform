@@ -88,6 +88,7 @@ export interface Course {
 // 3D Metadata Question
 export interface QuestionItem {
   evidenceQuote?: string;
+  duplicateWarning?: {questionId:number|null;content:string;similarity:number;matchType:string;source:string;threshold:number};
   id: string;
   courseId: string;
   chapterId: string;
@@ -221,6 +222,9 @@ export type FileUploadState =
   | 'ready'
   | 'uploading'
   | 'extracting'
+  | 'indexing'
+  | 'stale'
+  | 'failed'
   | 'success'
   | 'error';
 
@@ -238,6 +242,20 @@ export interface SourceDocument {
   wordCount?: number;
   topicsDetected?: string[];
   uploadedAt?: string;
+  saved?: boolean;
+  revision?: number;
+  indexId?: string;
+  configHash?: string;
+  indexStatus?: 'extracting' | 'indexing' | 'ready' | 'stale' | 'failed';
+  chunkCount?: number;
+  cacheHit?: boolean;
+}
+
+export interface AiDocumentRef {
+  documentId: string;
+  revision: number;
+  indexId: string;
+  configHash: string;
 }
 
 export interface DocumentExtractionSummary {
@@ -264,4 +282,6 @@ export interface AIGeneratorConfig {
   promptNotes?: string;
   sourceDocIds: string[];
 }
+
+export type InferenceBatchSize = 1 | 3;
 

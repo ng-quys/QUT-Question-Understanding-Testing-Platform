@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type{ Course, CourseChapter, CourseCLO } from '@shared/types';
 import { CourseDetailPage } from './CourseDetailPage';
+import { CourseOutlineImport } from '../components/CourseOutlineImport';
 import {
   createTeacherCourse,
   getTeacherCourses,
@@ -45,6 +46,7 @@ export const CourseListPage: React.FC<CourseListPageProps> = ({
 
   // Add course modal state
   const [isAddingCourse, setIsAddingCourse] = useState<boolean>(false);
+  const [importOutline,setImportOutline]=useState(false);
   const [newCode, setNewCode] = useState<string>('');
   const [newName, setNewName] = useState<string>('');
   const [newCredits, setNewCredits] = useState<number>(3);
@@ -197,6 +199,7 @@ export const CourseListPage: React.FC<CourseListPageProps> = ({
             setNewName('');
             setNewCredits(3);
             setNewDepartment('Khoa Công nghệ Thông tin');
+            setImportOutline(false);
             setIsAddingCourse(true);
           }}
           className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-white shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
@@ -215,6 +218,14 @@ export const CourseListPage: React.FC<CourseListPageProps> = ({
             <span>Khai báo học phần mới</span>
           </div>
 
+          <div className="flex gap-3 border-b border-slate-200 pb-3" aria-label="Cách tạo học phần">
+            <button type="button" disabled={isSaving} className="text-sm underline" aria-pressed={!importOutline} onClick={()=>setImportOutline(false)}>Nhập thủ công</button>
+            <button type="button" disabled={isSaving} className="text-sm underline" aria-pressed={importOutline} onClick={()=>setImportOutline(true)}>Tải đề cương</button>
+          </div>
+          {importOutline?<CourseOutlineImport onCancel={()=>setIsAddingCourse(false)} onImported={async id=>{
+            const updated=await getTeacherCourses();onUpdateCourses(updated);
+            setIsAddingCourse(false);setSelectedCourseId(id);onShowToast('Đã nhập cấu trúc học phần từ đề cương.');
+          }}/>:<>
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
             <div className="sm:col-span-3">
               <label className="block text-[11px] font-semibold text-slate-600 mb-1">
@@ -288,6 +299,7 @@ export const CourseListPage: React.FC<CourseListPageProps> = ({
               {isSaving ? 'Đang lưu...' : 'Lưu học phần'}
             </button>
           </div>
+          </>}
         </div>
       )}
 

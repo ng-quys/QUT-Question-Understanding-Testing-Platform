@@ -1,11 +1,12 @@
 import {useEffect,useRef,useState} from 'react';
-import type {Course,CourseChapter,CourseCLO,QuestionItem,SourceDocument,AIWorkflowStep} from '@shared/types';
+import type {Course,CourseChapter,CourseCLO,QuestionItem,SourceDocument,AIWorkflowStep,InferenceBatchSize} from '@shared/types';
 import {apiFetch} from '@shared/services/api';
 import {useAiQuota} from '../hooks/useAiQuota';
 import {DocumentUploadStep} from '../components/DocumentUploadStep';
 import {GeneratorStepper} from '../components/GeneratorStepper';
 import {MatrixGenerationProgress} from '../components/MatrixGenerationProgress';
 import {QuestionReviewStep} from '../components/QuestionReviewStep';
+import {InferenceModeSelector} from '../components/InferenceModeSelector';
 
 interface Props {
  courses:Course[];chapters:CourseChapter[];clos:CourseCLO[];questions?:QuestionItem[];
@@ -14,6 +15,7 @@ interface Props {
  onShowToast:(message:string)=>void;onBackToDashboard?:()=>void;
 }
 export function AIGeneratorPage({courses,chapters,clos,onSaveQuestions,onNavigateToQuestionBank,onShowToast,onBackToDashboard}:Props){
+ const savedDocumentsEnabled=import.meta.env.VITE_AI_SAVED_DOCUMENTS_ENABLED==='true';
  const {quota,error:quotaError}=useAiQuota();
  const [step,setStep]=useState<AIWorkflowStep>(1);
  const [generating,setGenerating]=useState(false);
@@ -22,6 +24,7 @@ export function AIGeneratorPage({courses,chapters,clos,onSaveQuestions,onNavigat
  const [courseClos,setCourseClos]=useState<CourseCLO[]>([]);
  const [selected,setSelected]=useState<string[]>([]);
  const [count,setCount]=useState(10);
+ const [inferenceBatchSize,setInferenceBatchSize]=useState<InferenceBatchSize>(1);
  const [loadingClos,setLoadingClos]=useState(false);
  const [error,setError]=useState('');
  const [generated,setGenerated]=useState<QuestionItem[]>([]);
@@ -49,8 +52,10 @@ export function AIGeneratorPage({courses,chapters,clos,onSaveQuestions,onNavigat
  },[courseId]);
  const sourceText=documents.map(d=>d.extractedText||'').join('\n\n');
  const proof=documents[0]?.aiSourceProof;
+ const documentRefs=savedDocumentsEnabled?documents.filter(d=>d.saved&&d.indexStatus==='ready'&&d.indexId&&d.configHash).map(d=>({documentId:d.id,revision:d.revision!,indexId:d.indexId!,configHash:d.configHash!})):undefined;
+ const documentsReady=savedDocumentsEnabled?!!documentRefs?.length&&documentRefs.length===documents.length:sourceText.trim().length>=50&&!!proof;
  const canGenerate=!!storageKey&&!!courseId&&!loadingClos&&selected.length>0&&Number.isInteger(count)&&count>=1&&count<=45
-   &&!!quota&&count<=quota.remaining&&!quota.activeJob&&sourceText.trim().length>=50&&!!proof;
+   &&!!quota&&count<=quota.remaining&&!quota.activeJob&&documentsReady;
  const start=()=>{
    if(!canGenerate||starting.current)return;starting.current=true;setError('');saved.current.clear();setGenerated([]);
    setSelectionCodes(courseClos.filter(c=>selected.includes(c.id)).map(c=>({id:Number(c.id),code:c.code})));
@@ -76,16 +81,17 @@ export function AIGeneratorPage({courses,chapters,clos,onSaveQuestions,onNavigat
    <p className="text-sm text-slate-600">{quota?`Còn ${quota.remaining} credits · Tối đa 45 câu/lượt`:quotaError||'Đang tải giới hạn sử dụng…'}</p>
    {quota?.activeJob&&!generating&&<button className="text-sm underline" onClick={()=>{setResumeId(quota.activeJob!.id);setJobKey('resume-'+quota.activeJob!.id);setGenerating(true);setStep(4);}}>Tiếp tục job #{quota.activeJob.id}</button>}
    {error&&<p role="alert" className="text-red-700">{error}</p>}
-   {step===1&&<DocumentUploadStep documents={documents} onUpdateDocuments={setDocuments} onShowToast={onShowToast} onUploadSuccess={result=>{setDocuments(result.documents);setStep(2);}}/>}
+   {step===1&&<DocumentUploadStep courses={courses} courseId={courseId} onCourseChange={setCourseId} savedDocumentsEnabled={savedDocumentsEnabled} documents={documents} onUpdateDocuments={setDocuments} onShowToast={onShowToast} onUploadSuccess={result=>{setDocuments(result.documents);setStep(2);}}/>}
    {step===2&&<div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
      <h2 className="font-semibold text-slate-900">Chọn chuẩn đầu ra CLO</h2>
-     <label className="block text-sm">Học phần<select value={courseId} onChange={e=>{setError('');setCourseId(e.target.value);}} className="block w-full border border-slate-200 rounded-lg p-2 mt-2"><option value="">Chọn học phần</option>{courses.map(c=><option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}</select></label>
+     <p className="text-sm text-slate-600">Học phần: <strong>{courses.find(c=>String(c.id)===courseId)?.code} — {courses.find(c=>String(c.id)===courseId)?.name}</strong></p>
      {loadingClos?<p>Đang tải CLO…</p>:courseId&&!courseClos.length?<p>Học phần chưa có CLO đang hoạt động. Hãy bổ sung CLO trước khi sinh câu hỏi.</p>:courseClos.map(c=><label key={c.id} className="flex gap-3 items-start text-sm border-b border-slate-100 pb-3"><input type="checkbox" checked={selected.includes(c.id)} onChange={e=>setSelected(prev=>e.target.checked?[...prev,c.id]:prev.filter(id=>id!==c.id))}/><span><strong>{c.code}</strong> — {c.description}</span></label>)}
      <div className="flex gap-4"><button onClick={()=>setStep(1)} className="text-sm underline">Quay lại tài liệu</button><button disabled={!courseId||loadingClos||!selected.length} onClick={()=>setStep(3)} className="rounded-lg px-5 py-2 text-white bg-[#172b4d] disabled:opacity-40">Tiếp tục</button></div>
    </div>}
    {step===3&&<div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
      <h2 className="font-semibold text-slate-900">Số lượng câu hỏi</h2>
      <label className="block text-sm">Số câu (1–45)<input type="number" min={1} max={45} step={1} value={Number.isFinite(count)?count:''} onChange={e=>setCount(e.target.valueAsNumber)} className="block border border-slate-200 rounded-lg p-2 mt-2 w-32"/></label>
+     <InferenceModeSelector value={inferenceBatchSize} onChange={setInferenceBatchSize}/>
      <p className="text-sm">Credits dự kiến giữ chỗ: {Number.isFinite(count)?count:'—'}. Chỉ quyết toán theo số câu hợp lệ.</p>
      <p className="text-sm text-slate-500">AI ưu tiên CLO phù hợp tài liệu, tự đề xuất Bloom và có thể trả kết quả từng phần. Giảng viên cần kiểm tra và hiệu chỉnh.</p>
      {quota&&count>quota.remaining&&<p role="alert" className="text-sm text-red-700">Không đủ credits khả dụng cho số câu đã chọn.</p>}
@@ -93,7 +99,8 @@ export function AIGeneratorPage({courses,chapters,clos,onSaveQuestions,onNavigat
      <div className="flex gap-4"><button onClick={()=>setStep(2)} className="text-sm underline">Quay lại CLO</button><button disabled={!canGenerate} onClick={start} className="rounded-lg px-5 py-2 text-white bg-[#172b4d] disabled:opacity-40">Sinh câu hỏi</button></div>
    </div>}
    {step===4&&generating&&<MatrixGenerationProgress courseId={courseId} totalQuestions={count} cloIds={selected.map(Number)} courses={courses}
-     idempotencyKey={jobKey} sourceProof={proof} resumeJobId={resumeId} sourceText={sourceText} storageKey={storageKey}
+     inferenceBatchSize={inferenceBatchSize}
+     idempotencyKey={jobKey} sourceProof={proof} resumeJobId={resumeId} sourceText={sourceText} documentRefs={documentRefs} storageKey={storageKey}
      onComplete={(qs,used,total,selectedClos)=>{setGenerated(qs);if(qs[0])setCourseId(qs[0].courseId);setCharged(used);setRequested(total);setSelectionCodes(selectedClos??selectionCodes);starting.current=false;setGenerating(false);setStep(4);}}
      onCancel={()=>{starting.current=false;setGenerating(false);setStep(3);}}/>}
    {step===4&&!generating&&<><p className="rounded-xl bg-slate-50 p-4 text-sm">Đã sinh {generated.length}/{requested} câu hợp lệ · Đã dùng {charged} credits. CLO chưa có câu: {selectionCodes.filter(c=>!generated.some(q=>Number(q.cloId)===c.id)).map(c=>c.code).join(', ')||'Không có'}. {generated.length<requested?'Không đủ câu hợp lệ theo căn cứ tài liệu/kiểm tra trùng hoặc tác vụ đã dừng. Phần giữ chỗ chưa dùng đã được hoàn. ':''}CLO/Bloom là đề xuất của AI, cần giảng viên thẩm định.</p>

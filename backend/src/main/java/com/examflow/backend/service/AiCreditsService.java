@@ -24,6 +24,7 @@ public class AiCreditsService {
     private final TransactionTemplate tx;
     private final ObjectMapper json;
     private final AiWorkerCoordinator coordination;
+    private final AiDocumentService documents;
     private final Clock clock = Clock.systemUTC();
     @Value("${ai.credits.enabled:false}") private boolean enabled;
     @Value("${ai.credits.monthly-limit:200}") private int monthlyLimit;
@@ -31,11 +32,17 @@ public class AiCreditsService {
     @Value("${ai.credits.zone:Asia/Ho_Chi_Minh}") private String zone;
     @Value("${ai.internal.key:}") private String secret;
 
-    public AiCreditsService(@Qualifier("dataSource") DataSource main, ObjectMapper json,AiWorkerCoordinator coordination) {
+    @Autowired
+    public AiCreditsService(@Qualifier("dataSource") DataSource main, ObjectMapper json,AiWorkerCoordinator coordination,AiDocumentService documents) {
         db = new JdbcTemplate(main);
         tx = new TransactionTemplate(new DataSourceTransactionManager(main));
         this.json = json;
         this.coordination=coordination;
+        this.documents=documents;
+    }
+    /** Test/legacy constructor; saved-document requests require the managed service. */
+    public AiCreditsService(DataSource main,ObjectMapper json,AiWorkerCoordinator coordination){
+        db=new JdbcTemplate(main);tx=new TransactionTemplate(new DataSourceTransactionManager(main));this.json=json;this.coordination=coordination;this.documents=null;
     }
     public boolean enabled() { return enabled; }
     public void requireEnabled() {
@@ -142,8 +149,13 @@ public class AiCreditsService {
         catch(IllegalArgumentException e) { throw error(400,e.getMessage()); }
         if(!List.of("qwen","openai").contains(request.provider()))throw error(400,"Provider không hợp lệ.");
         if(request.automatic() && !"qwen".equals(request.provider()))throw error(400,"Luồng tài liệu và CLO sử dụng Qwen qua RAG.");
-        if(request.sourceText()==null||request.sourceText().length()<50)
-            throw error(400,"Tài liệu phải có ít nhất 50 ký tự.");
+        if(request.effectiveBatchSize()!=5&&request.effectiveBatchSize()!=10)throw error(400,"Batch size phải là 5 hoặc 10 câu.");
+        if(request.effectiveInferenceBatchSize()!=1&&request.effectiveInferenceBatchSize()!=3)throw error(400,"Chế độ sinh AI phải là 1 hoặc 3 câu/lượt.");
+        boolean legacy=request.sourceText()!=null&&!request.sourceText().isBlank();
+        boolean saved=request.documentRefs()!=null&&!request.documentRefs().isEmpty();
+        if(legacy==saved)throw error(400,"Chọn đúng một nguồn: nội dung đã trích xuất hoặc tài liệu đã lưu.");
+        if(legacy&&request.sourceText().length()<50)throw error(400,"Tài liệu phải có ít nhất 50 ký tự.");
+        if(saved){if(documents==null)throw error(503,"Thư viện tài liệu AI chưa sẵn sàng.");documents.validateRefs(user,request.courseId(),request.documentRefs());}
         String payload=encode(request),hash=sha(payload);
         return tx.execute(status->{
             var account=lockAccount(user);
@@ -152,7 +164,7 @@ public class AiCreditsService {
                 if(!hash.equals(previous.get(0).get("payload_sha256")))throw error(409,"Idempotency key đã được dùng với nội dung khác.");
                 return view(raw(l(previous.get(0),"id")));
             }
-            ownedCourse(user,request);verifyProof(user,request);
+            ownedCourse(user,request);if(legacy)verifyProof(user,request);
             var stored=request;
             if(request.automatic()) {
                 var selected=new ArrayList<AiGenerateRequest.AiCloDto>();
@@ -162,7 +174,7 @@ public class AiCreditsService {
                         throw error(400,"CLO không hợp lệ hoặc không thuộc học phần.");
                     var c=rows.get(0);selected.add(new AiGenerateRequest.AiCloDto(cloId,c.get("code").toString(),c.get("description").toString()));
                 }
-                stored=new AiGenerateRequest(request.courseId(),request.provider(),request.instruction(),request.sourceText(),null,request.sourceProof(),request.defaultScore(),request.cloIds(),request.questionCount(),selected);
+                stored=new AiGenerateRequest(request.courseId(),request.provider(),request.instruction(),request.sourceText(),null,request.sourceProof(),request.defaultScore(),request.cloIds(),request.questionCount(),selected,request.effectiveBatchSize(),request.documentRefs(),request.effectiveInferenceBatchSize());
             }
             if(db.queryForObject("SELECT count(*) FROM public.ai_generation_requests WHERE requested_by=? AND credit_state IN ('reserved','running','cancel_requested','unknown')",Long.class,user)>0)
                 throw error(409,"Bạn đang có một job AI hoạt động hoặc chờ đối soát.");
@@ -202,6 +214,10 @@ public class AiCreditsService {
         out.put("courseId",row.get("course_id"));out.put("id",row.get("id"));out.put("status",row.get("credit_state"));
         out.put("requested",row.get("requested_question_count"));out.put("accepted",row.get("accepted_count"));
         out.put("charged",n(row,"charged_monthly")+n(row,"charged_extra"));out.put("error",row.get("credit_error_code"));
+        int batchSize=payload(row).effectiveBatchSize(),accepted=n(row,"accepted_count"),requested=n(row,"requested_question_count");
+        out.put("batchSize",batchSize);out.put("completedBatches",terminal(row)?(accepted+batchSize-1)/batchSize:accepted/batchSize);
+        out.put("inferenceBatchSize",payload(row).effectiveInferenceBatchSize());
+        out.put("totalBatches",(requested+batchSize-1)/batchSize);
         out.put("defaultScore",payload(row).defaultScore()==null?0.5:payload(row).defaultScore());
         if(payload(row).automatic())out.put("selectedClos",payload(row).selectedClos());
         out.put("questions",terminal(row)?results(row):List.of());return out;
@@ -254,7 +270,7 @@ public class AiCreditsService {
                     || !List.of("remember","understand","apply").contains(Objects.toString(q.bloom(),""))
                     || q.chapterId()!=null || q.explanation()==null || q.explanation().isBlank()
                     || q.evidenceQuote()==null || q.evidenceQuote().strip().length()<20
-                    || !request.sourceText().replaceAll("\\s+"," ").contains(q.evidenceQuote().strip().replaceAll("\\s+"," "))
+                    || !evidencePresent(request,q.evidenceQuote())
                     || q.options().stream().map(o->o.strip().toLowerCase(Locale.ROOT)).distinct().count()!=4)continue;
                 String fingerprint=q.content().strip().toLowerCase(Locale.ROOT).replaceAll("\\s+"," ");
                 if(seen.add(fingerprint))accepted.add(q);
@@ -265,6 +281,10 @@ public class AiCreditsService {
             if(budgets.getOrDefault(key,0)<=0||!seen.add(fingerprint))continue;
             budgets.computeIfPresent(key,(k,v)->v-1);accepted.add(q);
         }return accepted;
+    }
+    private boolean evidencePresent(AiGenerateRequest request,String quote){
+        if(request.documentRefs()!=null&&!request.documentRefs().isEmpty())return documents!=null&&documents.evidenceInRefs(request.documentRefs(),quote);
+        return request.sourceText()!=null&&request.sourceText().replaceAll("\\s+"," ").contains(quote.strip().replaceAll("\\s+"," "));
     }
     public void checkpoint(long id,UUID token,List<AiQuestionDto> questions) {
         tx.executeWithoutResult(status->{
@@ -352,6 +372,36 @@ public class AiCreditsService {
             FROM public.ai_credit_transactions t LEFT JOIN public.users u ON u.id=t.actor_id
             WHERE t.user_id=? AND t.id<? ORDER BY t.id DESC LIMIT ?
             """,user,before==null?Long.MAX_VALUE:before,Math.min(50,Math.max(1,size)));
+    }
+    /** Snapshot is compared again under the same account/month/job locks used by settlement. */
+    public String recoveryFingerprint(Map<String,Object> row) {
+        var values=new ArrayList<Object>();
+        for(String field:List.of("id","execution_token","credit_payload","credit_result","accepted_count",
+                "reserved_monthly","reserved_extra","charged_monthly","charged_extra","credit_state",
+                "lease_expires_at","cancel_requested_at"))values.add(Objects.toString(row.get(field),""));
+        return sha(encode(values));
+    }
+    public void requireOrphanCancellation(Map<String,Object> row) {
+        Object lease=row.get("lease_expires_at");
+        if(!List.of("cancel_requested","unknown").contains(row.get("credit_state"))
+                ||row.get("cancel_requested_at")==null||!(lease instanceof java.sql.Timestamp timestamp)
+                ||!timestamp.toInstant().isBefore(clock.instant().minusSeconds(120))
+                ||!"qwen".equals(payload(row).provider())
+                ||n(row,"charged_monthly")!=0||n(row,"charged_extra")!=0
+                ||results(row).size()!=n(row,"accepted_count")
+                ||validate(row,results(row)).size()!=n(row,"accepted_count"))
+            throw error(409,"Job chưa đủ điều kiện phục hồi checkpoint sau khi mất registry.");
+    }
+    public Map<String,Object> recoverCancelledCheckpoint(long admin,long id,String fingerprint,String reason) {
+        requireEnabled();
+        if(reason==null||reason.isBlank()||reason.length()>1000)throw error(400,"Cần lý do phục hồi.");
+        return tx.execute(status->{
+            var row=lockJob(id);
+            if(!recoveryFingerprint(row).equals(fingerprint))throw error(409,"Job đã thay đổi; cần kiểm tra lại preview.");
+            requireOrphanCancellation(row);
+            finish(id,(UUID)row.get("execution_token"),results(row),true,admin,reason.strip());
+            return view(raw(id));
+        });
     }
     public Map<String,Object> reconcile(long admin,long id,boolean stopped,String reason) {
         requireEnabled();

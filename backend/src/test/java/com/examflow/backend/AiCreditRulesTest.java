@@ -24,10 +24,16 @@ class AiCreditRulesTest {
     }
     @Test void oldPayloadSerializationDoesNotGainNewNullFields() throws Exception {
         String json=new ObjectMapper().writeValueAsString(request(1));
-        assertFalse(json.contains("cloIds"));assertFalse(json.contains("questionCount"));assertFalse(json.contains("selectedClos"));
+        assertFalse(json.contains("cloIds"));assertFalse(json.contains("questionCount"));assertFalse(json.contains("selectedClos"));assertFalse(json.contains("batchSize"));assertFalse(json.contains("inferenceBatchSize"));
         assertEquals(1,AiCreditRules.count(new ObjectMapper().readValue(json,AiGenerateRequest.class),45));
         String auto=new ObjectMapper().writeValueAsString(automatic(10,List.of(3L)));
         assertThrows(com.fasterxml.jackson.core.JsonProcessingException.class,()->new ObjectMapper().readValue(auto.replace("\"questionCount\":10","\"questionCount\":10.9"),AiGenerateRequest.class));
+        assertEquals(5,automatic(10,List.of(3L)).effectiveBatchSize());
+        var batch10=new AiGenerateRequest(1L,"qwen","","x".repeat(100),null,"proof",0.5,List.of(3L),10,null,10);
+        assertEquals(10,new ObjectMapper().readValue(new ObjectMapper().writeValueAsString(batch10),AiGenerateRequest.class).effectiveBatchSize());
+        assertEquals(1,automatic(10,List.of(3L)).effectiveInferenceBatchSize());
+        var inference3=new AiGenerateRequest(1L,"qwen","","x".repeat(100),null,"proof",0.5,List.of(3L),10,null,5,null,3);
+        assertEquals(3,new ObjectMapper().readValue(new ObjectMapper().writeValueAsString(inference3),AiGenerateRequest.class).effectiveInferenceBatchSize());
     }
     private AiGenerateRequest request(int count) {
         return new AiGenerateRequest(1L,"qwen","","x".repeat(100),
@@ -66,6 +72,17 @@ class AiCreditRulesTest {
         var service=new AiCreditsService(datasource,new ObjectMapper(),mock(com.examflow.backend.service.AiWorkerCoordinator.class));
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.quota(1));
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.create(1,UUID.randomUUID(),request(1)));
+        verifyNoInteractions(datasource);
+    }
+    @Test void inferenceModeAcceptsOnlyOneOrThreeBeforeDatabaseWork() {
+        DataSource datasource=mock(DataSource.class);
+        var service=new AiCreditsService(datasource,new ObjectMapper(),mock(com.examflow.backend.service.AiWorkerCoordinator.class));
+        ReflectionTestUtils.setField(service,"enabled",true);
+        ReflectionTestUtils.setField(service,"maximum",45);
+        var invalid=new AiGenerateRequest(1L,"qwen","","x".repeat(100),null,"proof",0.5,
+            List.of(3L),1,null,5,null,2);
+        var error=assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.create(1,UUID.randomUUID(),invalid));
+        assertEquals(400,error.getStatusCode().value());
         verifyNoInteractions(datasource);
     }
     @Test void acceptsOnlyValidQuestionsWithinCloBloomBudget() throws Exception {

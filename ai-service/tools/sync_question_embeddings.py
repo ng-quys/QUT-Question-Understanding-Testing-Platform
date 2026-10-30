@@ -7,6 +7,8 @@ import logging
 import math
 import os
 import time
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from contextlib import closing
 
@@ -17,6 +19,38 @@ from psycopg2.extensions import parse_dsn
 
 load_dotenv(Path(__file__).resolve().parents[1] / '.env')
 log = logging.getLogger('examflow.embedding-sync')
+HEALTH = {'ready': False, 'lastError': None, 'lastSuccessAt': None}
+
+
+def queue_metrics(dsn):
+    with closing(psycopg2.connect(dsn, connect_timeout=5)) as conn:
+        conn.set_session(readonly=True)
+        with conn.cursor() as cur:
+            cur.execute('''SELECT count(*),count(*) FILTER (WHERE next_retry_at<=now()),
+              count(*) FILTER (WHERE attempts>0 OR last_error IS NOT NULL),
+              coalesce(extract(epoch from now()-min(queued_at)),0)
+              FROM public.question_embedding_queue''')
+            pending,due,failed,lag=cur.fetchone()
+    return {'pendingCount':pending,'dueCount':due,'failedCount':failed,'oldestQueueLagSeconds':round(float(lag),3)}
+
+
+def start_health_server(port, reader_dsn):
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path not in ('/health','/ready','/metrics'):
+                self.send_response(404);self.end_headers();return
+            try:
+                payload={**HEALTH, **queue_metrics(reader_dsn)}
+                status=200 if (self.path!='/ready' or payload['ready']) else 503
+            except Exception as exc:
+                payload={**HEALTH,'ready':False,'lastError':type(exc).__name__};status=503
+            body=json.dumps(payload,sort_keys=True).encode()
+            self.send_response(status);self.send_header('Content-Type','application/json')
+            self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
+        def log_message(self, *_): pass
+    server=ThreadingHTTPServer(('127.0.0.1',port),Handler)
+    threading.Thread(target=server.serve_forever,name='embedding-sync-health',daemon=True).start()
+    return server
 
 
 def vector_for(client, url, model, text):
@@ -178,9 +212,12 @@ def main():
     parser.add_argument('--missing-only', action='store_true', help='Never update or remove an existing embedding')
     parser.add_argument('--question-ids', type=int, nargs='+', help='Restrict work to explicitly approved question IDs')
     parser.add_argument('--interval', type=int, default=10)
+    parser.add_argument('--health-port', type=int, default=8004)
     args = parser.parse_args()
     if args.interval < 1:
         parser.error('--interval must be >= 1')
+    if not 1 <= args.health_port <= 65535:
+        parser.error('--health-port must be between 1 and 65535')
     if not 1 <= args.batch_size <= 20:
         parser.error('--batch-size must be between 1 and 20')
     if args.question_ids and any(qid < 1 for qid in args.question_ids):
@@ -202,6 +239,7 @@ def main():
         dsn = writer_dsn(dsn, os.getenv('EXAMFLOW_EMBEDDING_SYNC_DSN', '').strip())
     except ValueError as exc:
         parser.error(str(exc))
+    health = start_health_server(args.health_port, os.getenv('EXAMFLOW_QUESTIONBANK_DSN','').strip()) if args.watch else None
     with httpx.Client(timeout=120) as client:
         while True:
             try:
@@ -212,12 +250,14 @@ def main():
                             raise SystemExit('Writer connection is read-only; reader settings will not be overridden')
                     conn.rollback()
                     counts = run_batch(conn, client, url, model, args.batch_size, args.missing_only, args.question_ids)
+                    HEALTH.update(ready=True,lastError=None,lastSuccessAt=time.time())
                     print(json.dumps(counts, sort_keys=True), flush=True)
                     if counts['errors']:
                         raise SystemExit('Batch stopped after first error; failed queue item retained')
                 if not args.watch:
                     break
             except Exception as exc:
+                HEALTH.update(ready=False,lastError=type(exc).__name__)
                 log.warning('Queue unavailable (%s)', type(exc).__name__)
                 if not args.watch:
                     raise SystemExit('Embedding sync failed (%s); credentials suppressed' % type(exc).__name__) from None
