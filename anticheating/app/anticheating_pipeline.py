@@ -17,7 +17,6 @@ publish("loading", "Đang tải thư viện và model")
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
-import mediapipe as mp
 import numpy as np
 import onnxruntime as ort
 import sounddevice as sd
@@ -64,10 +63,6 @@ OBJECT_MODEL = os.environ.get(
     "ANTICHEAT_OBJECT_MODEL",
     str(CUSTOM_OBJECT_MODEL if CUSTOM_OBJECT_MODEL.exists() else PROJECT_ROOT / "models" / "person" / "yolo11s.pt")
 )
-HAND_MODEL = os.environ.get(
-    "ANTICHEAT_HAND_MODEL",
-    str(PROJECT_ROOT / "models" / "hands" / "hand_landmarker.task")
-)
 ATTEMPT_ID = os.environ.get("ANTICHEAT_ATTEMPT_ID", "")
 BACKEND_CALLBACK_URL = os.environ.get(
     "ANTICHEAT_BACKEND_CALLBACK_URL",
@@ -82,24 +77,6 @@ DEVICE_ARG = "cpu" if DEVICE.lower() == "cpu" else 0
 # DETECTION CONFIG
 # ============================================================
 
-
-HAND_OBJECT_MARGIN = 30
-MIN_HAND_POINTS_NEAR_OBJECT = 3
-
-# ============================================================
-# M5 HYBRID CONFIG
-# ============================================================
-
-M5_GRACE_SECONDS = 0.45
-
-M5_FALLBACK_PHONE_SECONDS = 1.20
-M5_FALLBACK_STUDY_SECONDS = 1.20
-
-M5_FALLBACK_PHONE_CONF = 0.45
-M5_FALLBACK_STUDY_CONF = 0.45
-
-M5_MIN_OBJECT_PERSON_AREA_RATIO = 0.01
-M5_MAX_OBJECT_PERSON_AREA_RATIO = 0.35
 
 M4_MODEL_PATH = PROJECT_ROOT / "models" / "head_pose" / "head_behavior_all_balanced.joblib"
 M4_MIN_CONFIDENCE = float(os.environ.get("M4_MIN_CONFIDENCE", "0.70"))
@@ -256,37 +233,6 @@ print("M1 Liveness ready.")
 
 
 # ============================================================
-# M5 HAND LANDMARKER
-# ============================================================
-
-print("Loading M5 Hand Landmarker...")
-
-BaseOptions = mp.tasks.BaseOptions
-HandLandmarker = mp.tasks.vision.HandLandmarker
-HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-RunningMode = mp.tasks.vision.RunningMode
-
-hand_options = HandLandmarkerOptions(
-    base_options=BaseOptions(
-        model_asset_path=HAND_MODEL
-    ),
-    running_mode=RunningMode.VIDEO,
-    num_hands=2,
-    min_hand_detection_confidence=0.35,
-    min_hand_presence_confidence=0.35,
-    min_tracking_confidence=0.35,
-)
-
-hand_landmarker = (
-    HandLandmarker.create_from_options(
-        hand_options
-    )
-)
-
-print("M5 ready.")
-
-
-# ============================================================
 # M8 + M9 + M10
 # ============================================================
 
@@ -323,21 +269,7 @@ similarity_history = deque(
 )
 
 
-# ============================================================
-# M5 HYBRID STATE
-# ============================================================
-
-m5_last_confirmed = {
-    "HOLDING_PHONE": None,
-    "HOLDING_STUDY_MATERIAL": None,
-    "HOLDING_TABLET": None,
-}
-
-m5_fallback_start = {
-    "HOLDING_PHONE": None,
-    "HOLDING_STUDY_MATERIAL": None,
-    "HOLDING_TABLET": None,
-}
+object_visible_since = {}
 
 
 # ============================================================
@@ -509,61 +441,9 @@ def classify_head_direction(original_frame, verified_face):
         original_frame, verified_face, m4_landmark_model)
 
 
-def point_near_box(
-    px,
-    py,
-    box,
-    margin,
-):
-
-    x1, y1, x2, y2 = box
-
-    return (
-        x1 - margin <= px <= x2 + margin
-        and
-        y1 - margin <= py <= y2 + margin
-    )
-
-
-def hand_interacts_with_object(
-    hand_points,
-    box,
-):
-
-    count = 0
-
-    for px, py in hand_points:
-
-        if point_near_box(
-            px,
-            py,
-            box,
-            HAND_OBJECT_MARGIN,
-        ):
-
-            count += 1
-
-    return (
-        count
-        >= MIN_HAND_POINTS_NEAR_OBJECT
-    )
-
-
 def interaction_event_name(label):
-
-    if label == "mobile_phone":
-        return "HOLDING_PHONE"
-
-    if label == "study_material":
-        return "HOLDING_STUDY_MATERIAL"
-
-    if label == "tablet":
-        return "HOLDING_TABLET"
-
-    if label == "laptop":
-        return "INTERACTING_LAPTOP"
-
-    return None
+    from object_interaction import EVENTS
+    return EVENTS.get(label)
 
 
 def box_center(box):
@@ -609,102 +489,6 @@ def person_is_inside_phone(
             phone_box,
             margin=20,
         ):
-            return True
-
-    return False
-
-
-def box_area(box):
-
-    x1, y1, x2, y2 = box
-
-    return max(0, x2 - x1) * max(0, y2 - y1)
-
-
-def intersection_area(box_a, box_b):
-
-    ax1, ay1, ax2, ay2 = box_a
-    bx1, by1, bx2, by2 = box_b
-
-    x1 = max(ax1, bx1)
-    y1 = max(ay1, by1)
-    x2 = min(ax2, bx2)
-    y2 = min(ay2, by2)
-
-    return max(0, x2 - x1) * max(0, y2 - y1)
-
-
-def object_near_person_for_fallback(
-    object_box,
-    person_boxes,
-):
-
-    if not person_boxes:
-        return False
-
-    obj_area = box_area(object_box)
-
-    if obj_area <= 0:
-        return False
-
-    ox, oy = box_center(object_box)
-
-    for person_box in person_boxes:
-
-        px1, py1, px2, py2 = person_box
-
-        person_area = box_area(person_box)
-
-        if person_area <= 0:
-            continue
-
-        area_ratio = obj_area / person_area
-
-        if not (
-            M5_MIN_OBJECT_PERSON_AREA_RATIO
-            <= area_ratio
-            <= M5_MAX_OBJECT_PERSON_AREA_RATIO
-        ):
-            continue
-
-        person_w = max(1, px2 - px1)
-        person_h = max(1, py2 - py1)
-
-        margin_x = int(person_w * 0.10)
-        margin_y = int(person_h * 0.05)
-
-        inside_expanded = (
-            px1 - margin_x <= ox <= px2 + margin_x
-            and
-            py1 - margin_y <= oy <= py2 + margin_y
-        )
-
-        if not inside_expanded:
-            continue
-
-        relative_y = (oy - py1) / person_h
-
-        if relative_y < 0.18:
-            continue
-
-        inter = intersection_area(
-            object_box,
-            person_box
-        )
-
-        overlap_ratio = (
-            inter / obj_area
-            if obj_area > 0
-            else 0.0
-        )
-
-        near_side = (
-            abs(ox - px1) <= person_w * 0.18
-            or
-            abs(ox - px2) <= person_w * 0.18
-        )
-
-        if overlap_ratio >= 0.10 or near_side:
             return True
 
     return False
@@ -981,9 +765,9 @@ TRACKED_EVENT_NAMES = [
     "HEAD_UP",
     "HEAD_DOWN",
 
-    "HOLDING_PHONE",
-    "HOLDING_STUDY_MATERIAL",
-    "HOLDING_TABLET",
+    "PHONE_VISIBLE",
+    "MATERIAL_VISIBLE",
+    "TABLET_VISIBLE",
 
     "SPEECH",
 
@@ -1023,9 +807,7 @@ if not cap.isOpened():
 if not audio_ready.wait(timeout=10) or audio_error:
     raise RuntimeError("Không khởi động được micro: " + str(audio_error or "hết thời gian chờ"))
 
-start_time = time.monotonic()
 
-last_timestamp_ms = 0
 
 
 print()
@@ -1532,293 +1314,17 @@ while True:
 
 
     # ========================================================
-    # M5 HANDS
+    # OBJECT VISIBILITY (no hand model)
     # ========================================================
 
-    rgb = cv2.cvtColor(
-        analysis_frame,
-        cv2.COLOR_BGR2RGB
+    from object_interaction import visible_object_events
+    interaction_events = visible_object_events(
+        [(obj["label"], obj["box"], obj["conf"]) for obj in objects],
+        time.monotonic(), object_visible_since,
     )
-
-    mp_image = mp.Image(
-        image_format=mp.ImageFormat.SRGB,
-        data=rgb,
-    )
-
-    timestamp_ms = int(
-        (
-            time.monotonic()
-            - start_time
-        )
-        * 1000
-    )
-
-    if timestamp_ms <= last_timestamp_ms:
-
-        timestamp_ms = (
-            last_timestamp_ms
-            + 1
-        )
-
-    last_timestamp_ms = (
-        timestamp_ms
-    )
-
-    hand_result = (
-        hand_landmarker.detect_for_video(
-            mp_image,
-            timestamp_ms,
-        )
-    )
-
-    all_hands = []
-
-    if hand_result.hand_landmarks:
-
-        for landmarks in (
-            hand_result.hand_landmarks
-        ):
-
-            hand_points = []
-
-            for lm in landmarks:
-
-                px = int(
-                    lm.x * w
-                )
-
-                py = int(
-                    lm.y * h
-                )
-
-                hand_points.append(
-                    (px, py)
-                )
-
-                cv2.circle(
-                    frame,
-                    (px, py),
-                    3,
-                    (255, 255, 0),
-                    -1,
-                )
-
-            all_hands.append(
-                hand_points
-            )
-
-
-    # ========================================================
-    # M5 HYBRID HAND <-> OBJECT
-    # ========================================================
-
-    now_monotonic = time.monotonic()
-
-    interaction_events = []
-
-    fallback_candidate_events = set()
-
-    # --------------------------------------------------------
-    # LEVEL 1: CONFIRMED BY HAND LANDMARKS
-    # --------------------------------------------------------
-
     for obj in objects:
-
-        event_name = (
-            interaction_event_name(
-                obj["label"]
-            )
-        )
-
-        if event_name is None:
-            continue
-
-        confirmed_by_hand = False
-
-        for hand_points in all_hands:
-
-            if hand_interacts_with_object(
-                hand_points,
-                obj["box"],
-            ):
-
-                confirmed_by_hand = True
-                break
-
-        if confirmed_by_hand:
-
-            obj["interacting"] = True
-            obj["interaction_mode"] = "HAND"
-
-            interaction_events.append(
-                event_name
-            )
-
-            if event_name in m5_last_confirmed:
-
-                m5_last_confirmed[
-                    event_name
-                ] = now_monotonic
-
-            if event_name in m5_fallback_start:
-
-                m5_fallback_start[
-                    event_name
-                ] = None
-
-            continue
-
-        # ----------------------------------------------------
-        # LEVEL 2: FALLBACK WHEN HANDS ARE MISSED
-        # ----------------------------------------------------
-
-        if len(all_hands) == 0:
-
-            label = obj["label"]
-            conf = obj["conf"]
-
-            fallback_allowed = False
-            required_seconds = None
-
-            if (
-                label == "mobile_phone"
-                and conf >= M5_FALLBACK_PHONE_CONF
-            ):
-
-                fallback_allowed = True
-                required_seconds = (
-                    M5_FALLBACK_PHONE_SECONDS
-                )
-
-            elif (
-                label == "study_material"
-                and conf >= M5_FALLBACK_STUDY_CONF
-            ):
-
-                fallback_allowed = True
-                required_seconds = (
-                    M5_FALLBACK_STUDY_SECONDS
-                )
-
-            elif (
-                label == "tablet"
-                and conf >= M5_FALLBACK_PHONE_CONF
-            ):
-
-                fallback_allowed = True
-                required_seconds = (
-                    M5_FALLBACK_PHONE_SECONDS
-                )
-
-            if (
-                fallback_allowed
-                and object_near_person_for_fallback(
-                    obj["box"],
-                    valid_person_boxes,
-                )
-            ):
-
-                fallback_candidate_events.add(
-                    event_name
-                )
-
-                if (
-                    m5_fallback_start[
-                        event_name
-                    ]
-                    is None
-                ):
-
-                    m5_fallback_start[
-                        event_name
-                    ] = now_monotonic
-
-                fallback_duration = (
-                    now_monotonic
-                    - m5_fallback_start[
-                        event_name
-                    ]
-                )
-
-                if (
-                    fallback_duration
-                    >= required_seconds
-                ):
-
-                    obj["interacting"] = True
-                    obj["interaction_mode"] = "FALLBACK"
-
-                    interaction_events.append(
-                        event_name
-                    )
-
-                    m5_last_confirmed[
-                        event_name
-                    ] = now_monotonic
-
-                else:
-
-                    obj["interaction_mode"] = (
-                        "POSSIBLE"
-                    )
-
-            else:
-
-                obj["interaction_mode"] = (
-                    "NONE"
-                )
-
-        else:
-
-            obj["interaction_mode"] = (
-                "NONE"
-            )
-
-    # --------------------------------------------------------
-    # RESET FALLBACK TIMERS THAT DISAPPEARED
-    # --------------------------------------------------------
-
-    for event_name in m5_fallback_start:
-
-        if (
-            event_name
-            not in fallback_candidate_events
-        ):
-
-            m5_fallback_start[
-                event_name
-            ] = None
-
-    # --------------------------------------------------------
-    # LEVEL 3: GRACE PERIOD
-    # --------------------------------------------------------
-
-    for event_name, last_seen in (
-        m5_last_confirmed.items()
-    ):
-
-        if last_seen is None:
-            continue
-
-        if event_name in interaction_events:
-            continue
-
-        elapsed = (
-            now_monotonic
-            - last_seen
-        )
-
-        if elapsed <= M5_GRACE_SECONDS:
-
-            interaction_events.append(
-                event_name
-            )
-
-    interaction_events = list(
-        dict.fromkeys(
-            interaction_events
-        )
-    )
+        obj["interacting"] = interaction_event_name(obj["label"]) in interaction_events
+        obj["interaction_mode"] = "VISIBLE" if obj["interacting"] else "NONE"
 
 
     # ========================================================
@@ -2061,78 +1567,9 @@ while True:
             obj["box"]
         )
 
-        interaction_mode = obj.get(
-            "interaction_mode",
-            "NONE"
-        )
-
-        if obj["interacting"]:
-
-            color = (
-                0,
-                0,
-                255
-            )
-
-            base_event = (
-                interaction_event_name(
-                    obj["label"]
-                )
-                or obj["label"]
-            )
-
-            if interaction_mode == "FALLBACK":
-
-                text = (
-                    f"{base_event}*"
-                )
-
-            else:
-
-                text = base_event
-
-        elif interaction_mode == "POSSIBLE":
-
-            color = (
-                0,
-                165,
-                255
-            )
-
-            if obj["label"] == "mobile_phone":
-
-                text = (
-                    "POSSIBLE_PHONE_HOLD"
-                )
-
-            elif obj["label"] == "study_material":
-
-                text = (
-                    "POSSIBLE_STUDY_HOLD"
-                )
-
-            elif obj["label"] == "tablet":
-
-                text = (
-                    "POSSIBLE_TABLET_HOLD"
-                )
-
-            else:
-
-                text = obj["label"]
-
-        else:
-
-            color = (
-                0,
-                255,
-                0
-            )
-
-            text = (
-                obj["label"]
-            )
-
+        confirmed = obj["interacting"]
+        color = (0, 0, 255) if confirmed else (0, 255, 0)
+        text = interaction_event_name(obj["label"]) if confirmed else obj["label"]
 
         cv2.rectangle(
             frame,
@@ -2272,7 +1709,7 @@ while True:
         ),
 
         (
-            f"M5 Hands: {len(all_hands)}",
+            f"Object alerts: {len(interaction_events)}",
             (
                 255,
                 255,
@@ -2433,7 +1870,6 @@ cap.release()
 
 cv2.destroyAllWindows()
 
-hand_landmarker.close()
 
 print()
 publish("stopped", "Giám sát đã dừng")

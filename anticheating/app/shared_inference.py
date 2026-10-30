@@ -21,7 +21,6 @@ if str(ROOT) not in sys.path:
 class SharedInference:
     def __init__(self):
         import cv2
-        import mediapipe as mp
         import numpy as np
         import onnxruntime as ort
         import webrtcvad
@@ -44,7 +43,7 @@ class SharedInference:
         options = ort.SessionOptions()
         options.intra_op_num_threads = 1
         options.inter_op_num_threads = 1
-        self.cv, self.np, self.mp = cv2, np, mp
+        self.cv, self.np = cv2, np
         self.device = os.environ.get("ANTICHEAT_DEVICE", "cpu")
         self.face = FaceAnalysis(name="buffalo_l", root=str(ROOT / "models/identity"),
                                  providers=["CPUExecutionProvider"] if self.device == "cpu" else ort.get_available_providers())
@@ -54,12 +53,6 @@ class SharedInference:
         self.live = ort.InferenceSession(str(ROOT / "models/liveness/MiniFASNetV2.onnx"),
                                          sess_options=options, providers=["CPUExecutionProvider"])
         self.head = TrainedHeadClassifier(ROOT / "models/head_pose/head_behavior_all_balanced.joblib")
-        self.hands = mp.tasks.vision.HandLandmarker.create_from_options(
-            mp.tasks.vision.HandLandmarkerOptions(
-                base_options=mp.tasks.BaseOptions(model_asset_path=str(ROOT / "models/hands/hand_landmarker.task")),
-                running_mode=mp.tasks.vision.RunningMode.IMAGE, num_hands=2,
-                min_hand_detection_confidence=.35, min_hand_presence_confidence=.35,
-                min_tracking_confidence=.35))
         self.vad, self.risk = webrtcvad.Vad(2), RiskEngine()
 
     def decode(self, data, reference=False):
@@ -181,8 +174,7 @@ class SharedInference:
         if context.get("generation") != generation or now-context.get("sample_at", 0) > 3:
             context["tracker"] = create_anticheating_tracker()
             context["votes"] = []
-            context["object_fallback_since"] = {}
-            context["object_last_confirmed"] = {}
+            context["object_visible_since"] = {}
         context.update(generation=generation, sample_at=now)
         events = set()
         faces = self.face.get(frame)
@@ -249,17 +241,10 @@ class SharedInference:
                       "MULTIPLE_PEOPLE":50, "PHONE_VISIBLE":30, "TABLET_VISIBLE":30,
                       "MATERIAL_VISIBLE":20}
             return [{"event": name, "score": scores.get(name, 15)} for name in sorted(events)]
-        rgb = self.cv.cvtColor(frame, self.cv.COLOR_BGR2RGB)
-        hands = self.hands.detect(self.mp.Image(image_format=self.mp.ImageFormat.SRGB, data=rgb))
-        h,w = frame.shape[:2]
-        points = [[(p.x*w,p.y*h) for p in hand] for hand in hands.hand_landmarks]
-        from object_interaction import interaction_events
+        from object_interaction import visible_object_events
         object_observations = [(objects.names[int(box.cls.item())], box.xyxy[0].tolist(),
                                 float(box.conf.item())) for box in objects.boxes]
-        person_boxes = [box.xyxy[0].tolist() for box in people.boxes
-                        if not inside_phone(box.xyxy[0].tolist())]
-        events.update(interaction_events(object_observations, points, person_boxes, now,
-                                         context["object_fallback_since"], context["object_last_confirmed"]))
+        events.update(visible_object_events(object_observations, now, context["object_visible_since"]))
         if speech_observation(self.vad, audio):
             events.add("SPEECH")
         tracker = context["tracker"]

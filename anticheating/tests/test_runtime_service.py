@@ -35,7 +35,7 @@ class RuntimeTests(unittest.TestCase):
         service.active_deadline = None
         (self.root / 'profiles').mkdir()
         (self.root / 'profiles' / '7.jpg').write_bytes(b'reference')
-        self.models = ['identity/buffalo_l/det_10g.onnx', 'identity/buffalo_l/1k3d68.onnx', 'identity/buffalo_l/w600k_r50.onnx', 'liveness/MiniFASNetV2.onnx', 'person/yolo11s.pt', 'hands/hand_landmarker.task', 'objects/best.pt', 'head_pose/head_behavior_all_balanced.joblib']
+        self.models = ['identity/buffalo_l/det_10g.onnx', 'identity/buffalo_l/1k3d68.onnx', 'identity/buffalo_l/w600k_r50.onnx', 'liveness/MiniFASNetV2.onnx', 'person/yolo11s.pt', 'objects/best.pt', 'head_pose/head_behavior_all_balanced.joblib']
         for name in self.models:
             p = self.root / 'models' / name
             p.parent.mkdir(parents=True, exist_ok=True)
