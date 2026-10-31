@@ -267,21 +267,21 @@ def create_anticheating_tracker():
 
 
     # ========================================================
-    # HAND-OBJECT INTERACTION
+    # VISIBLE OBJECTS (no inference of holding)
     # ========================================================
 
     tracker.register(
-        "HOLDING_PHONE",
+        "PHONE_VISIBLE",
         threshold=1.0
     )
 
     tracker.register(
-        "HOLDING_STUDY_MATERIAL",
+        "MATERIAL_VISIBLE",
         threshold=1.0
     )
 
     tracker.register(
-        "HOLDING_TABLET",
+        "TABLET_VISIBLE",
         threshold=1.0
     )
 
@@ -327,13 +327,13 @@ if __name__ == "__main__":
     print("====================================")
     print()
 
-    print("Simulating HOLDING_PHONE...")
+    print("Simulating PHONE_VISIBLE...")
     print()
 
     for _ in range(8):
 
         result = tracker.update(
-            "HOLDING_PHONE",
+            "PHONE_VISIBLE",
             True
         )
 
@@ -347,10 +347,10 @@ if __name__ == "__main__":
 
 
     print()
-    print("Phone released.")
+    print("Phone no longer visible.")
 
     result = tracker.update(
-        "HOLDING_PHONE",
+        "PHONE_VISIBLE",
         False
     )
 

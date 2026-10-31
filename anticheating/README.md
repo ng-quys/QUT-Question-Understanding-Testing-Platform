@@ -8,7 +8,7 @@ This directory contains the runtime AI anti-cheating service integrated with QUT
 - M2 Person detection
 - M3 Object detection
 - M4 Head pose
-- M5 Hand-object interaction
+- Object visibility confirmation (no hand model required)
 - M6 Audio VAD
 - M7 Browser monitoring bridge
 - M8 Temporal tracking
@@ -28,6 +28,8 @@ The running pipeline exposes the internal M7 browser bridge on `127.0.0.1:8765`.
 
 Runtime models belong under `models/`.
 The custom M3 model is expected at `models/objects/best.pt`.
+MediaPipe and hand weights are no longer required by either runtime worker.
+See [OBJECT_DETECTION.md](OBJECT_DETECTION.md) for visibility events and confirmation rules.
 Do not commit large model binaries, student photos, or evidence to Git.
 
 ## Student face reference

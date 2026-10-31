@@ -39,8 +39,6 @@ class WebInferenceTests(unittest.TestCase):
             self.head_calls.append(face)
             return {"direction": "LEFT"}
         self.engine.head = NS(predict_verified_face=head)
-        self.engine.hands = NS(detect=lambda image: NS(hand_landmarks=[]))
-        self.engine.mp = NS(Image=lambda **kwargs: None, ImageFormat=NS(SRGB=0))
         self.engine.vad = NS(is_speech=lambda chunk, rate: chunk[0] == 1)
         self.engine.risk = NS(calculate=lambda events: NS(score=40, level="MEDIUM"))
         self.item = NS(context={"embedding": np.array([1., 0.])}, attempt=0)
@@ -48,7 +46,6 @@ class WebInferenceTests(unittest.TestCase):
     def test_offline_snapshot_does_not_require_temporal_votes_or_emit_audio_or_holding_duration(self):
         self.face.normed_embedding = np.array([0., 1.])
         self.objects = [box(0, [100, 100, 150, 150])]
-        self.engine.hands.detect = lambda image: self.fail("Offline snapshots must not infer holding")
         self.engine.vad.is_speech = lambda *args: self.fail("No offline audio was recorded")
         result = self.engine.analyze(self.item, b"jpeg", bytes(9600), 100, 0, snapshot=True)
         names = {row["event"] for row in result}
@@ -127,7 +124,22 @@ class WebInferenceTests(unittest.TestCase):
     def test_phone_detection_runs_even_when_face_is_hidden(self):
         self.faces = []
         self.objects = [box(0, [180.1, 121.2, 397.6, 439.7], .694)]
-        self.assertTrue({"NO_FACE", "HOLDING_PHONE"}.issubset(self.replay()))
+        self.assertTrue({"NO_FACE", "PHONE_VISIBLE"}.issubset(self.replay()))
+
+    def test_live_phone_alert_needs_no_hand_or_person_model_result_and_never_claims_holding(self):
+        self.people = []
+        self.objects = [box(0, [100, 100, 150, 150])]
+        events = self.replay()
+        self.assertIn('PHONE_VISIBLE', events)
+        self.assertFalse(any('HOLDING' in event for event in events))
+
+    def test_sampling_lease_change_cannot_complete_old_object_confirmation(self):
+        self.objects = [box(0, [100, 100, 150, 150])]
+        for now in [100, 100.6, 101.3]:
+            self.engine.analyze(self.item, b'jpeg', b'', now, 1)
+        result = self.engine.analyze(self.item, b'jpeg', b'', 102.5, 2)
+        self.assertFalse(any(event[0] == 'PHONE_VISIBLE' for event in result))
+        self.assertEqual({'PHONE_VISIBLE':102.5}, self.item.context['object_visible_since'])
 
     def test_voice_and_visual_models_both_run(self):
         self.assertTrue({"SPEECH", "HEAD_LEFT"}.issubset(self.replay(bytes([1])*9600)))

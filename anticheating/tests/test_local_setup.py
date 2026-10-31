@@ -88,6 +88,11 @@ class LocalSetupTests(unittest.TestCase):
         for model in prepare_models(self.anti / 'models'):
             self.assertEqual(model.read_bytes(), b'test-weights')
 
+    def test_required_models_start_without_any_hand_weights(self):
+        self.fill_models()
+        self.assertFalse((self.anti / 'models/hands').exists())
+        self.assertEqual(7, len(prepare_models(self.anti / 'models')))
+
     def test_models_in_flat_folder_are_linked_to_expected_locations(self):
         self.fill_models(flat=True)
         for model in prepare_models(self.anti / 'models'):

@@ -19,7 +19,11 @@ EVENT_WEIGHTS = {
     "HEAD_UP": 5,
     "HEAD_DOWN": 10,
 
-    # Object / interaction
+    # Visible objects; retain existing review weights after removing hand inference.
+    "PHONE_VISIBLE": 40,
+    "MATERIAL_VISIBLE": 35,
+    "TABLET_VISIBLE": 35,
+    # Historical event codes remain readable.
     "HOLDING_PHONE": 40,
     "HOLDING_STUDY_MATERIAL": 35,
     "HOLDING_TABLET": 35,

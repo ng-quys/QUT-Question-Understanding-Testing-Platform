@@ -8,7 +8,6 @@ REQUIRED_MODELS = (
     'identity/buffalo_l/w600k_r50.onnx',
     'liveness/MiniFASNetV2.onnx',
     'person/yolo11s.pt',
-    'hands/hand_landmarker.task',
     'objects/best.pt',
     'head_pose/head_behavior_all_balanced.joblib',
 )
