@@ -1,7 +1,7 @@
 import { PORTAL_ORIGIN } from '@shared/app/frontendOrigins';
 import { useState, type FormEvent } from 'react';
 import { errorMessageVi } from '@shared/services/errorMessages';
-import { AlertCircle, ArrowLeft, BookOpen, CalendarDays, Check, Eye, EyeOff, FileText, Loader2, LockKeyhole } from 'lucide-react';
+import { AlertCircle, ArrowLeft, BookOpen, CalendarDays, Check, Eye, EyeOff, FileText, Loader2, LockKeyhole, UserRound } from 'lucide-react';
 import '../styles/admin.css';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@shared/services/api';
@@ -58,8 +58,21 @@ export function AdminLoginPage() {
       <h1 id="admin-login-title">Đăng nhập quản trị</h1><p className="admin-login-description">Nhập tài khoản quản trị của bạn để tiếp tục.</p>
       <form onSubmit={submit} aria-busy={busy}>
         {error && <div role="alert" className="admin-login-error"><AlertCircle size={17} /><span>{error}</span></div>}
-        <label htmlFor="admin-username">Tên đăng nhập hoặc email</label><input id="admin-username" autoComplete="username" autoCapitalize="none" spellCheck={false} required disabled={busy} value={username} onChange={event => setUsername(event.target.value)} />
-        <label htmlFor="admin-password">Mật khẩu</label><div className="admin-login-password"><input id="admin-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required disabled={busy} value={password} onChange={event => setPassword(event.target.value)} onKeyUp={event => setCapsLock(event.getModifierState('CapsLock'))} onKeyDown={event => setCapsLock(event.getModifierState('CapsLock'))} onBlur={() => setCapsLock(false)} /><button type="button" disabled={busy} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showPassword} onClick={() => setShowPassword(previous => !previous)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
+        <div className="admin-login-field">
+          <label htmlFor="admin-username">Tên đăng nhập hoặc email</label>
+          <div className="admin-login-control" data-disabled={busy || undefined}>
+            <UserRound size={19} className="admin-login-field-icon" aria-hidden="true" />
+            <input id="admin-username" placeholder="Nhập tên đăng nhập hoặc email" autoComplete="username" autoCapitalize="none" spellCheck={false} required disabled={busy} value={username} onChange={event => setUsername(event.target.value)} />
+          </div>
+        </div>
+        <div className="admin-login-field">
+          <label htmlFor="admin-password">Mật khẩu</label>
+          <div className="admin-login-control" data-disabled={busy || undefined}>
+            <LockKeyhole size={19} className="admin-login-field-icon" aria-hidden="true" />
+            <input id="admin-password" placeholder="Nhập mật khẩu của bạn" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required disabled={busy} value={password} onChange={event => setPassword(event.target.value)} onKeyUp={event => setCapsLock(event.getModifierState('CapsLock'))} onKeyDown={event => setCapsLock(event.getModifierState('CapsLock'))} onBlur={() => setCapsLock(false)} />
+            <button type="button" className="admin-login-password-toggle" disabled={busy} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showPassword} onClick={() => setShowPassword(previous => !previous)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+          </div>
+        </div>
         {capsLock && <p className="admin-login-caps" role="status">Caps Lock đang bật.</p>}
         <button disabled={busy} className="admin-login-submit">{busy && <Loader2 size={17} className="animate-spin" />}{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
       </form><div className="admin-login-card-footer">{PORTAL_ORIGIN&&<a href={`${PORTAL_ORIGIN}/login`}><ArrowLeft size={14} />Đăng nhập sinh viên / giảng viên</a>}</div>
