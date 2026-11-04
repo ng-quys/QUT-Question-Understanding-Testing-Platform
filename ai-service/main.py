@@ -12,6 +12,7 @@ from clo_generation import generate_clo_questions
 from durable_telemetry import ExcelTelemetry
 from inference_metrics import inference_batch_size, measured_generate
 from document_cache import DocumentCache,DocumentRef,ExactDocumentStore,from_environment,document_metrics_snapshot
+from hierarchical_chunker import HierarchyAwareStore, chunk_text, validate_strategy
 import os
 import re
 from io import BytesIO
@@ -36,6 +37,7 @@ logger = logging.getLogger('examflow.duplicate')
 OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://127.0.0.1:11434').rstrip('/')
 MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5:7b')
 EMBED_MODEL = os.getenv('OLLAMA_EMBED_MODEL', 'nomic-embed-text')
+CHUNKING_STRATEGY = validate_strategy(os.getenv('AI_CHUNKING_STRATEGY', 'fixed'))
 INFERENCE_BATCH_SIZE = inference_batch_size()
 SAVED_DOCUMENTS_ENABLED = os.getenv('AI_SAVED_DOCUMENTS_ENABLED', 'false').strip().lower() == 'true'
 MAX_QUESTIONS = min(45, int(os.getenv('AI_CREDITS_MAX_QUESTIONS', '45')))
@@ -160,6 +162,7 @@ def extract(filename: str, content: bytes) -> str:
 def health():
     return {'status': 'ok', 'ollama_url': OLLAMA_URL, 'model': MODEL, 'registryId': registry.registry_id,
             'savedDocumentsEnabled': bool(globals().get('SAVED_DOCUMENTS_ENABLED', False)),
+            'chunkingStrategy': globals().get('CHUNKING_STRATEGY', 'fixed'),
             'inferenceBatchSize': globals().get('INFERENCE_BATCH_SIZE', 1),
             'queue': {'active': sum(j.state == 'running' for j in registry.jobs.values()),
                       'waiting': sum(j.state in ('queued', 'paused') for j in registry.jobs.values()),
@@ -377,8 +380,23 @@ async def _generate(request: GenerationRequest, progress=lambda items: None, can
         else:
             if len(request.sourceText.strip()) < 50:
                 raise HTTPException(400, 'Nội dung tài liệu quá ngắn; vui lòng tải tài liệu thực')
-            chunks = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150).split_documents([LCDocument(page_content=request.sourceText[:MAX_CHARS])])
-            store = await asyncio.to_thread(FAISS.from_documents, chunks, embeddings)
+            # The globals fallback retains compatibility with the isolated legacy
+            # generation-loop harness that compiles this function by itself.
+            chunker = globals().get('chunk_text')
+            strategy = globals().get('CHUNKING_STRATEGY', 'fixed')
+            if chunker:
+                chunks, chunking_stats = chunker(request.sourceText[:MAX_CHARS], source_file='source-text',
+                                                  strategy=strategy)
+                logger.info('RAG_CHUNKING strategy=%s chunks=%s chapters=%s sections=%s subsections=%s fallback=%s processing_ms=%s',
+                            chunking_stats.strategy, chunking_stats.chunk_count, chunking_stats.chapter_count,
+                            chunking_stats.section_count, chunking_stats.subsection_count,
+                            chunking_stats.fallback, chunking_stats.processing_ms)
+            else:
+                chunks = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150).split_documents(
+                    [LCDocument(page_content=request.sourceText[:MAX_CHARS])])
+            base_store = await asyncio.to_thread(FAISS.from_documents, chunks, embeddings)
+            adapter = globals().get('HierarchyAwareStore')
+            store = adapter(base_store) if strategy == 'hierarchical' and adapter else base_store
     except Exception as exc:
         raise HTTPException(502, f'Embedding/FAISS thất bại: {str(exc)[:250]}') from exc
     if cancelled():
