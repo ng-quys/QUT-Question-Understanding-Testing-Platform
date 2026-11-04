@@ -114,6 +114,37 @@ class InferenceBatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('text',manifest['chunks'][0]);self.assertNotIn(TEXT,json.dumps(manifest,ensure_ascii=False))
         self.assertRegex(manifest['contextFingerprint'],r'^[0-9a-f]{64}$')
 
+    async def test_hierarchical_mode_allocates_subsections_and_bloom_targets(self):
+        passages = [
+            ('DNS chuyển đổi tên miền thành địa chỉ IP cho máy trạm trong hệ thống.', '1.1 DNS'),
+            ('DHCP tự động cấp phát địa chỉ IP và thông tin cấu hình cho máy khách.', '1.2 DHCP'),
+            ('Group Policy áp dụng chính sách cấu hình cho người dùng và máy tính.', '1.3 Group Policy'),
+        ]
+        class Store:
+            hierarchical = True
+            def similarity_search(self, query, count):
+                self.count = count
+                return [NS(page_content=text, metadata={'similarity': .91, 'chapter': 'CHƯƠNG 1: MẠNG',
+                    'section': section, 'subsection': None}) for text, section in passages]
+        store=Store();calls=[]
+        response=json.dumps({'questions':[
+            question(1,evidenceChunkId='chunk-1',evidenceQuote=passages[0][0],bloom='remember'),
+            question(2,evidenceChunkId='chunk-2',evidenceQuote=passages[1][0],bloom='understand'),
+            question(3,evidenceChunkId='chunk-3',evidenceQuote=passages[2][0],bloom='apply'),
+        ]},ensure_ascii=False)
+        async def model(client,prompt):calls.append(prompt);return response
+        embeddings=NS(embed_query=lambda t:[1,0],embed_documents=lambda t:[[1,0] for _ in t])
+        metrics=RunMetrics();token=CURRENT.set(metrics)
+        try:
+            result=await generate_clo_questions(NS(courseId=1,questionCount=3,
+                selectedClos=[NS(id=1,code='CLO1',description='quản trị mạng')]),store,embeddings,model,
+                AsyncMock(return_value=({'suspectedDuplicate':False},[1,0])),3,lambda _:None,lambda:False,5,None,3)
+        finally:CURRENT.reset(token)
+        self.assertEqual(3,len(result));self.assertEqual(12,store.count)
+        self.assertIn('1.1 DNS',calls[0]);self.assertIn('1.2 DHCP',calls[0])
+        self.assertIn('remember, understand, apply',calls[0])
+        self.assertEqual('1.1 DNS',metrics.retrieval_manifests[0]['chunks'][0]['section'])
+
     async def test_semantic_support_still_rejects_after_exact_source_match(self):
         candidate=question(1,evidenceChunkId='chunk-1')
         response=json.dumps({'questions':[candidate]},ensure_ascii=False)
